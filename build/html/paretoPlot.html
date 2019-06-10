@@ -1,0 +1,299 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>paretoPlot package &mdash; BioChemicalNN 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="smallNetworkSimul module" href="smallNetworkSimul.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: orange" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BioChemicalNN
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="simulOfBioNN.html">SimulOfBioNN package</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">paretoPlot package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#paretoconfigutils">paretoConfigUtils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#paretotraintools">paretoTrainTools</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BioChemicalNN</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>paretoPlot package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/paretoPlot.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="paretoplot-package">
+<h1>paretoPlot package<a class="headerlink" href="#paretoplot-package" title="Permalink to this headline">¶</a></h1>
+<p>Package to obtain quickly pareto plot of a variety of models.
+The python multiprocessing show bad behavior when used with interpreter, so please do only use the run mode for this package.</p>
+<div class="section" id="paretoconfigutils">
+<h2>paretoConfigUtils<a class="headerlink" href="#paretoconfigutils" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>File to have config, can be ignored.</p>
+</div></blockquote>
+</div>
+<div class="section" id="paretotraintools">
+<h2>paretoTrainTools<a class="headerlink" href="#paretotraintools" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-paretoPlot.paretoTrainTools"></span><p>In this module we provide functions for creating pareto plots, and training tool using python multiprocessing.</p>
+<dl class="function">
+<dt id="paretoPlot.paretoTrainTools.paretoPlot">
+<code class="descclassname">paretoPlot.paretoTrainTools.</code><code class="descname">paretoPlot</code><span class="sig-paren">(</span><em>listOfRescale</em>, <em>Batches</em>, <em>colors</em>, <em>colors3</em>, <em>Initial_Result_Path</em><span class="sig-paren">)</span><a class="headerlink" href="#paretoPlot.paretoTrainTools.paretoPlot" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Produce the pareto plot for a solution created by paretoExperiment.Train, in the directory Initial_Result_Path</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>save the fig in Initial_Result_Path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="paretoPlot.paretoTrainTools.train">
+<code class="descclassname">paretoPlot.paretoTrainTools.</code><code class="descname">train</code><span class="sig-paren">(</span><em>listOfRescale</em>, <em>Batches</em>, <em>Sparsity</em>, <em>NbUnits</em>, <em>Initial_Result_Path</em>, <em>epochs</em>, <em>repeat</em>, <em>use_bias</em>, <em>fashion=False</em><span class="sig-paren">)</span><a class="headerlink" href="#paretoPlot.paretoTrainTools.train" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Train a variety of neural network on Batches architecture, a list of string name for architecture.
+Sparsity and NbUnits should be dictionary which keys are the architecture names.
+The training is also made for different rescale size of the inputs.
+They should define 3d_list with respectively the sparsity and number of units desired for each layer.
+The training program save all result in the Initial_Result_Path folder.
+Results for different rescale and different batches are saved in separate sub-directory.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>listOfRescale</strong> – list with the rescale size, often [1,2,4], that is the scale to divide each size of the image.</p></li>
+<li><p><strong>Batches</strong> – see above</p></li>
+<li><p><strong>Sparsity</strong> – see above</p></li>
+<li><p><strong>NbUnits</strong> – see above</p></li>
+<li><p><strong>Initial_Result_Path</strong> – </p></li>
+<li><p><strong>fashion</strong> – if Fashion_mnist rather than mnist: use True.</p></li>
+<li><p><strong>epochs</strong> – int, number of epochs per training</p></li>
+<li><p><strong>repeat</strong> – int, number of repeat</p></li>
+<li><p><strong>use_bias</strong> – boolean, True if using bias</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="paretoPlot.paretoTrainTools.trainMultiProcess">
+<code class="descclassname">paretoPlot.paretoTrainTools.</code><code class="descname">trainMultiProcess</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="headerlink" href="#paretoPlot.paretoTrainTools.trainMultiProcess" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Launch repeat training, validation test on normal and provided noisy data.
+The tip to launch parallel training is to modify the configuration with core_config.gpu_options.allow_growth = True.
+Naively Tensorflow allocate the whole memory for the first session created, which we don’t want.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>X</strong> – <p>tupple containing the following parameters:
+resultPath : string,directory to store results
+gpuName: int, index of the GPU to use (often: 0 and 1 are CPU,CPU_XLA, 2,3 : GPU0,GPU1XLA …</p>
+<blockquote>
+<div><p>set to none to let us automatically choose the first encountered GPU</p>
+</div></blockquote>
+<p>x_train: 3d-array, image data set for train
+y_train: 2d-array, result data set for train
+x_test: 3d-array, image data set for test
+x_test_noise: 3d-array, noisy image data set for test
+y_test: 2d-array, result data set for test
+nbU: int, number of units for each layer
+use_bias: bool, If using bias or not
+flatten: bool, if the data set is already flattent or not
+epochs: int, number of epochs for training
+biasValues: 1d-array, bias in each layer.
+zeroFrac: int, amount of sparsity
+idx: str use for naming the saved data
+repeat: number of repetition</p>
+</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>collectedAcc,collectedAccNoise,collectedWeightsNoneZeros,collectedWeightsZeros
+Arrays with the results of the training.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="smallNetworkSimul.html" class="btn btn-neutral float-left" title="smallNetworkSimul module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Pierre Orhan
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

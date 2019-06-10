@@ -1,0 +1,30 @@
+odeUtils module
+=========================================
+
+Module for solving the ODE evolution of a network of biochemical reaction following mass action on CPU and (in development) on GPU.
+
+
+.. contents::
+
+    systemEquation
+    tfDerivativeNetwork
+    utils
+
+
+systemEquation
+__________________
+
+.. automodule:: simulOfBioNN.odeUtils.systemEquation
+   :members:
+
+tfDerivativeNetwork
+__________________
+
+.. automodule:: simulOfBioNN.odeUtils.tfDerivativeNetwork
+   :members:
+
+utils
+__________________
+
+.. automodule:: simulOfBioNN.odeUtils.utils
+   :members:

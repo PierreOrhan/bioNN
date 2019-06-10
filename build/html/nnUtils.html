@@ -1,0 +1,803 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Neural Network module &mdash; BioChemicalNN 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="odeUtils module" href="odeUtils.html" />
+    <link rel="prev" title="SimulOfBioNN package" href="simulOfBioNN.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: orange" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BioChemicalNN
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="simulOfBioNN.html">SimulOfBioNN package</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Neural Network module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.nnUtils.clippedBinaryLayer">clippedBinaryLayer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.nnUtils.clippedSparseBioDenseLayer">clippedSparseBioDenseLayer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.nnUtils.clippedSparseBioSigLayer">clippedSparseBioSigLayer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.nnUtils.dataUtils">dataUtils</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.nnUtils.plotUtils">plotUtils</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="odeUtils.html">odeUtils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parseUtils.html">parse module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotUtils.html">plot module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulNN.html">SimulNN module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="smallNetworkSimul.html">smallNetworkSimul module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="paretoPlot.html">paretoPlot package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BioChemicalNN</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="simulOfBioNN.html">SimulOfBioNN package</a> &raquo;</li>
+        
+      <li>Neural Network module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/nnUtils.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="neural-network-module">
+<h1>Neural Network module<a class="headerlink" href="#neural-network-module" title="Permalink to this headline">¶</a></h1>
+<p>Module for the training of the neural network architechture.
+Also manage data set loading and plotting.</p>
+<div class="section" id="module-simulOfBioNN.nnUtils.clippedBinaryLayer">
+<span id="clippedbinarylayer"></span><h2>clippedBinaryLayer<a class="headerlink" href="#module-simulOfBioNN.nnUtils.clippedBinaryLayer" title="Permalink to this headline">¶</a></h2>
+<p>Definition of a binary layer with tensorflow.</p>
+<dl class="class">
+<dt id="simulOfBioNN.nnUtils.clippedBinaryLayer.clippedBinaryLayer">
+<em class="property">class </em><code class="descclassname">simulOfBioNN.nnUtils.clippedBinaryLayer.</code><code class="descname">clippedBinaryLayer</code><span class="sig-paren">(</span><em>deviceName</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedBinaryLayer.clippedBinaryLayer" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>A binary layer.</dt><dd><p>On prediction, weights are projected at either -1 or 1
+On backpropagaton the real value of weight is used.
+Finally we also binarize the activation by clipping it at -1 or 1.</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="simulOfBioNN.nnUtils.clippedBinaryLayer.clippedBinaryLayer.build">
+<code class="descname">build</code><span class="sig-paren">(</span><em>input_shape</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedBinaryLayer.clippedBinaryLayer.build" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Building function, based on the original one from Dense.
+We implemented a constraint on the weight and bias: clipped between -1 and 1.
+Initialization also takes place in this range of values.
+Please note that training is enabled in bias.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>input_shape</strong> – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulOfBioNN.nnUtils.clippedBinaryLayer.clippedBinaryLayer.call">
+<code class="descname">call</code><span class="sig-paren">(</span><em>inputs</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedBinaryLayer.clippedBinaryLayer.call" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Apply a clipped matrix multiplication and sign activation function.
+Backpropagation is made on non-clipped and without sign expression.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>inputs</strong> – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-simulOfBioNN.nnUtils.clippedSparseBioDenseLayer">
+<span id="clippedsparsebiodenselayer"></span><h2>clippedSparseBioDenseLayer<a class="headerlink" href="#module-simulOfBioNN.nnUtils.clippedSparseBioDenseLayer" title="Permalink to this headline">¶</a></h2>
+<p>Definition of a sparse layer with tensorflow.
+This layer starts with a forced sparsity.
+It also clips its weights in forward pass to {-1,0,1}, increasing sparsity.
+Bias are constant by layer and not trainable.</p>
+<dl class="function">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.choice">
+<code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.</code><code class="descname">choice</code><span class="sig-paren">(</span><em>a</em>, <em>size=None</em>, <em>replace=True</em>, <em>p=None</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.choice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a random sample from a given 1-D array</p>
+<blockquote>
+<div><div class="versionadded">
+<p><span class="versionmodified added">New in version 1.7.0.</span></p>
+</div>
+</div></blockquote>
+<dl class="simple">
+<dt>a<span class="classifier">1-D array-like or int</span></dt><dd><p>If an ndarray, a random sample is generated from its elements.
+If an int, the random sample is generated as if a were np.arange(a)</p>
+</dd>
+<dt>size<span class="classifier">int or tuple of ints, optional</span></dt><dd><p>Output shape.  If the given shape is, e.g., <code class="docutils literal notranslate"><span class="pre">(m,</span> <span class="pre">n,</span> <span class="pre">k)</span></code>, then
+<code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">*</span> <span class="pre">n</span> <span class="pre">*</span> <span class="pre">k</span></code> samples are drawn.  Default is None, in which case a
+single value is returned.</p>
+</dd>
+<dt>replace<span class="classifier">boolean, optional</span></dt><dd><p>Whether the sample is with or without replacement</p>
+</dd>
+<dt>p<span class="classifier">1-D array-like, optional</span></dt><dd><p>The probabilities associated with each entry in a.
+If not given the sample assumes a uniform distribution over all
+entries in a.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>samples<span class="classifier">single item or ndarray</span></dt><dd><p>The generated random samples</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>ValueError</dt><dd><p>If a is an int and less than zero, if a or p are not 1-dimensional,
+if a is an array-like of size 0, if p is not a vector of
+probabilities, if a and p have different lengths, or if
+replace=False and the sample size is greater than the population
+size</p>
+</dd>
+</dl>
+<p>randint, shuffle, permutation</p>
+<p>Generate a uniform random sample from np.arange(5) of size 3:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="go">array([0, 3, 4])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1">#This is equivalent to np.random.randint(0,5,3)</span>
+</pre></div>
+</div>
+<p>Generate a non-uniform random sample from np.arange(5) of size 3:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="go">array([3, 3, 0])</span>
+</pre></div>
+</div>
+<p>Generate a uniform random sample from np.arange(5) of size 3 without
+replacement:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="go">array([3,1,0])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1">#This is equivalent to np.random.permutation(np.arange(5))[:3]</span>
+</pre></div>
+</div>
+<p>Generate a non-uniform random sample from np.arange(5) of size
+3 without replacement:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="go">array([2, 3, 0])</span>
+</pre></div>
+</div>
+<p>Any of the above can be repeated with an arbitrary array-like
+instead of just integers. For instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">aa_milne_arr</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pooh&#39;</span><span class="p">,</span> <span class="s1">&#39;rabbit&#39;</span><span class="p">,</span> <span class="s1">&#39;piglet&#39;</span><span class="p">,</span> <span class="s1">&#39;Christopher&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">aa_milne_arr</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">])</span>
+<span class="go">array([&#39;pooh&#39;, &#39;pooh&#39;, &#39;pooh&#39;, &#39;Christopher&#39;, &#39;piglet&#39;],</span>
+<span class="go">      dtype=&#39;|S11&#39;)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.clippedMatMul">
+<code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.</code><code class="descname">clippedMatMul</code><span class="sig-paren">(</span><em>deviceName</em>, <em>inputs</em>, <em>kernel</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.clippedMatMul" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clipped Matrix multiplication
+Clipping follow the rule: weights&lt;0.2 take value -1, weighs&gt;0.2 take value 1 and other take value 0.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>After extensive research, it appeared that if you want the following behavior:</dt><dd><p>Y = def_op(f(x)) in forward pass
+grad = grad(def_op(x))</p>
+</dd>
+<dt>(In our case f is the clipping and def_op is a tf basic operation like MatMul), the only solution that doesn’t use C re-implementation of the ops is to use:</dt><dd><p>Y = def_op(f(x))-def_op(x)+def_op(x) and to forbid gradient computing on the first part of the graph.</p>
+</dd>
+</dl>
+<p>Nonetheless, such writing double forward time for this op, making it very bad, a C implementation should be used instead!</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="class">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.clippedSparseBioDenseLayer">
+<em class="property">class </em><code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.</code><code class="descname">clippedSparseBioDenseLayer</code><span class="sig-paren">(</span><em>deviceName</em>, <em>biasValue=None</em>, <em>fractionZero=0.9</em>, <em>min=-1</em>, <em>max=1</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.clippedSparseBioDenseLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>A layer parametrize by sparsity, applied for each output neurons at every stage.
+The bias value is constant through each layer.
+It can either be initialized randomly or given (for repeated tests)</p>
+<dl class="method">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.clippedSparseBioDenseLayer.build">
+<code class="descname">build</code><span class="sig-paren">(</span><em>input_shape</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.clippedSparseBioDenseLayer.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the variables of the layer (optional, for subclass implementers).</p>
+<p>This is a method that implementers of subclasses of <cite>Layer</cite> or <cite>Model</cite>
+can override if they need a state-creation step in-between
+layer instantiation and layer call.</p>
+<p>This is typically used to create the weights of <cite>Layer</cite> subclasses.</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><dl class="simple">
+<dt>input_shape: Instance of <cite>TensorShape</cite>, or list of instances of</dt><dd><p><cite>TensorShape</cite> if the layer expects a list of inputs
+(one instance per input).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.clippedSparseBioDenseLayer.call">
+<code class="descname">call</code><span class="sig-paren">(</span><em>inputs</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.clippedSparseBioDenseLayer.call" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is where the layer’s logic lives.</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><p>inputs: Input tensor, or list/tuple of input tensors.
+<a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs: Additional keyword arguments.</p>
+</dd>
+<dt>Returns:</dt><dd><p>A tensor or list/tuple of tensors.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.clippedSparseBioDenseLayer.get_config">
+<code class="descname">get_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.clippedSparseBioDenseLayer.get_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the config of the layer.</p>
+<p>A layer config is a Python dictionary (serializable)
+containing the configuration of a layer.
+The same layer can be reinstantiated later
+(without its trained weights) from this configuration.</p>
+<p>The config of a layer does not include connectivity
+information, nor the layer class name. These are handled
+by <cite>Network</cite> (one layer of abstraction above).</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Python dictionary.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.clippedTensorDot">
+<code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.</code><code class="descname">clippedTensorDot</code><span class="sig-paren">(</span><em>deviceName</em>, <em>inputs</em>, <em>kernel</em>, <em>rank</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.clippedTensorDot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clipped tensorDot
+Clipping follow the rule: weights&lt;0.2 take value -1, weighs&gt;0.2 take value 1 and other take value 0.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.layerconstantInitiliaizer">
+<em class="property">class </em><code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.</code><code class="descname">layerconstantInitiliaizer</code><span class="sig-paren">(</span><em>minval=0</em>, <em>maxval=None</em>, <em>seed=None</em>, <em>dtype=tf.float32</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.layerconstantInitiliaizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initiliazer for the bias. Generates random but constant bias for the weights.
+Args:</p>
+<blockquote>
+<div><p>fractionZero: The fraction of weight that are initialized as zero
+minval: A python scalar or a scalar tensor. Lower bound of the range</p>
+<blockquote>
+<div><p>of random values to generate.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>maxval: A python scalar or a scalar tensor. Upper bound of the range</dt><dd><p>of random values to generate.  Defaults to 1 for float types.</p>
+</dd>
+<dt>seed: A Python integer. Used to create random seeds. See</dt><dd><p><cite>tf.set_random_seed</cite> for behavior.</p>
+</dd>
+<dt>dtype: Default data type, used if no <cite>dtype</cite> argument is provided when</dt><dd><p>calling the initializer.</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="class">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.sparseInitializer">
+<em class="property">class </em><code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.</code><code class="descname">sparseInitializer</code><span class="sig-paren">(</span><em>fractionZero</em>, <em>minval=0</em>, <em>maxval=None</em>, <em>seed=None</em>, <em>dtype=tf.float32</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.sparseInitializer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializer that generates tensors with a sparse uniform distribution.
+Args:</p>
+<blockquote>
+<div><p>fractionZero: The fraction of weight that are initialized as zero
+minval: A python scalar or a scalar tensor. Lower bound of the range</p>
+<blockquote>
+<div><p>of random values to generate.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>maxval: A python scalar or a scalar tensor. Upper bound of the range</dt><dd><p>of random values to generate.  Defaults to 1 for float types.</p>
+</dd>
+<dt>seed: A Python integer. Used to create random seeds. See</dt><dd><p><cite>tf.set_random_seed</cite> for behavior.</p>
+</dd>
+<dt>dtype: Default data type, used if no <cite>dtype</cite> argument is provided when</dt><dd><p>calling the initializer.</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.sparse_random_uniform">
+<code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.</code><code class="descname">sparse_random_uniform</code><span class="sig-paren">(</span><em>newshape</em>, <em>shape</em>, <em>indices</em>, <em>minval=0</em>, <em>maxval=None</em>, <em>dtype=tf.float32</em>, <em>seed=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.sparse_random_uniform" title="Permalink to this definition">¶</a></dt>
+<dd><p>This operator is built as a combination of tensorflow ops. It is very slow but gives the possibility to set a distribution that only takes into account
+the point that will have a none-zero value in the model (during and after training)</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.weightFixedAndClippedConstraint">
+<em class="property">class </em><code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.</code><code class="descname">weightFixedAndClippedConstraint</code><span class="sig-paren">(</span><em>sparseInitializer</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioDenseLayer.weightFixedAndClippedConstraint" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Constraint on weights values:</dt><dd><p>If the weight was initially set to 0, then we don’t allow it to move, it is fixed at 0.</p>
+</dd>
+</dl>
+<p>In version 0_2_0 we add a new clip for values: we restrict them between -1 and 1</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-simulOfBioNN.nnUtils.clippedSparseBioSigLayer">
+<span id="clippedsparsebiosiglayer"></span><h2>clippedSparseBioSigLayer<a class="headerlink" href="#module-simulOfBioNN.nnUtils.clippedSparseBioSigLayer" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioSigLayer.choice">
+<code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioSigLayer.</code><code class="descname">choice</code><span class="sig-paren">(</span><em>a</em>, <em>size=None</em>, <em>replace=True</em>, <em>p=None</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioSigLayer.choice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a random sample from a given 1-D array</p>
+<blockquote>
+<div><div class="versionadded">
+<p><span class="versionmodified added">New in version 1.7.0.</span></p>
+</div>
+</div></blockquote>
+<dl class="simple">
+<dt>a<span class="classifier">1-D array-like or int</span></dt><dd><p>If an ndarray, a random sample is generated from its elements.
+If an int, the random sample is generated as if a were np.arange(a)</p>
+</dd>
+<dt>size<span class="classifier">int or tuple of ints, optional</span></dt><dd><p>Output shape.  If the given shape is, e.g., <code class="docutils literal notranslate"><span class="pre">(m,</span> <span class="pre">n,</span> <span class="pre">k)</span></code>, then
+<code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">*</span> <span class="pre">n</span> <span class="pre">*</span> <span class="pre">k</span></code> samples are drawn.  Default is None, in which case a
+single value is returned.</p>
+</dd>
+<dt>replace<span class="classifier">boolean, optional</span></dt><dd><p>Whether the sample is with or without replacement</p>
+</dd>
+<dt>p<span class="classifier">1-D array-like, optional</span></dt><dd><p>The probabilities associated with each entry in a.
+If not given the sample assumes a uniform distribution over all
+entries in a.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>samples<span class="classifier">single item or ndarray</span></dt><dd><p>The generated random samples</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>ValueError</dt><dd><p>If a is an int and less than zero, if a or p are not 1-dimensional,
+if a is an array-like of size 0, if p is not a vector of
+probabilities, if a and p have different lengths, or if
+replace=False and the sample size is greater than the population
+size</p>
+</dd>
+</dl>
+<p>randint, shuffle, permutation</p>
+<p>Generate a uniform random sample from np.arange(5) of size 3:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="go">array([0, 3, 4])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1">#This is equivalent to np.random.randint(0,5,3)</span>
+</pre></div>
+</div>
+<p>Generate a non-uniform random sample from np.arange(5) of size 3:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="go">array([3, 3, 0])</span>
+</pre></div>
+</div>
+<p>Generate a uniform random sample from np.arange(5) of size 3 without
+replacement:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="go">array([3,1,0])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1">#This is equivalent to np.random.permutation(np.arange(5))[:3]</span>
+</pre></div>
+</div>
+<p>Generate a non-uniform random sample from np.arange(5) of size
+3 without replacement:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="go">array([2, 3, 0])</span>
+</pre></div>
+</div>
+<p>Any of the above can be repeated with an arbitrary array-like
+instead of just integers. For instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">aa_milne_arr</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pooh&#39;</span><span class="p">,</span> <span class="s1">&#39;rabbit&#39;</span><span class="p">,</span> <span class="s1">&#39;piglet&#39;</span><span class="p">,</span> <span class="s1">&#39;Christopher&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">aa_milne_arr</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">])</span>
+<span class="go">array([&#39;pooh&#39;, &#39;pooh&#39;, &#39;pooh&#39;, &#39;Christopher&#39;, &#39;piglet&#39;],</span>
+<span class="go">      dtype=&#39;|S11&#39;)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioSigLayer.clippedMatMul">
+<code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioSigLayer.</code><code class="descname">clippedMatMul</code><span class="sig-paren">(</span><em>deviceName</em>, <em>inputs</em>, <em>kernel</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioSigLayer.clippedMatMul" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>After extensive research, it appeared that if you want the following behavior:</dt><dd><p>Y = def_op(f(x)) in forward pass
+grad = grad(def_op(x))</p>
+</dd>
+<dt>(In our case f is the clipping and def_op is a tf basic operation like MatMul), the only solution that doesn’t use C re-implementation of the ops is to use:</dt><dd><p>Y = def_op(f(x))-def_op(x)+def_op(x) and to forbid gradient computing on the first part of the graph.</p>
+</dd>
+</dl>
+<p>Nonetheless, such writing double forward time for this op, making it very bad, a C implementation should be used instead!</p>
+<p>Here we implement f(xi)=sum(ActivatorOfxi)/(1+sum(ActivatorOfxi)+sumAllInhib)</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioSigLayer.clippedSparseBioSigLayer">
+<em class="property">class </em><code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioSigLayer.</code><code class="descname">clippedSparseBioSigLayer</code><span class="sig-paren">(</span><em>deviceName, biasValue=[1.0], fractionZero=0.9, min=-1, max=1, **kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioSigLayer.clippedSparseBioSigLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>bio dense layers:
+Adds a constant bias to the input
+:param theta: bias to be added after each multipication</p>
+<dl class="method">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioSigLayer.clippedSparseBioSigLayer.build">
+<code class="descname">build</code><span class="sig-paren">(</span><em>input_shape</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioSigLayer.clippedSparseBioSigLayer.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the variables of the layer (optional, for subclass implementers).</p>
+<p>This is a method that implementers of subclasses of <cite>Layer</cite> or <cite>Model</cite>
+can override if they need a state-creation step in-between
+layer instantiation and layer call.</p>
+<p>This is typically used to create the weights of <cite>Layer</cite> subclasses.</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><dl class="simple">
+<dt>input_shape: Instance of <cite>TensorShape</cite>, or list of instances of</dt><dd><p><cite>TensorShape</cite> if the layer expects a list of inputs
+(one instance per input).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioSigLayer.clippedSparseBioSigLayer.call">
+<code class="descname">call</code><span class="sig-paren">(</span><em>inputs</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioSigLayer.clippedSparseBioSigLayer.call" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is where the layer’s logic lives.</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><p>inputs: Input tensor, or list/tuple of input tensors.
+<a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs: Additional keyword arguments.</p>
+</dd>
+<dt>Returns:</dt><dd><p>A tensor or list/tuple of tensors.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioSigLayer.clippedSparseBioSigLayer.get_config">
+<code class="descname">get_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioSigLayer.clippedSparseBioSigLayer.get_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the config of the layer.</p>
+<p>A layer config is a Python dictionary (serializable)
+containing the configuration of a layer.
+The same layer can be reinstantiated later
+(without its trained weights) from this configuration.</p>
+<p>The config of a layer does not include connectivity
+information, nor the layer class name. These are handled
+by <cite>Network</cite> (one layer of abstraction above).</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Python dictionary.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioSigLayer.sparseInitializer">
+<em class="property">class </em><code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioSigLayer.</code><code class="descname">sparseInitializer</code><span class="sig-paren">(</span><em>fractionZero=0.6</em>, <em>minval=0</em>, <em>maxval=None</em>, <em>seed=None</em>, <em>dtype=tf.float32</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioSigLayer.sparseInitializer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializer that generates tensors with a sparse uniform distribution.
+Args:</p>
+<blockquote>
+<div><p>fractionZero : 0 =&gt; the fraction of weight that are initialized as zero
+minval: A python scalar or a scalar tensor. Lower bound of the range</p>
+<blockquote>
+<div><p>of random values to generate.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>maxval: A python scalar or a scalar tensor. Upper bound of the range</dt><dd><p>of random values to generate.  Defaults to 1 for float types.</p>
+</dd>
+<dt>seed: A Python integer. Used to create random seeds. See</dt><dd><p><cite>tf.set_random_seed</cite>
+for behavior.</p>
+</dd>
+<dt>dtype: Default data type, used if no <cite>dtype</cite> argument is provided when</dt><dd><p>calling the initializer.</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="method">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioSigLayer.sparseInitializer.get_config">
+<code class="descname">get_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioSigLayer.sparseInitializer.get_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the configuration of the initializer as a JSON-serializable dict.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A JSON-serializable Python dict.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioSigLayer.sparse_random_uniform">
+<code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioSigLayer.</code><code class="descname">sparse_random_uniform</code><span class="sig-paren">(</span><em>newshape</em>, <em>shape</em>, <em>minval=0</em>, <em>maxval=None</em>, <em>sizes=[]</em>, <em>posOfZeros=[]</em>, <em>posOfFull=[]</em>, <em>dtype=tf.float32</em>, <em>seed=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioSigLayer.sparse_random_uniform" title="Permalink to this definition">¶</a></dt>
+<dd><p>This operator is built as a combination of tensorflow ops. It is very slow but gives the possibility to set a distribution that only takes into account
+the point that will have a none-zero value in the model (during and after training)</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="simulOfBioNN.nnUtils.clippedSparseBioSigLayer.weightFixedAndClippedConstraint">
+<em class="property">class </em><code class="descclassname">simulOfBioNN.nnUtils.clippedSparseBioSigLayer.</code><code class="descname">weightFixedAndClippedConstraint</code><span class="sig-paren">(</span><em>sparseInitializer</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.clippedSparseBioSigLayer.weightFixedAndClippedConstraint" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Constraint on weights values:</dt><dd><p>If the weight was initially set to 0, then we don’t allow it to move, it is fixed at 0.</p>
+</dd>
+</dl>
+<p>In version 0_2_0 we add a new clip for values: we restrict them between -1 and 1</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-simulOfBioNN.nnUtils.dataUtils">
+<span id="datautils"></span><h2>dataUtils<a class="headerlink" href="#module-simulOfBioNN.nnUtils.dataUtils" title="Permalink to this headline">¶</a></h2>
+<p>Utilitarian for data management</p>
+<dl class="function">
+<dt id="simulOfBioNN.nnUtils.dataUtils.computeUmap">
+<code class="descclassname">simulOfBioNN.nnUtils.dataUtils.</code><code class="descname">computeUmap</code><span class="sig-paren">(</span><em>x_train</em>, <em>x_test</em>, <em>y_train</em>, <em>n_components=100</em>, <em>n_neighbors=5</em>, <em>limitData=None</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.dataUtils.computeUmap" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Compute the uniform manifold approximation (UMAP)… Can be use to reduce the dimension of a dataset.
+This can be seen as “cheating”, we just use it in test.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_train</strong> – original dataset</p></li>
+<li><p><strong>x_test</strong> – original dataset</p></li>
+<li><p><strong>y_train</strong> – original dataset</p></li>
+<li><p><strong>n_components</strong> – int, see UMAP documentation</p></li>
+<li><p><strong>n_neighbors</strong> – int, see UMAP documentation</p></li>
+<li><p><strong>limitData</strong> – int, to restrict the number of elements in the training set</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>x_train,y_train,x_test but projected on a smaller dimension after UMAP is ran.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.nnUtils.dataUtils.downloadmnist">
+<code class="descclassname">simulOfBioNN.nnUtils.dataUtils.</code><code class="descname">downloadmnist</code><span class="sig-paren">(</span><em>rescaleFactor=2</em>, <em>fashion=False</em>, <em>size=None</em>, <em>mean=0</em>, <em>var=0.01</em>, <em>path='Data/mnist/2'</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.dataUtils.downloadmnist" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Download the mnist of fashion-mnist data set and save them in the path repo</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rescaleFactor</strong> – int, The rescale factor on the data set</p></li>
+<li><p><strong>fashion</strong> – use fashion-mnist.</p></li>
+<li><p><strong>size</strong> – maximal size, default to None: keep all the data</p></li>
+<li><p><strong>mean</strong> – mean for noise</p></li>
+<li><p><strong>var</strong> – variance for noise</p></li>
+<li><p><strong>path</strong> – string, default to “Data/mnist/2”</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.nnUtils.dataUtils.loadMnist">
+<code class="descclassname">simulOfBioNN.nnUtils.dataUtils.</code><code class="descname">loadMnist</code><span class="sig-paren">(</span><em>rescaleFactor=2</em>, <em>fashion=False</em>, <em>size=None</em>, <em>mean=0</em>, <em>var=0.01</em>, <em>path='Data/mnist'</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.dataUtils.loadMnist" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Load Mnist without downloading it.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rescaleFactor</strong> – int, The rescale factor on the data set</p></li>
+<li><p><strong>fashion</strong> – use fashion-mnist.</p></li>
+<li><p><strong>size</strong> – maximal size, default to None: keep all the data</p></li>
+<li><p><strong>mean</strong> – mean for noise</p></li>
+<li><p><strong>var</strong> – variance for noise</p></li>
+<li><p><strong>path</strong> – string, path to the directory where is situated the original dataset.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>x_train,x_test,y_train,y_test,x_test_noise: the different data set.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.nnUtils.dataUtils.noiseAddition">
+<code class="descclassname">simulOfBioNN.nnUtils.dataUtils.</code><code class="descname">noiseAddition</code><span class="sig-paren">(</span><em>x_test</em>, <em>mean</em>, <em>var</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.dataUtils.noiseAddition" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>We increase the difficulty of test by adding random gaussian noises to our test set</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_test</strong> – nd_array: test set to modify</p></li>
+<li><p><strong>amount</strong> – proportion in [0,1] of noises to add to our test set</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>nd_array: the noisy test set</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-simulOfBioNN.nnUtils.plotUtils">
+<span id="plotutils"></span><h2>plotUtils<a class="headerlink" href="#module-simulOfBioNN.nnUtils.plotUtils" title="Permalink to this headline">¶</a></h2>
+<p>Utilitarian for plot management</p>
+<dl class="function">
+<dt id="simulOfBioNN.nnUtils.plotUtils.displayEmbeddingHeat">
+<code class="descclassname">simulOfBioNN.nnUtils.plotUtils.</code><code class="descname">displayEmbeddingHeat</code><span class="sig-paren">(</span><em>X</em>, <em>precision</em>, <em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.nnUtils.plotUtils.displayEmbeddingHeat" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Creates the heat map of an embedding</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> – </p></li>
+<li><p><strong>precision</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="odeUtils.html" class="btn btn-neutral float-right" title="odeUtils module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="simulOfBioNN.html" class="btn btn-neutral float-left" title="SimulOfBioNN package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Pierre Orhan
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

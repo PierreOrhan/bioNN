@@ -1,0 +1,36 @@
+SimulNN module
+=========================================
+
+Module for simulations
+
+.. contents::
+
+    simulator
+    launcher
+    loader
+    simul
+
+Simulator
+_________
+
+.. automodule:: simulOfBioNN.simulNN.simulator
+   :members:
+
+Launcher
+________
+
+.. automodule:: simulOfBioNN.simulNN.launcher
+   :members:
+
+Loader
+______
+
+.. automodule:: simulOfBioNN.simulNN.loader
+   :members:
+
+simul
+_____
+
+.. automodule:: simulOfBioNN.simulNN.simul
+   :members:
+

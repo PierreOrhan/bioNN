@@ -1,0 +1,372 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>odeUtils module &mdash; BioChemicalNN 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="parse module" href="parseUtils.html" />
+    <link rel="prev" title="Neural Network module" href="nnUtils.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: orange" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BioChemicalNN
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="simulOfBioNN.html">SimulOfBioNN package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="nnUtils.html">Neural Network module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">odeUtils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.odeUtils.systemEquation">systemEquation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tfderivativenetwork">tfDerivativeNetwork</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.odeUtils.utils">utils</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="parseUtils.html">parse module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotUtils.html">plot module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulNN.html">SimulNN module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="smallNetworkSimul.html">smallNetworkSimul module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="paretoPlot.html">paretoPlot package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gettingStarted.html">Getting started</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BioChemicalNN</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="simulOfBioNN.html">SimulOfBioNN package</a> &raquo;</li>
+        
+      <li>odeUtils module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/odeUtils.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="odeutils-module">
+<h1>odeUtils module<a class="headerlink" href="#odeutils-module" title="Permalink to this headline">¶</a></h1>
+<p>Module for solving the ODE evolution of a network of biochemical reaction following mass action on CPU and (in development) on GPU.</p>
+<div class="section" id="module-simulOfBioNN.odeUtils.systemEquation">
+<span id="systemequation"></span><h2>systemEquation<a class="headerlink" href="#module-simulOfBioNN.odeUtils.systemEquation" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="simulOfBioNN.odeUtils.systemEquation.fPython">
+<code class="descclassname">simulOfBioNN.odeUtils.systemEquation.</code><code class="descname">fPython</code><span class="sig-paren">(</span><em>speciesA</em>, <em>t</em>, <em>KarrayA</em>, <em>inputStochio</em>, <em>maskA</em>, <em>maskComplementary</em>, <em>derivLeak</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.systemEquation.fPython" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>speciesA</strong> – </p></li>
+<li><p><strong>t</strong> – </p></li>
+<li><p><strong>KarrayA</strong> – </p></li>
+<li><p><strong>inputStochio</strong> – </p></li>
+<li><p><strong>maskA</strong> – </p></li>
+<li><p><strong>maskComplementary</strong> – </p></li>
+<li><p><strong>derivLeak</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.odeUtils.systemEquation.fPythonSparse">
+<code class="descclassname">simulOfBioNN.odeUtils.systemEquation.</code><code class="descname">fPythonSparse</code><span class="sig-paren">(</span><em>speciesA</em>, <em>t</em>, <em>KarrayA</em>, <em>inputStochio</em>, <em>maskA</em>, <em>maskComplementary</em>, <em>derivLeak</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.systemEquation.fPythonSparse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computation of the derivative for each species for a system parametrized by sparse matrix.
+We use the sparse module. Indeed Numba can’t manage sparsity.
+In the current implementation, speciesA should not contains null elements.
+derivLeak: a small value to add to the derivative, account for tiny leak</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.odeUtils.systemEquation.obtainJacobianMasks">
+<code class="descclassname">simulOfBioNN.odeUtils.systemEquation.</code><code class="descname">obtainJacobianMasks</code><span class="sig-paren">(</span><em>karrayA</em>, <em>inputStochio</em>, <em>maskA</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.systemEquation.obtainJacobianMasks" title="Permalink to this definition">¶</a></dt>
+<dd><p>It is really easy to derive the jacobian from the way we wrote our system it down
+The original function can be applied by just changing the masks</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.odeUtils.systemEquation.setToUnits">
+<code class="descclassname">simulOfBioNN.odeUtils.systemEquation.</code><code class="descname">setToUnits</code><span class="sig-paren">(</span><em>kDic</em>, <em>KarrayA</em>, <em>inputStochio</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.systemEquation.setToUnits" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>This function parametrize the system in simpler range of work.
+The three parameters should be the output of the parse function.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kDic</strong> – a d-array with the reaction constant for the equation</p></li>
+<li><p><strong>KarrayA</strong> – The array with the reactions</p></li>
+<li><p><strong>inputStochio</strong> – The stochiometry</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>karrayA,T0,C0
+a new KarrayA with modified values as well as a constant: T0 for time and C0 to use to set to units every input concentration.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="tfderivativenetwork">
+<h2>tfDerivativeNetwork<a class="headerlink" href="#tfderivativenetwork" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-simulOfBioNN.odeUtils.tfDerivativeNetwork"></span><p>In this module we propose a neural network as the derivative of the chemical system.
+The goal is to be able to be plugged-in directly with tensorflow’s tools.</p>
+<dl class="class">
+<dt id="simulOfBioNN.odeUtils.tfDerivativeNetwork.derivativeNetwork">
+<em class="property">class </em><code class="descclassname">simulOfBioNN.odeUtils.tfDerivativeNetwork.</code><code class="descname">derivativeNetwork</code><span class="sig-paren">(</span><em>deviceIdx</em>, <em>KarrayA</em>, <em>inputStoichio</em>, <em>maskA</em>, <em>maskComplementary</em>, <em>derivLeak</em>, <em>isSparse=False</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.tfDerivativeNetwork.derivativeNetwork" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="simulOfBioNN.odeUtils.tfDerivativeNetwork.derivativeNetwork.call">
+<code class="descname">call</code><span class="sig-paren">(</span><em>inputs</em>, <em>training=None</em>, <em>mask=None</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.tfDerivativeNetwork.derivativeNetwork.call" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Compute the derivative for every species, on the device given by self.deviceIdx (set at initialization of the object).</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inputs</strong> – 1d-array or tensor of the concentration of input species</p></li>
+<li><p><strong>training</strong> – legacy, do not use</p></li>
+<li><p><strong>mask</strong> – legacy, do not use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The derivative for every species in a Tensor.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-simulOfBioNN.odeUtils.utils">
+<span id="utils"></span><h2>utils<a class="headerlink" href="#module-simulOfBioNN.odeUtils.utils" title="Permalink to this headline">¶</a></h2>
+<p>utilitarians for script</p>
+<dl class="function">
+<dt id="simulOfBioNN.odeUtils.utils.obtainOutputDic">
+<code class="descclassname">simulOfBioNN.odeUtils.utils.</code><code class="descname">obtainOutputDic</code><span class="sig-paren">(</span><em>nameDic</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.utils.obtainOutputDic" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Find the output species, that is species of the last layer:
+species are sorted as: X_nbLayer_neuronPosition</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>nameDic</strong> – name of all species of our systems.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the sorted list of species from the last layer, which might be interesting to overview.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.odeUtils.utils.readAttribute">
+<code class="descclassname">simulOfBioNN.odeUtils.utils.</code><code class="descname">readAttribute</code><span class="sig-paren">(</span><em>experiment_name</em>, <em>listToRead</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.utils.readAttribute" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Read the description of the experiment</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experiment_name</strong> – path where it was saved using saveAttribute function</p></li>
+<li><p><strong>listToRead</strong> – list of string from parameters to retrieve from the file</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.odeUtils.utils.saveAttribute">
+<code class="descclassname">simulOfBioNN.odeUtils.utils.</code><code class="descname">saveAttribute</code><span class="sig-paren">(</span><em>experiment_name</em>, <em>attributesDic</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.utils.saveAttribute" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Save an experiment, for each attribute in attributeDic, save as: attribute + ” has value: ” + value</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experiment_name</strong> – </p></li>
+<li><p><strong>attributesDic</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="parseUtils.html" class="btn btn-neutral float-right" title="parse module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="nnUtils.html" class="btn btn-neutral float-left" title="Neural Network module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Pierre Orhan
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

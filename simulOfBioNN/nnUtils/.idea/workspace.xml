@@ -1,0 +1,517 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="306d5936-cec2-44c4-a9b9-dd43bc8067fe" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/1/downscaled_expl_1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/1/noise_1_mean_0.01_var_0.01.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/1/x_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/1/x_test_noise.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/1/x_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/1/y_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/1/y_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/2/downscaled_expl_2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/2/noise_2_mean_0.01_var_0.01.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/2/x_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/2/x_test_noise.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/2/x_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/2/y_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/2/y_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/batches.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/data_batch_1" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/data_batch_2" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/data_batch_3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/data_batch_4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/data_batch_5" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/readme.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/cifar/test_batch" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/1/downscaled_expl_1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/1/noise_1_mean_0_var_0.01.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/1/x_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/1/x_test_noise.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/1/x_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/1/y_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/1/y_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/2/downscaled_expl_2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/2/noise_2_mean_0_var_0.01.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/2/x_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/2/x_test_noise.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/2/x_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/2/y_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/2/y_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/4/downscaled_expl_4.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/4/noise_4_mean_0_var_0.01.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/4/x_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/4/x_test_noise.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/4/x_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/4/y_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/fashionMnist/4/y_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/1/x_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/1/x_test_noise.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/1/x_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/1/y_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/2/downscaled_expl_2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/2/noise_2_mean_0_var_0.01.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/2/x_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/2/x_test_noise.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/2/x_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/2/y_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/2/y_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/2downscaled_expl_2.png.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/2noise_2_mean_0_var_0.01.png.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/4/downscaled_expl_4.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/4/noise_4_mean_0_var_0.01.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/4/x_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/4/x_test_noise.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/4/x_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/4/y_test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Data/mnist/4/y_train.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/compareOde/compareX1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/compareOde/compareX2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/ecoEvoTest/constants.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/ecoEvoTest/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/generatedNeuralNetwork/weightDir/Simul/ExperimentDescriptif.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/generatedNeuralNetwork/weightDir/Simul/ExperimentDescriptif_Old.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/generatedNeuralNetwork/weightDir/Simul/output_equilibrium.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/generatedNeuralNetwork/weightDir/weight_0.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/generatedNeuralNetwork/weightDir/weight_1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/generatedNeuralNetwork/weightDir/weight_2.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/generatedNeuralNetwork/weightDir/weight_3.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testDifferentODESolver.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testModel/constants.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testModel/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba/ExperimentDescriptif.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba/ExperimentDescriptif_Old.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba/activationX1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba/activationX2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba/neuralDiagramm.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba/neural_X1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba/neural_X2.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba/neural_equilibrium.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba2/ExperimentDescriptif.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba2/ExperimentDescriptif_Old.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba2/constants.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba2/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba2/neural_X1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba2/neural_X2.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testNumba2/neural_equilibrium.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython/ExperimentDescriptif.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython/ExperimentDescriptif_Old.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython/constants.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython/neural_X1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython/neural_X2.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython/neural_equilibrium.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython2/ExperimentDescriptif.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython2/ExperimentDescriptif_Old.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython2/constants.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython2/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython2/neural_X1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython2/neural_X2.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testPython2/neural_equilibrium.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testTF/ExperimentDescriptif.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testTF/ExperimentDescriptif_Old.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testTF/constants.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../developmentTest/testTF/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../paretoPlot/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../paretoPlot/paretoConfigUtils.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../paretoPlot/paretoExperiment.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../paretoPlot/paretoTrainTools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../odeUtils/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../odeUtils/tfDerivativeNetwork.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../parseUtils/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../plotUtils/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../plotUtils/adaptivePlotUtils.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../simulNN/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../simulNN/nnAnswer.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../simulNN/weightDir/Simul/ExperimentDescriptif.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../simulNN/weightDir/Simul/ExperimentDescriptif_Old.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../simulNN/weightDir/Simul/constants.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../simulNN/weightDir/Simul/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../simulNN/weightDir/Simul/output_equilibrium.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../simulNN/weightDir/weight_0.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../simulNN/weightDir/weight_1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../simulNN/weightDir/weight_2.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../simulNN/weightDir/weight_3.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../simulNN/ytest.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/10foisplusA1and100enzyme/Y1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/10foisplusA1and100enzyme/Y1equi.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/10foisplusA1and100enzyme/diagrammRatio.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/10foisplusA1and100enzyme/diagrammY1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/10foisplusA1and100enzyme/diagrammY2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/10foisplusA1and100enzyme2/ExperimentDescriptif.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/10foisplusA1and100enzyme2/ExperimentDescriptif_Old.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/ecoEvoSimul/0_1/resultData/separate/Y1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/ecoEvoSimul/0_1/resultData/separate/Y2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/ecoEvoSimul/0_2/resultData/separate/Y1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/ecoEvoSimul/0_2/resultData/separate/Y2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/ecoEvoSimul/1_1/resultData/intermediateSpecies0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/ecoEvoSimul/1_1/resultData/mainSpecies0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/ecoEvoSimul/1_1/resultData/separate/Y1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/ecoEvoSimul/1_1/resultData/separate/Y2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/ecoEvoSimul/constants.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/ecoEvoSimul/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/0_0/resultData/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/0_0/resultData/intermediateSpecies0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/0_0/resultData/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/0_0/resultData/mainSpecies0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/0_1/resultData/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/0_1/resultData/intermediateSpecies0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/0_1/resultData/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/0_1/resultData/mainSpecies0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/1_0/resultData/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/1_0/resultData/intermediateSpecies0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/1_0/resultData/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/1_0/resultData/mainSpecies0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/1_1/resultData/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/1_1/resultData/intermediateSpecies0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/1_1/resultData/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/1_1/resultData/mainSpecies0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/ExperienceDescript" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/a2on1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/c.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp0/diagramm.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1/ExperienceDescript" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1/a2on1Test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1/cTest.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1/diagrammTest.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1/equilibriumTest.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1/plotMaster.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1_1/ExperimentDescriptif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1_1/a2on1Test.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1_1/cTest.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1_1/constants.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1_1/diagrammTest.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1_1/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1_1/equilibriumTest.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1_2/ExperimentDescriptif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1_2/a2on1Famine.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1_2/cFamine.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1_2/diagrammFamine.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp1_2/equilibriumFamine.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2/ExperienceDescriptif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2/Y1superFamine.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2/Y2superFamine.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2/a2on1superFamine.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2/csuperFamine.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2/diagrammY1superFamine.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2/diagrammY2superFamine.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2/diagrammsuperFamine.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2/equilibriumsuperFamine.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2_0/ExperienceDescriptif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2_0/Y1Famine100.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2_0/Y2Famine100.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2_0/a2on1Famine100.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2_0/cFamine100.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2_0/diagrammFamine100.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2_0/diagrammY1Famine100.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2_0/diagrammY2Famine100.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp2_0/equilibriumFamine100.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp3/ExperimentDescriptif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp3/Y1BetterView.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp3/Y2BetterView.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp3/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp3/a2on1BetterView.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp3/cBetterView.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp3/diagrammBetterView.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp3/diagrammLogBetterView.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp3/diagrammY1BetterView.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp3/diagrammY2BetterView.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp3/equilibriumBetterView.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp3/plotMaster.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp4/Y110foisplusA1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp4/Y210foisplusA1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp4/a2on110foisplusA1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp4/c10foisplusA1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp4/diagramm10foisplusA1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp4/diagrammY110foisplusA1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp4/diagrammY210foisplusA1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/exp4/equilibrium10foisplusA1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/plotMaster.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul0_0/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul0_0/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul0_1/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul0_1/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul10_0/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul10_0/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul10_10/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul10_10/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul10_20/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul10_20/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul10_30/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul10_30/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul10_40/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul10_40/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul1_0/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul1_0/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul1_1/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoSimul1_1/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/A1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/A2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/C1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/C2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/E.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/E2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/E2Y1A1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/E2Y1C1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/E2Y2A2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/E2Y2C2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/EY1A1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/EY1C1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/EY2A2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/EY2C2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/Y1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/Y1A1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/Y1C1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/Y2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/Y2A2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest/separate/Y2C2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest0_0/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest0_0/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest0_1/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest0_1/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest0_2/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/ecoEvoTest0_2/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/neuronSimul0_0/intermediateSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul/resultData/neuronSimul0_0/mainSpecies.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul10/ExperimentDescriptif.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul10/ExperimentDescriptif_Old.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul10/activationX1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul10/activationX2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul10/constants.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul10/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul10/false_result.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul10/neuralDiagramm.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul10/neural_X1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul10/neural_equilibrium.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/ExperimentDescriptif_Old.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/constants.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/neural_X2.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/testActivationX1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/testActivationX2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/testActivationX2exp.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul6/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul7/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/ExperimentDescriptif.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/ExperimentDescriptif_Old.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/activationX1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/activationX1log.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/activationX2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/activationX2log.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/constants.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/false_result.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/fitComparisonX1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/fitComparisonX2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/neuralDiagramm.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/neuralDiagramm2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/neuralDiagramm2log.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/neural_X1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/neural_X2.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/neural_equilibrium.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/smallScript.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/testActivationX1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/testActivationX2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul8/testDiagramm2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul9/ExperimentDescriptif.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul9/ExperimentDescriptif_Old.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul9/activationX1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul9/activationX2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul9/equations.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul9/false_result.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul9/neuralDiagramm.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul9/neural_X1.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul9/neural_X2.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../source/odeUtils.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../source/parseUtils.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../source/plotUtils.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../source/smallNetworkSimul.rst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/adaptivePlotUtils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/developmentTest/processingTest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/developmentTest/sparseTest.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../developmentTest/sparseTest.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/developmentTest/testfile.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../developmentTest/testfile.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/ecoEvoGenerator.py" beforeDir="false" afterPath="$PROJECT_DIR$/../parseUtils/ecoEvoGenerator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/ecoEvoSimul.py" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/ecoEvoSimul.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuralNetworkSimul.py" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuralNetworkSimul.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/ExperimentDescriptif.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/ExperimentDescriptif.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/ExperimentDescriptif_Old.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../../developmentTest/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/activationX1.png" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/activationX1.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/activationX1log.png" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/activationX1log.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/activationX2.png" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/activationX2.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/activationX2log.png" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/activationX2log.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/0.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/0.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/1.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/1.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/10.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/10.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/11.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/11.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/12.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/12.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/13.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/13.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/14.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/14.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/15.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/15.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/16.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/16.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/17.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/17.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/18.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/18.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/19.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/19.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/2.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/2.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/3.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/3.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/4.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/4.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/5.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/5.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/6.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/6.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/7.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/7.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/8.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/8.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/allSpecies/9.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/allSpecies/9.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/constants.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../../developmentTest/generatedNeuralNetwork/weightDir/Simul/constants.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/equations.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../../developmentTest/generatedNeuralNetwork/weightDir/Simul/equations.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/false_result.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/false_result.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/frontier.png" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/frontier.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/neuralDiagramm2.png" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/neuralDiagramm2.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/neuralDiagramm2log.png" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/neuralDiagramm2log.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/neural_X1.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/neural_X1.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/neural_X2.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul10/neural_X2.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/neural_equilibrium.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/neural_equilibrium.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/neural_plots.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/neural_plots.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/smallScript.py" beforeDir="false" afterPath="$PROJECT_DIR$/../smallNetworkSimul/neuronSimul4/smallScript.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/testActivationX1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/testActivationX1exp.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/testActivationX2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/testActivationX2exp.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/testDiagFrontier.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/testDiagramm2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/testfrontierX1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/neuronSimul4/testfrontierX2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/../parseUtils/parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/systemEquation.py" beforeDir="false" afterPath="$PROJECT_DIR$/../odeUtils/systemEquation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../adaptiveSystem/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/../odeUtils/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../oldfile/cudaNumbaKinh.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../oldfile/guvectNumbaKInh.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../oldfile/killingInhibitors.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../oldfile/noPythonNumbaKInh.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../oldfile/numbaKillingInhibitors.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../oldfile/predatorPreyNumba.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../scipyODE/ExperimentDescriptif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../scipyODE/killerTemplate.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../scipyODE/plotResult.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../scipyODE/plotUtils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../scipyODE/scipyNumba.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/launcher.py" beforeDir="false" afterPath="$PROJECT_DIR$/../simulNN/launcher.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/loader.py" beforeDir="false" afterPath="$PROJECT_DIR$/../simulNN/loader.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/nnAnswer.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/nnUtils/clippedBinaryLayer.py" beforeDir="false" afterPath="$PROJECT_DIR$/clippedBinaryLayer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/nnUtils/clippedSparseBioDenseLayer.py" beforeDir="false" afterPath="$PROJECT_DIR$/clippedSparseBioDenseLayer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/nnUtils/clippedSparseBioSigLayer.py" beforeDir="false" afterPath="$PROJECT_DIR$/clippedSparseBioSigLayer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/nnUtils/dataUtils.py" beforeDir="false" afterPath="$PROJECT_DIR$/dataUtils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/nnUtils/plotUtils.py" beforeDir="false" afterPath="$PROJECT_DIR$/plotUtils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/simul.py" beforeDir="false" afterPath="$PROJECT_DIR$/../simulNN/simul.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/../simulNN/simulator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/tensorflowTraining.py" beforeDir="false" afterPath="$PROJECT_DIR$/../simulNN/tensorflowTraining.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/x_test.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../simulNN/x_test.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../simulTestOfNN/ytest.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../../Data/mnist/1/y_test.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../source/NeuralNetwork.rst" beforeDir="false" afterPath="$PROJECT_DIR$/../../source/nnUtils.rst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../source/index.rst" beforeDir="false" afterPath="$PROJECT_DIR$/../../source/index.rst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../source/paretoPlot" beforeDir="false" afterPath="$PROJECT_DIR$/../../source/paretoPlot.rst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../source/simul.rst" beforeDir="false" afterPath="$PROJECT_DIR$/../../source/simulNN.rst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../source/simulOfBioNN" beforeDir="false" afterPath="$PROJECT_DIR$/../../source/simulOfBioNN.rst" afterDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="67" />
+    <option name="y" value="25" />
+    <option name="width" value="1327" />
+    <option name="height" value="1055" />
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="PackagesPane" />
+      <pane id="ProjectPane" />
+      <pane id="Scope" />
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="306d5936-cec2-44c4-a9b9-dd43bc8067fe" name="Default Changelist" comment="" />
+      <created>1559699329667</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1559699329667</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="0" y="25" width="1920" height="1055" extended-state="6" />
+    <layout>
+      <window_info id="Designer" />
+      <window_info id="Favorites" side_tool="true" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2497332" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info anchor="bottom" id="Version Control" />
+      <window_info anchor="bottom" id="Terminal" />
+      <window_info anchor="bottom" id="Event Log" side_tool="true" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Run" order="2" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="right" id="Palette&#9;" />
+      <window_info anchor="right" id="Maven" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+    </layout>
+  </component>
+  <component name="masterDetails">
+    <states>
+      <state key="ProjectJDKs.UI">
+        <settings>
+          <last-edited>Python 3.7 (conda_tensorflow_gpu_env)</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+    </states>
+  </component>
+</project>

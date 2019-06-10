@@ -1,0 +1,10 @@
+e1 has value: 0.0001
+e2 has value: 0.0001
+y1 has value: 1e-08
+y2 has value: 1e-08
+a10 has value: 1e-05
+leak has value: 1e-13
+T0 has value: 0.058823529411764705
+C0 has value: 8.086075400626399e-07
+lastTime has value: 1000
+time step has value: 10

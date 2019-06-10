@@ -1,0 +1,455 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>parse module &mdash; BioChemicalNN 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="plot module" href="plotUtils.html" />
+    <link rel="prev" title="odeUtils module" href="odeUtils.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: orange" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BioChemicalNN
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="simulOfBioNN.html">SimulOfBioNN package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="nnUtils.html">Neural Network module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="odeUtils.html">odeUtils module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">parse module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.parseUtils.parser">parser</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.parseUtils.ecoEvoGenerator">ecoEvoGenerator</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="plotUtils.html">plot module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulNN.html">SimulNN module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="smallNetworkSimul.html">smallNetworkSimul module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="paretoPlot.html">paretoPlot package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gettingStarted.html">Getting started</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BioChemicalNN</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="simulOfBioNN.html">SimulOfBioNN package</a> &raquo;</li>
+        
+      <li>parse module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/parseUtils.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="parse-module">
+<h1>parse module<a class="headerlink" href="#parse-module" title="Permalink to this headline">¶</a></h1>
+<p>This module provide translation tool between the ode simulation and tensorflow models.
+It is also in this module that one can add function for automatic construction of new models for activation and inhibition.</p>
+<div class="section" id="module-simulOfBioNN.parseUtils.parser">
+<span id="parser"></span><h2>parser<a class="headerlink" href="#module-simulOfBioNN.parseUtils.parser" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="simulOfBioNN.parseUtils.parser.autocatalysisWrite">
+<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">autocatalysisWrite</code><span class="sig-paren">(</span><em>nameA</em>, <em>nameY</em>, <em>nameE</em>, <em>nameE2</em>, <em>constants</em>, <em>pathEquations</em>, <em>pathConstants</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.autocatalysisWrite" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Autogenerate equations for the autocatalysis, and parse them in a file:</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nameA</strong> – Template</p></li>
+<li><p><strong>nameY</strong> – catalyzed species</p></li>
+<li><p><strong>nameE</strong> – Polymerase name</p></li>
+<li><p><strong>nameE2</strong> – Nickase name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>add names in the txt file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.parseUtils.parser.coopWrite">
+<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">coopWrite</code><span class="sig-paren">(</span><em>nameC</em>, <em>nameY1</em>, <em>nameY2</em>, <em>nameE</em>, <em>nameE2</em>, <em>constants</em>, <em>pathEquations</em>, <em>pathConstants</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.coopWrite" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Autogenerate equations for the autocatalysis, and parse them in a file:</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nameC</strong> – Template used for cooperation</p></li>
+<li><p><strong>nameY1</strong> – catalyzed species</p></li>
+<li><p><strong>nameE</strong> – Polymerase name</p></li>
+<li><p><strong>nameE2</strong> – Nickase name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>add names in the txt file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.parseUtils.parser.endonucleasedWrite">
+<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">endonucleasedWrite</code><span class="sig-paren">(</span><em>nameY</em>, <em>constant</em>, <em>pathEquations</em>, <em>pathConstants</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.endonucleasedWrite" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Write the equation of a template eaten by an endonuclease.
+The endonuclease is for the moment considered to remain of constant concentration</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nameY</strong> – </p></li>
+<li><p><strong>constantName</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.parseUtils.parser.generateLayerKillerTemplate">
+<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">generateLayerKillerTemplate</code><span class="sig-paren">(</span><em>nameInputs</em>, <em>nameOutputs</em>, <em>nameE</em>, <em>nameE2</em>, <em>mask</em>, <em>constantValues</em>, <em>endoConstants</em>, <em>pathEquations='models/equations.txt'</em>, <em>pathConstants='models/constants.txt'</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.generateLayerKillerTemplate" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Generate a layer with killer Template inhibition.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nameInputs</strong> – the inputs species name</p></li>
+<li><p><strong>nameOutputs</strong> – the output species name</p></li>
+<li><p><strong>mask</strong> – the mask connecting input to outputs</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Parse into the model the layer</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.parseUtils.parser.generateNeuralNetwork">
+<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">generateNeuralNetwork</code><span class="sig-paren">(</span><em>name</em>, <em>masks</em>, <em>activConstants=None</em>, <em>inhibConstants=None</em>, <em>endoConstant=None</em>, <em>erase=True</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.generateNeuralNetwork" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><dl class="simple">
+<dt>Generate a neural network</dt><dd><p>The reaction constants are believed to be similar among all reactions. (in future dev: either fully given, either modified by a small amount consistently)
+if not provided, we use values from Montagne paper.</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – models name</p></li>
+<li><p><strong>masks</strong> – neural network architecture: contains the mask at each layer</p></li>
+<li><p><strong>activConstants</strong> – </p></li>
+<li><p><strong>inhibConstants</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.parseUtils.parser.killingTemplateWrite">
+<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">killingTemplateWrite</code><span class="sig-paren">(</span><em>nameM</em>, <em>nameT</em>, <em>nameY</em>, <em>nameE</em>, <em>nameE2</em>, <em>constants</em>, <em>pathEquations</em>, <em>pathConstants</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.killingTemplateWrite" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nameM</strong> – </p></li>
+<li><p><strong>nameY</strong> – </p></li>
+<li><p><strong>nameE</strong> – </p></li>
+<li><p><strong>nameE2</strong> – </p></li>
+<li><p><strong>pathEquations</strong> – </p></li>
+<li><p><strong>pathConstants</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.parseUtils.parser.parse">
+<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">parse</code><span class="sig-paren">(</span><em>equations</em>, <em>kdic</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.parse" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Parse the equations into the correct masks and arrays for computations</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>equations</strong> – <p>a d*n array where d is the number of equations (one sided : -&gt; ) and n the number of species
+The syntax should be the following, an array with the stochiometric coefficient of the species: [alpha,-beta] for alpha*A-&gt;beta*B for example</p>
+<blockquote>
+<div><p>Negative stochiometric coeff represent product when positive represent input.</p>
+</div></blockquote>
+</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>:param</dt><dd><p>kdic: a d array, the reaction constant for the equation</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>KarrayA,stochio, maskA these different mask are to feed to the function computing the derivative. It is more efficient to compute them beforehand.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.parseUtils.parser.read_file">
+<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">read_file</code><span class="sig-paren">(</span><em>pathEquations</em>, <em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.read_file" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Parse two file, on for the equations, one for the path</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pathEquations</strong> – </p></li>
+<li><p><strong>path</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.parseUtils.parser.sparseParser">
+<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">sparseParser</code><span class="sig-paren">(</span><em>equations</em>, <em>kdic</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.sparseParser" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Parse the equations into the correct masks and arrays for computations, but as sparse matrix</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>equations</strong> – <p>a d*n array where d is the number of equations (one sided : -&gt; ) and n the number of species
+The syntax should be the following, an array with the stochiometric coefficient of the species: [alpha,-beta] for alpha*A-&gt;beta*B for example</p>
+<blockquote>
+<div><p>Negative stochiometric coeff represent product when positive represent input.</p>
+</div></blockquote>
+</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>:param</dt><dd><p>kdic: a d array, the reaction constant for the equation</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><p>KarrayA,stochio, maskA these different mask are to feed to the function computing the derivative. It is more efficient to compute them beforehand.
+In the sparsity case, stochio is as bit different:</p>
+<blockquote>
+<div><p>We can’t keep the ones everywhere =&gt; We use the fact that the log will only apply on elements in the data array from the maskA.</p>
+</div></blockquote>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-simulOfBioNN.parseUtils.ecoEvoGenerator">
+<span id="ecoevogenerator"></span><h2>ecoEvoGenerator<a class="headerlink" href="#module-simulOfBioNN.parseUtils.ecoEvoGenerator" title="Permalink to this headline">¶</a></h2>
+<p>In this file we give a function to create and model predator-prey systems using the parser.</p>
+<dl class="function">
+<dt id="simulOfBioNN.parseUtils.ecoEvoGenerator.generateEcoEvoNetwork">
+<code class="descclassname">simulOfBioNN.parseUtils.ecoEvoGenerator.</code><code class="descname">generateEcoEvoNetwork</code><span class="sig-paren">(</span><em>name</em>, <em>activConstants=None</em>, <em>inhibConstants=None</em>, <em>endoConstant=None</em>, <em>erase=True</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.ecoEvoGenerator.generateEcoEvoNetwork" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>For the moment a simple equation is written done, but could be easily changed to a more complex one, either by hand or by creating other features.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – </p></li>
+<li><p><strong>activConstants</strong> – </p></li>
+<li><p><strong>inhibConstants</strong> – </p></li>
+<li><p><strong>endoConstant</strong> – </p></li>
+<li><p><strong>erase</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="plotUtils.html" class="btn btn-neutral float-right" title="plot module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="odeUtils.html" class="btn btn-neutral float-left" title="odeUtils module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Pierre Orhan
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,256 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>SimulOfBioNN package &mdash; BioChemicalNN 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Neural Network module" href="nnUtils.html" />
+    <link rel="prev" title="Welcome to BioChemicalNN’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: orange" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BioChemicalNN
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">SimulOfBioNN package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nnUtils.html">Neural Network module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="odeUtils.html">odeUtils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parseUtils.html">parse module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotUtils.html">plot module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulNN.html">SimulNN module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="smallNetworkSimul.html">smallNetworkSimul module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="paretoPlot.html">paretoPlot package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gettingStarted.html">Getting started</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BioChemicalNN</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>SimulOfBioNN package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/simulOfBioNN.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="simulofbionn-package">
+<h1>SimulOfBioNN package<a class="headerlink" href="#simulofbionn-package" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="nnUtils.html">Neural Network module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nnUtils.html#module-simulOfBioNN.nnUtils.clippedBinaryLayer">clippedBinaryLayer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nnUtils.html#module-simulOfBioNN.nnUtils.clippedSparseBioDenseLayer">clippedSparseBioDenseLayer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nnUtils.html#module-simulOfBioNN.nnUtils.clippedSparseBioSigLayer">clippedSparseBioSigLayer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nnUtils.html#module-simulOfBioNN.nnUtils.dataUtils">dataUtils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nnUtils.html#module-simulOfBioNN.nnUtils.plotUtils">plotUtils</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="odeUtils.html">odeUtils module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="odeUtils.html#module-simulOfBioNN.odeUtils.systemEquation">systemEquation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="odeUtils.html#tfderivativenetwork">tfDerivativeNetwork</a></li>
+<li class="toctree-l2"><a class="reference internal" href="odeUtils.html#module-simulOfBioNN.odeUtils.utils">utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parseUtils.html">parse module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parseUtils.html#module-simulOfBioNN.parseUtils.parser">parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parseUtils.html#module-simulOfBioNN.parseUtils.ecoEvoGenerator">ecoEvoGenerator</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="plotUtils.html">plot module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="plotUtils.html#module-simulOfBioNN.plotUtils.adaptivePlotUtils">adaptivePlotUtils</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="simulNN.html">SimulNN module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="simulNN.html#module-simulOfBioNN.simulNN.simulator">Simulator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulNN.html#module-simulOfBioNN.simulNN.launcher">Launcher</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulNN.html#tensorflowtraining">tensorflowTraining</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="smallNetworkSimul.html">smallNetworkSimul module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="smallNetworkSimul.html#neuralnetworksimul">neuralNetworkSimul</a></li>
+<li class="toctree-l2"><a class="reference internal" href="smallNetworkSimul.html#ecoevosimul">ecoEvoSimul</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<blockquote class="epigraph">
+<div><p>Package for the simulation of chemical network following mass-action model.
+Also present tools for fitting equilibrium activation function, and tools for training neural network with Tensorflow under constraint of sparsity.
+In this package we currently provide 7 submodule for simulating a network of biochemical reactions.</p>
+</div></blockquote>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="nnUtils.html" class="btn btn-neutral float-right" title="Neural Network module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to BioChemicalNN’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Pierre Orhan
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
