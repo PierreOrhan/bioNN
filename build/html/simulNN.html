@@ -90,7 +90,7 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">SimulNN module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.simulNN.simulator">Simulator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.simulNN.launcher">Launcher</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#tensorflowtraining">tensorflowTraining</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.simulNN.tensorflowTraining">tensorflowTraining</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="smallNetworkSimul.html">smallNetworkSimul module</a></li>
@@ -170,13 +170,11 @@
 <div class="section" id="module-simulOfBioNN.simulNN.simulator">
 <span id="simulator"></span><h2>Simulator<a class="headerlink" href="#module-simulOfBioNN.simulNN.simulator" title="Permalink to this headline">¶</a></h2>
 <p>Tools to run simulations in parallel on the CPU, for sparse matrix.
-Here we proceed to the simulation of a graph, against some inputs.</p>
-<blockquote>
-<div><p>Equations are solved in parallel on the CPU</p>
-</div></blockquote>
+Here we proceed to the simulation of a graph, against some inputs.
+Equations are solved in parallel on the CPU</p>
 <dl class="function">
 <dt id="simulOfBioNN.simulNN.simulator.executeSimulation">
-<code class="descclassname">simulOfBioNN.simulNN.simulator.</code><code class="descname">executeSimulation</code><span class="sig-paren">(</span><em>funcForSolver, name, inputsArray, initializationDic=None, outputList=None, leak=1e-13, endTime=1000, sparse=False, modes=['verbose', 'time', 'outputPlot', 'outputEqui']</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.simulNN.simulator.executeSimulation" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">simulOfBioNN.simulNN.simulator.</code><code class="descname">executeSimulation</code><span class="sig-paren">(</span><em>funcForSolver, name, inputsArray, initializationDic=None, outputList=None, leak=1e-13, endTime=1000, sparse=False, modes=['verbose', 'time', 'outputPlot', 'outputEqui'], timeStep=0.1</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.simulNN.simulator.executeSimulation" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
 <div><p>Execute the simulation of the system saved under the name directory.
 InputsArray contain the values for the input species.</p>
@@ -259,15 +257,12 @@ coLeak: the small leak used for stability, added at the end of each computation 
 </dl>
 </p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>Depending if the mode is present in outputDic[“mode”]:</dt><dd><p>output: for each run (column)m, for each species in outputDic (row), the final value reached.
-outputPlot: for each each run (column)m, for each species in outputDic (row), all reached values.
-avgTime: avgTime for the asked run</p>
-</dd>
 </dl>
-<p>The position is the same as the position of the key in outputDic[“mode”]</p>
-</p>
+<dl class="simple">
+<dt>:return:Depending if the mode is present in outputDic[“mode”]:</dt><dd><p>output: for each run (column)m, for each species in outputDic (row), the final value reached.
+outputPlot: for each each run (column)m, for each species in outputDic (row), all reached values.
+avgTime: avgTime for the asked run
+The position is the same as the position of the key in outputDic[“mode”]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -302,24 +297,22 @@ The weights should be stored in the format csv, with the following name:</p>
 <blockquote>
 <div><p>weight_LayerNb</p>
 </div></blockquote>
-<p>The weight dir should be a directory containing only weights files.</p>
-<p>Bias should not be given in this file as we ignore it in the current algorithm.</p>
+<p>The weight dir should be a directory containing only weights files.
+Bias should not be given in this file as we ignore it in the current algorithm.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="tensorflowtraining">
-<h2>tensorflowTraining<a class="headerlink" href="#tensorflowtraining" title="Permalink to this headline">¶</a></h2>
-<span class="target" id="module-simulOfBioNN.simulNN.tensorflowTraining"></span><p>Provide a simple train function to train a network with tensorflow.</p>
+<div class="section" id="module-simulOfBioNN.simulNN.tensorflowTraining">
+<span id="tensorflowtraining"></span><h2>tensorflowTraining<a class="headerlink" href="#module-simulOfBioNN.simulNN.tensorflowTraining" title="Permalink to this headline">¶</a></h2>
+<p>Provide a simple train function to train a network with tensorflow.</p>
 <dl class="function">
 <dt id="simulOfBioNN.simulNN.tensorflowTraining.train">
 <code class="descclassname">simulOfBioNN.simulNN.tensorflowTraining.</code><code class="descname">train</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.simulNN.tensorflowTraining.train" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
 <div><p>Train some neural network, and save the weight, aka the architecture, so that in can be used by our parser module.</p>
 </div></blockquote>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>directory for weight
-accuracy
+<dl class="simple">
+<dt>:return directory for weight</dt><dd><p>accuracy
 testing_x_set : a set of inputs for test
 testing_y_set : a set of outputs for test
 nnAnswer : the answer for the raw nn on the test set</p>

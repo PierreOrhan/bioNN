@@ -198,6 +198,44 @@ Default to None: we use all line, except line where a nan value can be observed<
 </dd></dl>
 
 <dl class="function">
+<dt id="simulOfBioNN.plotUtils.adaptivePlotUtils.compareEvolutionPlot">
+<code class="descclassname">simulOfBioNN.plotUtils.adaptivePlotUtils.</code><code class="descname">compareEvolutionPlot</code><span class="sig-paren">(</span><em>time, experiment_name, nameDic, Xs, wishToDisp=[''], displaySeparate=False, displayOther=True, experimentNames=None</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.plotUtils.adaptivePlotUtils.compareEvolutionPlot" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Function to plot the evolution against the time of the concentration of some species.
+:param time: 1d-array, containing the time.
+:param experiment_name: result path will be of the form: resultPath=experiment_name+”/resultData/”+”separate”+”/”</p>
+<blockquote>
+<div><p>and  resultPath=experiment_name+”/resultData/”</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">param nameDic</dt>
+<dd class="field-odd"><p>dictionnary with the name of species as key, and position in the array as values.</p>
+</dd>
+<dt class="field-even">param X</dt>
+<dd class="field-even"><p>3d-array, axis0: time, axis1: species as described by namedic, axis3: experiments</p>
+</dd>
+<dt class="field-odd">param wishToDisp</dt>
+<dd class="field-odd"><p>name of species one wish to disp individually</p>
+</dd>
+<dt class="field-even">param displaySeparate</dt>
+<dd class="field-even"><p>if we want to Display the individual species in wishToDisp</p>
+</dd>
+<dt class="field-odd">param displayOther</dt>
+<dd class="field-odd"><p>if we want to display all intermediate and all main species in a separate fashion.</p>
+</dd>
+<dt class="field-even">param experimentNames</dt>
+<dd class="field-even"><p>name for each experiment</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
 <dt id="simulOfBioNN.plotUtils.adaptivePlotUtils.fitComparePlot">
 <code class="descclassname">simulOfBioNN.plotUtils.adaptivePlotUtils.</code><code class="descname">fitComparePlot</code><span class="sig-paren">(</span><em>X1</em>, <em>X2</em>, <em>output</em>, <em>fitOutput</em>, <em>courbs</em>, <em>figname</em>, <em>figname2</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.plotUtils.adaptivePlotUtils.fitComparePlot" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>

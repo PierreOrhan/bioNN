@@ -1,13 +1,13 @@
-import numpy as np
-import pandas
-import os,sys
-from tqdm import tqdm
 """
     This file contains all i/o operation to create bio-chemical models.
-    
+
     Format is described in the function.
     Some special parsing heuristics are all-ready given, for example to create feed-forward neural network of biochemical reactions.
 """
+
+import numpy as np
+import pandas
+import os
 
 def parse(equations,kdic):
     """

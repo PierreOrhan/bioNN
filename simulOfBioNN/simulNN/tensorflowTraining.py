@@ -13,16 +13,18 @@ import sys
 
 
 def train():
-    import tensorflow as tf
     """
         Train some neural network, and save the weight, aka the architecture, so that in can be used by our parser module.
 
-    :return: directory for weight
+    :return directory for weight
              accuracy
              testing_x_set : a set of inputs for test
              testing_y_set : a set of outputs for test
              nnAnswer : the answer for the raw nn on the test set
     """
+
+    import tensorflow as tf
+
     x_train,x_test,y_train,y_test,x_test_noise=loadMnist(rescaleFactor=4,fashion=False,size=None,mean=0,var=0.01,path="../../Data/mnist")
 
     archlist=["binary","sig","sparseNormal"]

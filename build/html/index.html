@@ -150,7 +150,8 @@
             
   <div class="section" id="welcome-to-biochemicalnn-s-documentation">
 <h1>Welcome to BioChemicalNN’s documentation!<a class="headerlink" href="#welcome-to-biochemicalnn-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>The project is mainly based on the simulOfBioNN package, on which an introduction can be found in getting started.
+<p>This project aims at demonstrating that neural network can be used to find and optimize interesting reaction networks.
+The project is mainly based on the simulOfBioNN package, on which an introduction can be found in getting started.
 As for now the project only supports mass-action solve on the CPU, but will be quickly interfaced with a solve on the GPU.
 The paretoPlot package provide an easy way to obtain very fast pareto plot of the performance of a given architecture.</p>
 <div class="toctree-wrapper compound">
@@ -177,14 +178,25 @@ The paretoPlot package provide an easy way to obtain very fast pareto plot of th
 <div><p>This project aims to propose a coarse-grained approach for the discovering of interesting bio-chemical network.
 Multiple species reacting in a suited environment can be seen as a network of chemical reaction.
 Given some input species, the equilibrium of the chemical reaction, if it exists, give birth to new species.
-If the network is well organized we can understand this final value as the evaluation of a neural network.</p>
+If the network is well organized we can understand this final value as the evaluation of a neural network, as one can see in the following image.</p>
+<p>To find such interesting network, we train neural network under special constraints, and test them by simulating mass-action kinetics.
+Our project is separated in two parts: the training part and the simulating one.
+For now ODE are simulating on the CPU using scipy odeint. Network training is made with tensorflow.</p>
 </div></blockquote>
 <img alt="_images/equiInNN.png" src="_images/equiInNN.png" />
 <blockquote class="epigraph">
-<div><p>To find such interesting network, we train neural network under special constraints, and test them by simulating mass-action kinetics.
-Our project is separated in two parts: the training part and the simulating one.
-For now ODE are simulating on the GPU using scipy odeint. Network training is made with tensorflow.
-We aim at doing everything on to the GPU so that simulation and training can be coupled in a ODE-net fashion approach, enable us to leave the equilibrium constraints.
+<div><p>Nevertheless, it is also interesting to obtain a simulated value of the concentration of output species at equilibrium as a function of input species.
+To obtain these values, we need to integrate an ODE describing the evolution of species in the system for various input, and fit the function linking input species to output.
+Some example of such simulation, for one activator and one inhibitor acting on an output species can be observed in the following image.</p>
+</div></blockquote>
+<img alt="_images/exampleSimul.png" src="_images/exampleSimul.png" />
+<blockquote class="epigraph">
+<div><p>As the number of species in the system increase, the time of simulation on the CPU with our current implementation dramatically increase.
+We therefore need to either improve our implementation or change the computation support from CPU to GPU</p>
+</div></blockquote>
+<img alt="_images/sparseTime.png" src="_images/sparseTime.png" />
+<blockquote class="epigraph">
+<div><p>As a side-project, or a secon step, we aim at doing everything on to the GPU so that simulation and training can be coupled in a ODE-net fashion approach, enabling us to leave the equilibrium constraints.
 Such improvement will allow us to use the full dynamic.</p>
 </div></blockquote>
 <img alt="_images/odeSolveOnNN.png" src="_images/odeSolveOnNN.png" />

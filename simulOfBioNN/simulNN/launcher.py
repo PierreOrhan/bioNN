@@ -63,7 +63,6 @@ def load(directory_name="weightDir",directory_for_network=""):
         The weights should be stored in the format csv, with the following name:
             weight_LayerNb
         The weight dir should be a directory containing only weights files.
-
         Bias should not be given in this file as we ignore it in the current algorithm.
     """
     files = os.listdir(directory_name)

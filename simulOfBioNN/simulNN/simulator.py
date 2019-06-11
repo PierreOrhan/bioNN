@@ -1,7 +1,8 @@
 """
     Tools to run simulations in parallel on the CPU, for sparse matrix.
     Here we proceed to the simulation of a graph, against some inputs.
-        Equations are solved in parallel on the CPU
+    Equations are solved in parallel on the CPU
+
 """
 
 import numpy as np
@@ -51,13 +52,13 @@ def scipyOdeSolverForMultiProcess(X):
                                             "outputDic": name of species to record
                                             "nameDic": link name to position
                                             "outputPlot": array to store the results
-    :return:
-        Depending if the mode is present in outputDic["mode"]:
+    :return:Depending if the mode is present in outputDic["mode"]:
             output: for each run (column)m, for each species in outputDic (row), the final value reached.
             outputPlot: for each each run (column)m, for each species in outputDic (row), all reached values.
             avgTime: avgTime for the asked run
-        The position is the same as the position of the key in outputDic["mode"]
+            The position is the same as the position of the key in outputDic["mode"]
     """
+
     speciesArray,time,df,functionArgs,outputDic = X
 
     if "display" in outputDic["mode"]:
@@ -110,6 +111,7 @@ def executeSimulation(funcForSolver, name, inputsArray, initializationDic=None, 
             The equilibrium values for everySpecies
             The nameDic to analyze them, useful to navigate in the created files for other plot. (But not necessary)
     """
+
     parsedEquation,constants,nameDic=read_file(name+"/equations.txt",name+"/constants.txt")
     if sparse:
         KarrayA,stochio,maskA,maskComplementary = sparseParser(parsedEquation,constants)

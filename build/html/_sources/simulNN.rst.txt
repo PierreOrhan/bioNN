@@ -23,7 +23,7 @@ ________
    :members:
 
 tensorflowTraining
-________
+__________________
 
 .. automodule:: simulOfBioNN.simulNN.tensorflowTraining
    :members:

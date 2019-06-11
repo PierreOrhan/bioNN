@@ -169,6 +169,9 @@
 It is also in this module that one can add function for automatic construction of new models for activation and inhibition.</p>
 <div class="section" id="module-simulOfBioNN.parseUtils.parser">
 <span id="parser"></span><h2>parser<a class="headerlink" href="#module-simulOfBioNN.parseUtils.parser" title="Permalink to this headline">¶</a></h2>
+<p>This file contains all i/o operation to create bio-chemical models.</p>
+<p>Format is described in the function.
+Some special parsing heuristics are all-ready given, for example to create feed-forward neural network of biochemical reactions.</p>
 <dl class="function">
 <dt id="simulOfBioNN.parseUtils.parser.autocatalysisWrite">
 <code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">autocatalysisWrite</code><span class="sig-paren">(</span><em>nameA</em>, <em>nameY</em>, <em>nameE</em>, <em>nameE2</em>, <em>constants</em>, <em>pathEquations</em>, <em>pathConstants</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.autocatalysisWrite" title="Permalink to this definition">¶</a></dt>
@@ -327,19 +330,37 @@ The syntax should be the following, an array with the stochiometric coefficient 
 <dt id="simulOfBioNN.parseUtils.parser.read_file">
 <code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">read_file</code><span class="sig-paren">(</span><em>pathEquations</em>, <em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.read_file" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
-<div><p>Parse two file, on for the equations, one for the path</p>
+<div><p>Parse two file, on for the equations, one for the constants values</p>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>pathEquations</strong> – </p></li>
-<li><p><strong>path</strong> – </p></li>
+<li><p><strong>pathEquations</strong> – path for the equations.</p></li>
+<li><p><strong>path</strong> – path for the constants values.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.parseUtils.parser.saveModelWeight">
+<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">saveModelWeight</code><span class="sig-paren">(</span><em>model</em>, <em>use_bias</em>, <em>dirName='weightDir'</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.saveModelWeight" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Save model weights so that in can be reused by the parser.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – keras trained model</p></li>
+<li><p><strong>use_bias</strong> – if the model use bias or not.</p></li>
+<li><p><strong>dirName</strong> – name of the directory where the weight shall be stored.</p></li>
+</ul>
+</dd>
+</dl>
+<p>:return</p>
 </dd></dl>
 
 <dl class="function">

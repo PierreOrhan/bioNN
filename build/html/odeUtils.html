@@ -85,7 +85,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="simulOfBioNN.html">SimulOfBioNN package</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="nnUtils.html">Neural Network module</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">odeUtils module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.odeUtils.systemEquation">systemEquation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#systemequation">systemEquation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#tfderivativenetwork">tfDerivativeNetwork</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-simulOfBioNN.odeUtils.utils">utils</a></li>
 </ul>
@@ -167,9 +167,11 @@
   <div class="section" id="odeutils-module">
 <h1>odeUtils module<a class="headerlink" href="#odeutils-module" title="Permalink to this headline">¶</a></h1>
 <p>Module for solving the ODE evolution of a network of biochemical reaction following mass action on CPU and (in development) on GPU.</p>
-<div class="section" id="module-simulOfBioNN.odeUtils.systemEquation">
-<span id="systemequation"></span><h2>systemEquation<a class="headerlink" href="#module-simulOfBioNN.odeUtils.systemEquation" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
+<div class="section" id="systemequation">
+<h2>systemEquation<a class="headerlink" href="#systemequation" title="Permalink to this headline">¶</a></h2>
+<p>Please refer to the following document for detailed explanation:
+<a class="reference external" href="https://docs.google.com/presentation/d/1ZayLqDJUJofIbhZDxJycxC7s8eSLk1yoRpdWa8xXkjM/edit?usp=sharing">https://docs.google.com/presentation/d/1ZayLqDJUJofIbhZDxJycxC7s8eSLk1yoRpdWa8xXkjM/edit?usp=sharing</a></p>
+<span class="target" id="module-simulOfBioNN.odeUtils.systemEquation"></span><dl class="function">
 <dt id="simulOfBioNN.odeUtils.systemEquation.fPython">
 <code class="descclassname">simulOfBioNN.odeUtils.systemEquation.</code><code class="descname">fPython</code><span class="sig-paren">(</span><em>speciesA</em>, <em>t</em>, <em>KarrayA</em>, <em>inputStochio</em>, <em>maskA</em>, <em>maskComplementary</em>, <em>derivLeak</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.systemEquation.fPython" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
@@ -262,6 +264,13 @@ The goal is to be able to be plugged-in directly with tensorflow’s tools.</p>
 <div class="section" id="module-simulOfBioNN.odeUtils.utils">
 <span id="utils"></span><h2>utils<a class="headerlink" href="#module-simulOfBioNN.odeUtils.utils" title="Permalink to this headline">¶</a></h2>
 <p>utilitarians for script</p>
+<dl class="function">
+<dt id="simulOfBioNN.odeUtils.utils.obtainCopyArgs">
+<code class="descclassname">simulOfBioNN.odeUtils.utils.</code><code class="descname">obtainCopyArgs</code><span class="sig-paren">(</span><em>modes</em>, <em>idxList</em>, <em>outputList</em>, <em>time</em>, <em>funcForSolver</em>, <em>speciesArray</em>, <em>KarrayA</em>, <em>stochio</em>, <em>maskA</em>, <em>maskComplementary</em>, <em>coLeak</em>, <em>nameDic</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.utils.obtainCopyArgs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produce a list with each elements being a list of parameters used by a sub-process for integration.
+The merge is also dependent on the output modes that has been chosen.</p>
+</dd></dl>
+
 <dl class="function">
 <dt id="simulOfBioNN.odeUtils.utils.obtainOutputDic">
 <code class="descclassname">simulOfBioNN.odeUtils.utils.</code><code class="descname">obtainOutputDic</code><span class="sig-paren">(</span><em>nameDic</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.utils.obtainOutputDic" title="Permalink to this definition">¶</a></dt>
