@@ -33,7 +33,7 @@ def plotEvolution(time, experiment_name, nameDic, X, wishToDisp=[""], displaySep
 
     c=['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
     if(displaySeparate):
-        figs=[plt.figure() for _ in wishToDisp]
+        figs=[plt.figure(figsize=(19.2,10.8), dpi=100) for _ in wishToDisp]
         figIdx=0
         for idx,k in enumerate(nameDic.keys()):
             if(selected[k]):
@@ -47,7 +47,7 @@ def plotEvolution(time, experiment_name, nameDic, X, wishToDisp=[""], displaySep
 
     if(displayOther):
         try:
-            assert X.shape[0]==len(list(nameDic.keys()))
+            assert X.shape[1]==len(list(nameDic.keys()))
         except:
             raise Exception("please, provide an array with the concentration for all species at all time step!")
         txt_inter={}
@@ -57,7 +57,7 @@ def plotEvolution(time, experiment_name, nameDic, X, wishToDisp=[""], displaySep
             if(len(t)>=3):
                 txt_inter[t]=1
         resultPath=os.path.join(experiment_name,"resultData/")
-        plt.figure()
+        plt.figure(figsize=(19.2,10.8), dpi=100)
         for idx,k in enumerate(nameDic.keys()):
             if(txt_inter[k]):
                 plt.plot(time,X[:,idx],label=k)
@@ -70,7 +70,7 @@ def plotEvolution(time, experiment_name, nameDic, X, wishToDisp=[""], displaySep
         for t in fulltxt:
             if(len(t)<3):
                 txt_inter[t]=1
-        plt.figure()
+        plt.figure(figsize=(19.2,10.8), dpi=100)
         for idx,k in enumerate(nameDic.keys()):
             if(txt_inter[k]):
                 plt.plot(time,X[:,idx],label=k)
@@ -506,7 +506,7 @@ def compareEvolutionPlot(time, experiment_name, nameDic, Xs, wishToDisp=[""], di
 
     c=['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
     if(displaySeparate):
-        figs=[plt.figure() for _ in wishToDisp]
+        figs=[plt.figure(figsize=(19.2,10.8), dpi=100) for _ in wishToDisp]
         figIdx=0
         for idx,k in enumerate(nameDic.keys()):
             if(selected[k]):
@@ -515,7 +515,10 @@ def compareEvolutionPlot(time, experiment_name, nameDic, Xs, wishToDisp=[""], di
                 for e in range(Xs.shape[2]):
                     ax.plot(time,Xs[:,nameDic[k],e],c=c[e],label=experimentNames[e])
                 ax.set_title(k)
-                plt.legend()
+                ax.set_xlabel("time",fontsize="xx-large")
+                ax.set_ylabel("concentration",fontsize="xx-large")
+                ax.tick_params(labelsize="xx-large")
+                ax.legend()
                 figIdx+=1
         for idx,fig in enumerate(figs):
             fig.savefig(os.path.join(resultPath,str(wishToDisp[idx])+".png"))
@@ -532,11 +535,14 @@ def compareEvolutionPlot(time, experiment_name, nameDic, Xs, wishToDisp=[""], di
             if(len(t)>=3):
                 txt_inter[t]=1
         resultPath=os.path.join(experiment_name,"resultData/")
-        plt.figure()
+        plt.figure(figsize=(19.2,10.8), dpi=100)
         for idx,k in enumerate(nameDic.keys()):
             if(txt_inter[k]):
                 for e in range(Xs.shape[2]):
                     ax.plot(time,Xs[:,nameDic[k],e],c=c[e],label=experimentNames[e])
+                ax.set_xlabel("time",fontsize="xx-large")
+                ax.set_ylabel("concentration",fontsize="xx-large")
+                ax.tick_params(labelsize="xx-large")
                 ax.set_title(k)
         plt.legend()
         plt.savefig(os.path.join(resultPath,"intermediateSpecies0.png"))
@@ -547,11 +553,14 @@ def compareEvolutionPlot(time, experiment_name, nameDic, Xs, wishToDisp=[""], di
         for t in fulltxt:
             if(len(t)<3):
                 txt_inter[t]=1
-        plt.figure()
+        plt.figure(figsize=(19.2,10.8), dpi=100)
         for idx,k in enumerate(nameDic.keys()):
             if(txt_inter[k]):
                 for e in range(Xs.shape[2]):
                     ax.plot(time,Xs[:,nameDic[k],e],c=c[e],label=experimentNames[e])
                 ax.set_title(k)
+                ax.set_xlabel("time",fontsize="xx-large")
+                ax.set_ylabel("concentration",fontsize="xx-large")
+                ax.tick_params(labelsize="xx-large")
         plt.legend()
         plt.savefig(os.path.join(resultPath,"mainSpecies0.png"))

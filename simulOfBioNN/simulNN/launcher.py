@@ -40,7 +40,7 @@ def launch(inputsArray,y,resultArray,directory_name="weightDic",layerInit=10**(-
 
     modes=["outputEqui","verbose"]
     results = simulator.executeSimulation(fPythonSparse, directory_for_network, inputsArray,
-                                          initializationDic=initialization_dic,outputList=outputList ,leak=10 ** (-13), endTime=1,
+                                          initializationDic=initialization_dic,outputList=outputList ,leak=10 ** (-13), endTime=1000,
                                           sparse=True,modes=modes,timeStep=0.1)
     outputArray = results[modes.index("outputEqui")]
     ##We now compute the accuracy obtained:

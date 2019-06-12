@@ -25,14 +25,14 @@ def train():
 
     import tensorflow as tf
 
-    x_train,x_test,y_train,y_test,x_test_noise=loadMnist(rescaleFactor=4,fashion=False,size=None,mean=0,var=0.01,path="../../Data/mnist")
+    x_train,x_test,y_train,y_test,x_test_noise=loadMnist(rescaleFactor=2,fashion=False,size=None,mean=0,var=0.01,path="../../Data/mnist")
 
     archlist=["binary","sig","sparseNormal"]
     architecture=archlist[2]
-    nbUnits = [10]
+    nbUnits = [10,10,10,10]
     nbLayers = len(nbUnits)
     use_bias = True
-    epochs = 5
+    epochs = 1
     sess=tf.Session()
     with sess.as_default():
         GPUidx = sess.list_devices()[2].name
@@ -63,17 +63,15 @@ def train():
         nnAnswer = model.predict(x_test)
 
 
-        activs=[tf.placeholder(dtype=tf.float32) for _ in layerList]
-        inputs = tf.placeholder(dtype=tf.float32,shape=(None,x_train.shape[1],x_train.shape[2]))
-
-        activs[0]=layerList[0](inputs)
-        for idx,l in enumerate(layerList[1:]):
-            activs[idx+1] = l(activs[idx])
-        activation=sess.run(activs,feed_dict={inputs:x_train})
-
-        names = ["activation of layer"+str(idx) for idx in range(len(layerList))]
-        for idx,a in enumerate(activation):
-            displayEmbeddingHeat(a,0.1,name=names[idx])
+        # activs=[tf.placeholder(dtype=tf.float32) for _ in layerList]
+        # inputs = tf.placeholder(dtype=tf.float32,shape=(None,x_train.shape[1],x_train.shape[2]))
+        # activs[0]=layerList[0](inputs)
+        # for idx,l in enumerate(layerList[1:]):
+        #     activs[idx+1] = l(activs[idx])
+        # activation=sess.run(activs,feed_dict={inputs:x_train})
+        # names = ["activation of layer"+str(idx) for idx in range(len(layerList))]
+        # for idx,a in enumerate(activation):
+        #     displayEmbeddingHeat(a,0.1,name=names[idx])
 
         savePath = os.path.join(sys.path[0],"weightDir")
         plotWeight(model,use_bias)

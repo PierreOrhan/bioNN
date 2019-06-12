@@ -130,3 +130,31 @@ def obtainCopyArgs(modes,idxList,outputList,time,funcForSolver,speciesArray,Karr
                    (KarrayA,stochio, maskA,maskComplementary,coLeak),
                    {"mode":modes,"idx":idx}] for idx, myId in enumerate(idxList[:-1])]
     return copyArgs
+
+def obtainCopyArgsLassie(modes,idxList,outputList,time,directory_for_network,parsedEquation,constants,coLeak,nameDic,speciesArray,lassieEx):
+    """
+        Produce a list with each elements being a list of parameters used by a sub-process for integration.
+        The merge is also dependent on the output modes that has been chosen.
+        Note that here we give for each thread a directory in which the thread will generate sub-directory for communication with LASSIE.
+        :param lassieEx: the path to the executive file of lassie.
+    """
+    if "outputPlot" and "outputEqui" in modes:
+        outputCollector=[np.zeros((len(outputList), idxList[idx + 1] - id)) for idx, id in enumerate(idxList[:-1])]
+        outputPlotsCollector=[np.zeros((len(outputList), idxList[idx + 1] - id, time.shape[0])) for idx, id in enumerate(idxList[:-1])]
+        copyArgs=[[speciesArray[myId:idxList[idx+1]], time, os.path.join(directory_for_network,str(idx)),parsedEquation,constants,coLeak,nameDic,lassieEx,
+                   {"mode":modes,"nameDic":nameDic,"idx":idx,"output":outputCollector[idx],
+                    "outputPlot":outputPlotsCollector[idx],"outputList":outputList}] for idx, myId in enumerate(idxList[:-1])]
+    elif "outputEqui" in modes:
+        outputCollector=[np.zeros((len(outputList), idxList[idx + 1] - id)) for idx, id in enumerate(idxList[:-1])]
+        copyArgs=[[speciesArray[myId:idxList[idx+1]], time, os.path.join(directory_for_network,str(idx)),parsedEquation,constants,coLeak,nameDic,lassieEx,
+                   {"mode":modes,"nameDic":nameDic,"idx":idx,"output":outputCollector[idx],
+                    "outputList":outputList}] for idx, myId in enumerate(idxList[:-1])]
+    elif "outputPlot" in modes:
+        outputPlotsCollector=[np.zeros((len(outputList), idxList[idx + 1] - id, time.shape[0])) for idx, id in enumerate(idxList[:-1])]
+        copyArgs=[[speciesArray[myId:idxList[idx+1]], time, os.path.join(directory_for_network,str(idx)),parsedEquation,constants,coLeak,nameDic,lassieEx,
+                   {"mode":modes,"nameDic":nameDic,"idx":idx,"outputPlot":outputPlotsCollector[idx],
+                    "outputList":outputList}] for idx, myId in enumerate(idxList[:-1])]
+    else:
+        copyArgs=[[speciesArray[myId:idxList[idx+1]], time, os.path.join(directory_for_network,str(idx)),parsedEquation,constants,coLeak,nameDic,lassieEx,
+                   {"mode":modes,"idx":idx}] for idx, myId in enumerate(idxList[:-1])]
+    return copyArgs
