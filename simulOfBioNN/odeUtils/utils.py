@@ -158,3 +158,41 @@ def obtainCopyArgsLassie(modes,idxList,outputList,time,directory_for_network,par
         copyArgs=[[speciesArray[myId:idxList[idx+1]], time, os.path.join(directory_for_network,str(idx)),parsedEquation,constants,coLeak,nameDic,lassieEx,
                    {"mode":modes,"idx":idx}] for idx, myId in enumerate(idxList[:-1])]
     return copyArgs
+
+def _removeLastLayerFromDic(outputDic,nameDic):
+    nameDic2 = {}
+    layer = outputDic[0].split("_")[0]+"_"+outputDic[0].split("_")[1]
+    for k in nameDic.keys():
+        if not layer in k:
+            nameDic2[k]=nameDic[k]
+    return nameDic2
+
+def rescaleInputConcentration(speciesArray,networkMask=None,nameDic=None):
+    """
+        This function enable to rescale concentrations when using more input species, or multi layers.
+        Such rescale is crucial to obtain output of similar values despite having more species as inputs.
+        One should either gave the network mask or dictonary with all the names.
+        Initial version:
+            A better heuristic should be derived.
+            For now we simply divide by the total number of nodes in the network.
+
+    :param speciesArray: 1d-array, the concentration of every species.
+    :param networkMask: optional, 2d-array with value in {0,1,-1}: mask of the network. (Same as considered by generateNeuralNetworkfunction)
+                        using this is much faster.
+    :param nameDic: optional, dictionary with name of species of the last layer.
+    :return: modified speciesArray.
+    """
+    if networkMask is None and nameDic is None:
+        raise Exception("please provide at least one mask")
+    elif networkMask is not None:
+        nbrNodes = networkMask.shape[0]*networkMask.shape[1]
+    elif nameDic is not None:
+        outputDic = obtainOutputDic(nameDic)
+        lastLayerIndex = int(outputDic[0].split("_")[1])
+        nbrNodes=len(outputDic)
+        nameDic2 = _removeLastLayerFromDic(outputDic,nameDic)
+        for i in range(lastLayerIndex): #while we are not at the first layer, we remove the last layer and add its nodes.
+            outputDic = obtainOutputDic(nameDic2)
+            nbrNodes+=len(outputDic)
+            nameDic2 = _removeLastLayerFromDic(outputDic,nameDic2)
+    return speciesArray/nbrNodes

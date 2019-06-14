@@ -9,7 +9,7 @@ import numpy as np
 from simulOfBioNN.parseUtils.parser import read_file, sparseParser, parse
 from simulOfBioNN.parseUtils.parserForLassie import convertToLassieInput
 from simulOfBioNN.odeUtils.systemEquation import setToUnits,fPythonSparse
-from simulOfBioNN.odeUtils.utils import saveAttribute,findRightNumberProcessus,obtainSpeciesArray,obtainCopyArgs,obtainOutputDic,obtainCopyArgsLassie
+from simulOfBioNN.odeUtils.utils import saveAttribute,findRightNumberProcessus,obtainSpeciesArray,obtainCopyArgs,obtainOutputDic,obtainCopyArgsLassie,rescaleInputConcentration
 
 from scipy.integrate import odeint
 
@@ -73,7 +73,7 @@ def scipyOdeSolverForMultiProcess(X):
     avgTime = 0
     for idx,species in enumerate(speciesArray):
         t0=tm()
-        X2,_=odeint(df,species,time,args=functionArgs,full_output=True,rtol=10**(-6),atol=10**(-12))
+        X2,_=odeint(df,species,time,args=functionArgs,full_output=True,rtol=None,atol=None)
         timeTook = tm()-t0
         avgTime += timeTook
         if "verbose" in outputDic["mode"]:
@@ -114,7 +114,7 @@ def lassieGPUsolverMultiProcess(X):
         #We create the directory of input for LASSIE:
         #TODO : change for a better communication.
         directory_for_lassie = os.path.join(os.path.join(directory_for_network,"LassieInput"),str(idx))
-        convertToLassieInput(directory_for_lassie,parsedEquation,constants,nameDic,time,species,coLeak)
+        convertToLassieInput(directory_for_lassie,parsedEquation,constants,nameDic,time,species,leak=coLeak)
         directory_for_lassie_outputdir = directory_for_lassie
         command=[os.path.join(sys.path[0],path_to_lassie_ex), directory_for_lassie, directory_for_lassie_outputdir]
         print("launching "+command[0]+" "+command[1]+" "+command[2])
@@ -172,6 +172,7 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
     print("Initialisation constant: time:"+str(T0)+" concentration:"+str(C0))
 
     speciesArray = obtainSpeciesArray(inputsArray,nameDic,leak,initializationDic,C0)
+    speciesArray = rescaleInputConcentration(speciesArray,nameDic=nameDic)
 
     time=np.arange(0,endTime,timeStep)
     coLeak = leak/C0
@@ -179,7 +180,7 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
     ##SAVE EXPERIMENT PARAMETERS:
     attributesDic = {}
     for k in initializationDic.keys():
-        attributesDic[k] = initializationDic[k]
+        attributesDic[k] = initializationDic[k]/C0
     attributesDic["leak"] = leak
     attributesDic["T0"] = T0
     attributesDic["C0"] = C0

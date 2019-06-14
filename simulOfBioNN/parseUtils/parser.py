@@ -9,6 +9,9 @@ import numpy as np
 import pandas
 import os
 
+from simulOfBioNN.parseUtils.equationWriter import killingTemplateWrite, autocatalysisWrite,templateActivationWrite,templateInhibWrite
+
+
 def parse(equations,kdic):
     """
         Parse the equations into the correct masks and arrays for computations
@@ -130,39 +133,6 @@ def read_file(pathEquations,path):
         constants[idx]=float(c.split("\n")[0])
     return parsedEquation,constants,nameDic
 
-def autocatalysisWrite(nameA,nameY,nameE,nameE2,constants,pathEquations,pathConstants):
-    """
-        Autogenerate equations for the autocatalysis, and parse them in a file:
-    :param nameA: Template
-    :param nameY: catalyzed species
-    :param nameE: Polymerase name
-    :param nameE2: Nickase name
-    :return: add names in the txt file
-    """
-    for n in [nameA,nameY,nameE,nameE2]:
-        assert "&" not in n
-        assert "+" not in n
-        assert "-" not in n
-    nameYA=nameY+nameA
-    nameEYA=nameE+nameY+nameA
-    nameE2YA=nameE2+nameY+nameA
-    equations=[
-        nameA+"+"+nameY+"+"+nameE+"-"+nameEYA,
-        nameEYA+"-"+nameA+"+"+nameY+"+"+nameE,
-        nameEYA+"-"+nameE+"+"+nameYA,
-        nameYA+"+"+nameE2+"-"+nameE2YA,
-        nameE2YA+"-"+nameE2+"+"+nameYA,
-        nameE2YA+"-"+nameE2+"+"+"2&"+nameY+"+"+nameA
-    ]
-
-    assert len(constants)==len(equations)
-
-    with open(pathEquations,'a') as file:
-        for e in equations:
-            file.write(e+"\n")
-    with open(pathConstants,'a') as file:
-        for c in constants:
-            file.write(str(c)+"\n")
 
 def endonucleasedWrite(nameY,constant,pathEquations,pathConstants):
     """
@@ -181,92 +151,21 @@ def endonucleasedWrite(nameY,constant,pathEquations,pathConstants):
     with open(pathConstants,'a') as file:
         file.write(str(constant)+"\n")
 
-def killingTemplateWrite(nameM,nameT,nameY,nameE,nameE2,constants,pathEquations,pathConstants):
+
+def generateLayer(nameInputs, nameOutputs, nameE, nameE2, mask, constantValues, endoConstants, activationWriter, inhibitionWriter, complexity=None,
+                  pathEquations="models/equations.txt", pathConstants="models/constants.txt"):
     """
+        Generate a layer with the given activation and inhibition writer.
 
-    :param nameM:
-    :param nameY:
-    :param nameE:
-    :param nameE2:
-    :param pathEquations:
-    :param pathConstants:
-    :return:
-    """
-    for n in [nameM,nameT,nameY,nameE,nameE2]:
-        assert "&" not in n
-        assert "+" not in n
-        assert "-" not in n
-    nameEM = nameE+nameM
-    nameE2MT = nameE2+nameM+nameT
-    nameMT = nameM+nameT
-    nameEYT = nameE+nameY+nameT
-    nameTY = nameT+nameY
-    nameTYd=nameTY+"d"
-    equations=[
-        nameM+"+"+nameE+"-"+nameEM,
-        nameEM+"-"+nameM+"+"+nameE,
-        nameEM+"-"+nameE+"+"+nameMT,
-        nameMT+"+"+nameE2+"-"+nameE2MT,
-        nameE2MT+"-"+nameE2+"+"+nameMT,
-        nameE2MT+"-"+nameE2+"+"+nameT+"+"+nameM, #creation of T
-        nameT+"+"+nameY+"+"+nameE+"-"+nameEYT,
-        nameEYT+"-"+nameT+"+"+nameY+"+"+nameE,
-        nameEYT+"-"+nameE+"+"+nameTY,
-        nameTY+"-"+nameT+"+"+nameTYd,
-        nameT+"+"+nameTYd+"-"+nameTY
-    ]
-
-    assert len(constants)==len(equations)
-
-    with open(pathEquations,'a') as file:
-        for e in equations:
-            file.write(e+"\n")
-    with open(pathConstants,'a') as file:
-        for c in constants:
-            file.write(str(c)+"\n")
-
-def coopWrite(nameC, nameY1, nameY2, nameE, nameE2, constants, pathEquations, pathConstants):
-    """
-        Autogenerate equations for the autocatalysis, and parse them in a file:
-    :param nameC: Template used for cooperation
-    :param nameY1: catalyzed species
-    :param nameE: Polymerase name
-    :param nameE2: Nickase name
-    :return: add names in the txt file
-    """
-    for n in [nameC, nameY1, nameE, nameE2]:
-        assert "&" not in n
-        assert "+" not in n
-        assert "-" not in n
-    nameYC= nameY1 + nameC
-    nameEYC= nameE + nameY1 + nameC
-    nameE2YC= nameE2 + nameY1 + nameC
-    equations=[
-        nameC + "+" + nameY1 + "+" + nameE + "-" + nameEYC,
-        nameEYC +"-" + nameC + "+" + nameY1 + "+" + nameE,
-        nameEYC +"-" + nameE + "+" + nameYC,
-        nameYC +"+" + nameE2 +"-" + nameE2YC,
-        nameE2YC +"-" + nameE2 +"+" + nameYC,
-        nameE2YC +"-" + nameE2 +"+" + nameY1 + "+" + nameY2 + "+" + nameC #Main differences with an auto-catalysis
-    ]
-    assert len(constants)==len(equations)
-    with open(pathEquations,'a') as file:
-        for e in equations:
-            file.write(e+"\n")
-    with open(pathConstants,'a') as file:
-        for c in constants:
-            file.write(str(c)+"\n")
-
-def generateLayerKillerTemplate(nameInputs, nameOutputs, nameE, nameE2, mask, constantValues,endoConstants,
-                                pathEquations="models/equations.txt",
-                                pathConstants="models/constants.txt"):
-    """
-        Generate a layer with killer Template inhibition.
-
-    :param nameInputs: the inputs species name
-    :param nameOutputs: the output species name
+    :param nameInputs: string array, the inputs species name
+    :param nameOutputs: string array, the output species name
     :param mask: the mask connecting input to outputs
-    :return: Parse into the model the layer
+    :param constantValues: array with values for reactions constants.
+    :param endoConstants: array with values for the reaction with the endonuclease.
+    :param activationWriter: function to call for the activation. Should take args as other pre-defined activation function. If provided, the complexity arg is added at the end.
+    :param inhibitionWriter: function to call for the inhibition. Should take args as other pre-defined inhibition function. If provided, the complexity arg is added at the end.
+    :param complexity: string, optional parameter for activation or inhibition function that require it.
+    :return: Parse the layer into the model
     """
     if(not os.path.exists(pathEquations)):
         if(not os.path.exists(pathEquations.split("/equations.txt")[0])):
@@ -282,23 +181,36 @@ def generateLayerKillerTemplate(nameInputs, nameOutputs, nameE, nameE2, mask, co
     for idx,equation in enumerate(mask):
         for idx2,speciesAction in enumerate(equation):
             if(speciesAction>0):
-                autocatalysisWrite(nameInputs[idx2], nameOutputs[idx], nameE, nameE2, constantValues[idx][idx2], pathEquations, pathConstants)
+                if complexity is not None:
+                    activationWriter(nameInputs[idx2], nameOutputs[idx], nameE, nameE2, constantValues[idx][idx2], pathEquations, pathConstants,complexity)
+                else:
+                    activationWriter(nameInputs[idx2], nameOutputs[idx], nameE, nameE2, constantValues[idx][idx2], pathEquations, pathConstants)
             elif(speciesAction<0):
                 nameT="T_"+str(idx)+"_"+str(idx2)
-                killingTemplateWrite(nameInputs[idx2], nameT, nameOutputs[idx], nameE, nameE2, constantValues[idx][idx2], pathEquations, pathConstants)
+                if complexity is not None:
+                    inhibitionWriter(nameInputs[idx2], nameT, nameOutputs[idx], nameE, nameE2, constantValues[idx][idx2], pathEquations, pathConstants,complexity)
+                else:
+                    inhibitionWriter(nameInputs[idx2], nameT, nameOutputs[idx], nameE, nameE2, constantValues[idx][idx2], pathEquations, pathConstants)
     for idx,nameY in enumerate(nameOutputs):
         endonucleasedWrite(nameY,endoConstants[idx],pathEquations,pathConstants)
 
 
 def generateNeuralNetwork(name,masks,activConstants=None,inhibConstants=None,endoConstant=None,erase=True):
     """
-        Generate a neural network
+        Generate a neural network using the autocatalysis models.
             The reaction constants are believed to be similar among all reactions. (in future dev: either fully given, either modified by a small amount consistently)
             if not provided, we use values from Montagne paper.
     :param name: models name
     :param masks: neural network architecture: contains the mask at each layer
-    :param activConstants:
+    :param activConstants: reactions constants for activations,
+                           if not provided default to:
+                                26*10**12 for activation reaction with 3 species (template + activator + polymerase)
+                                26*10**6 for activation reaction with 2 species (complex + polymerase)
+                                3 for reactions in the non-natural other way.
+                                7*10**6 for activation reaction with 2 species (complex + nickase)
     :param inhibConstants:
+    :param endoConstant: constant for endonuclease reaction default to 0.32
+    :param erase: if we need to erase previous files for the equations, default to True (recommended)
     :return:
     """
     pathEquations = name+"/equations.txt"
@@ -334,7 +246,71 @@ def generateNeuralNetwork(name,masks,activConstants=None,inhibConstants=None,end
                     line+=[[None]]
             constantValues+=[line]
         endoConstants=[endoConstant for _ in range(np.array(masks[l]).shape[0])]
-        generateLayerKillerTemplate(nameInputs,nameOutputs,nameE,nameE2,masks[l],constantValues,endoConstants,pathEquations,pathConstants)
+        generateLayer(nameInputs, nameOutputs, nameE, nameE2, masks[l], constantValues, endoConstants,
+                      activationWriter=autocatalysisWrite,inhibitionWriter=killingTemplateWrite,
+                      pathEquations= pathEquations,pathConstants= pathConstants)
+
+def generateTemplateNeuralNetwork(name,masks,complexity=None,activConstants=None,inhibConstants=None,endoConstant=None,erase=True):
+    """
+        Generate a neural network using the template models.
+        For each reaction a template is used: all species of interests are now small adn strands.
+        The reaction constants are believed to be similar among all reactions. (in future dev: either fully given, either modified by a small amount consistently)
+        if not provided, we use values from Montagne paper.
+    :param name: models name
+    :param masks: neural network architecture: contains the mask at each layer
+    :param complexity: to be chosen between [simple,normal,full], default to normal. Represent the level of chemical description we use.
+                       Please refer to module equationWriter for more precisions.
+    :param activConstants: if not provided default to: ONLY SUPPORTED FOR THE NORMAL MODE!!!
+                            26*10**12 for activation reaction with 3 species (template + activator + polymerase)
+                            26*10**6 for activation reaction with 2 species (complex + polymerase)
+                            3 for reactions in the non-natural other way.
+                            7*10**6 for activation reaction with 2 species (complex + nickase)
+    :param inhibConstants:
+    :param endoConstant: constant for endonuclease reaction default to 0.32
+    :param erase: if we need to erase previous files for the equations, default to True (recommended)
+    :return:
+    """
+    pathEquations = name+"/equations.txt"
+    pathConstants = name+"/constants.txt"
+    if(erase):
+        if(os.path.exists(pathEquations)):
+            with open(pathConstants,"w") as file:
+                pass
+        if(os.path.exists(pathConstants)):
+            with open(pathEquations,"w") as file:
+                pass
+    if not activConstants:
+        if complexity is not None:
+            assert complexity=="normal"
+        activConstants=[26*10**12,3,17,7*10**6,3,3]
+    if not inhibConstants:
+        if complexity is not None:
+            assert complexity=="normal"
+        inhibConstants=[26*10**6,3,17,26*10**6,3,3,26*10**12,3,17]
+    if not endoConstant:
+        endoConstant=0.32
+    nameE="E"
+    nameE2="E2"
+
+    for l in range(len(masks)):
+        nameInputs=["X_" + str(l) + "_" + str(idx) for idx in range(np.array(masks[l]).shape[1])]
+        nameOutputs=["X_" + str(l+1) + "_" + str(idx) for idx in range(np.array(masks[l]).shape[0])]
+        constantValues=[]
+        for m in masks[l]:
+            line=[]
+            for m2 in m:
+                if(m2>0):
+                    line+=[activConstants]
+                elif(m2<0):
+                    line+=[inhibConstants]
+                else:
+                    line+=[[None]]
+            constantValues+=[line]
+        endoConstants=[endoConstant for _ in range(np.array(masks[l]).shape[0])]
+        generateLayer(nameInputs, nameOutputs, nameE, nameE2, masks[l], constantValues, endoConstants,
+                      activationWriter=templateActivationWrite,inhibitionWriter=templateInhibWrite,complexity=complexity,
+                      pathEquations= pathEquations,pathConstants= pathConstants)
+
 
 
 """

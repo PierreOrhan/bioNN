@@ -84,7 +84,7 @@ def convertToLassieInput(inputDir,equations,constants,nameDic,time,
     #generate alphabet:
     with open(os.path.join(inputDir,"alphabet"),'w') as file:
         for n in list(nameDic.keys()):
-            file.write(n+" ")
+            file.write(n+"\t")
 
     #generate atol_vector:
     if atol is not None:

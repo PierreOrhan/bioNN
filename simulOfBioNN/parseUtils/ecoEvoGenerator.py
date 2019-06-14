@@ -1,14 +1,15 @@
 """
     In this file we give a function to create and model predator-prey systems using the parser.
 """
-
+import simulOfBioNN.parseUtils.equationWriter
 import simulOfBioNN.parseUtils.parser as parser
 import os
 
 
 def generateEcoEvoNetwork(name,activConstants=None,inhibConstants=None,endoConstant=None,erase=True):
     """
-        For the moment a simple equation is written done, but could be easily changed to a more complex one, either by hand or by creating other features.
+        Generate an network with an ecological competition between two species.
+        For the moment a simple equation is written down, but could be easily changed to a more complex one, either by hand or by creating other features.
     :param name:
     :param activConstants:
     :param inhibConstants:
@@ -46,9 +47,9 @@ def generateEcoEvoNetwork(name,activConstants=None,inhibConstants=None,endoConst
     if not endoConstant:
         endoConstant=0.32
     constantsMask=[activConstants[0],activConstants[0],activConstants[0],activConstants[0]]
-    parser.autocatalysisWrite(namesA[0], namesY[0], nameE[0], nameE[1], constantsMask[0], pathEquations, pathConstants)
-    parser.autocatalysisWrite(namesA[1], namesY[1], nameE[0], nameE[1], constantsMask[1], pathEquations, pathConstants)
-    parser.coopWrite(namesC[0], namesY[0], namesY[1], nameE[0], nameE[1], constantsMask[2], pathEquations, pathConstants)
-    parser.coopWrite(namesC[1], namesY[1], namesY[0], nameE[0], nameE[1], constantsMask[3], pathEquations, pathConstants)
+    simulOfBioNN.parseUtils.equationWriter.autocatalysisWrite(namesA[0], namesY[0], nameE[0], nameE[1], constantsMask[0], pathEquations, pathConstants)
+    simulOfBioNN.parseUtils.equationWriter.autocatalysisWrite(namesA[1], namesY[1], nameE[0], nameE[1], constantsMask[1], pathEquations, pathConstants)
+    simulOfBioNN.parseUtils.equationWriter.coopWrite(namesC[0], namesY[0], namesY[1], nameE[0], nameE[1], constantsMask[2], pathEquations, pathConstants)
+    simulOfBioNN.parseUtils.equationWriter.coopWrite(namesC[1], namesY[1], namesY[0], nameE[0], nameE[1], constantsMask[3], pathEquations, pathConstants)
     parser.endonucleasedWrite(namesY[0], endoConstant, pathEquations, pathConstants)
     parser.endonucleasedWrite(namesY[1], endoConstant, pathEquations, pathConstants)
