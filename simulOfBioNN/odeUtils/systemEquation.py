@@ -118,15 +118,18 @@ def obtainJacobianMasks(karrayA,inputStochio,maskA):
 
 ##Creation tools:
 
-def setToUnits(kDic,KarrayA,inputStochio):
+def setToUnits(constants, KarrayA, inputStochio):
     """
         This function parametrize the system in simpler range of work.
         The three parameters should be the output of the parse function.
-    :param kDic: a d-array with the reaction constant for the equation
+    :param constants: a d-array with the reaction constant for the equation
     :param KarrayA: The array with the reactions
     :param inputStochio: The stochiometry
-    :return: karrayA,T0,C0
-            a new KarrayA with modified values as well as a constant: T0 for time and C0 to use to set to units every input concentration.
+    :return: karrayA,T0,C0,kdic
+            karrayA: A new KarrayA with modified values.
+            T0: value used to rescale with regard to time.
+            C0: value used to rescale with regard to concentrations.
+            constants: modified d-array with the reaction constant for the equation
     """
     constantStochiodic={}
     #Let us retrieve the number of species acting as input for each equation and its stochiometry
@@ -141,7 +144,7 @@ def setToUnits(kDic,KarrayA,inputStochio):
             for y in range(KarrayA.shape[1]):
                 if(KarrayA[idxe,y]<0): #if it is an input!
                     nbSpSt+=np.max(inputStochio[idxe,:,y])
-        constantStochiodic[idxe]=[kDic[idxe],nbSpSt]
+        constantStochiodic[idxe]=[constants[idxe], nbSpSt]
 
     #now we extract the maximal reaction constant of time unit and of time*concentraion**2 unit
 
@@ -166,26 +169,26 @@ def setToUnits(kDic,KarrayA,inputStochio):
         for k in constantStochiodic.keys():
             if(constantStochiodic[k][1]==1):
                 lilMat[k]=lilMat[k]*T0
-                kDic[k]=kDic[k]*T0
+                constants[k]= constants[k] * T0
             elif(constantStochiodic[k][1]==2):
                 lilMat[k]=lilMat[k]*T0*C0
-                kDic[k]=kDic[k]*T0*C0
+                constants[k]= constants[k] * T0 * C0
             elif(constantStochiodic[k][1]==3):
                 lilMat[k]=lilMat[k]*T0*C0*C0
-                kDic[k]=kDic[k]*T0*C0*C0
+                constants[k]= constants[k] * T0 * C0 * C0
         KarrayA = sparse.COO.from_scipy_sparse(lilMat)
     else:
         for k in constantStochiodic.keys():
             if(constantStochiodic[k][1]==1):
                 KarrayA[k]=KarrayA[k]*T0
-                kDic[k]=kDic[k]*T0
+                constants[k]= constants[k] * T0
             elif(constantStochiodic[k][1]==2):
                 KarrayA[k]=KarrayA[k]*T0*C0
-                kDic[k]=kDic[k]*T0*C0
+                constants[k]= constants[k] * T0 * C0
             elif(constantStochiodic[k][1]==3):
                 KarrayA[k]=KarrayA[k]*T0*C0*C0
-                kDic[k]=kDic[k]*T0*C0*C0
-    return KarrayA,T0,C0,kDic
+                constants[k]= constants[k] * T0 * C0 * C0
+    return KarrayA, T0, C0, constants
 
 
 

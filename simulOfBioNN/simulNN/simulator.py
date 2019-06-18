@@ -9,7 +9,7 @@ import numpy as np
 from simulOfBioNN.parseUtils.parser import read_file, sparseParser, parse
 from simulOfBioNN.parseUtils.parserForLassie import convertToLassieInput
 from simulOfBioNN.odeUtils.systemEquation import setToUnits,fPythonSparse
-from simulOfBioNN.odeUtils.utils import saveAttribute,findRightNumberProcessus,obtainSpeciesArray,obtainCopyArgs,obtainOutputDic,obtainCopyArgsLassie,rescaleInputConcentration
+from simulOfBioNN.odeUtils.utils import saveAttribute,findRightNumberProcessus,obtainSpeciesArray,obtainCopyArgs,obtainOutputArray,obtainCopyArgsLassie,rescaleInputConcentration
 
 from scipy.integrate import odeint
 
@@ -73,7 +73,7 @@ def scipyOdeSolverForMultiProcess(X):
     avgTime = 0
     for idx,species in enumerate(speciesArray):
         t0=tm()
-        X2,_=odeint(df,species,time,args=functionArgs,full_output=True,rtol=None,atol=None)
+        X2,_=odeint(df,species,time,args=functionArgs,full_output=True,rtol=1e-6,atol=1e-12)
         timeTook = tm()-t0
         avgTime += timeTook
         if "verbose" in outputDic["mode"]:
@@ -117,7 +117,7 @@ def lassieGPUsolverMultiProcess(X):
         convertToLassieInput(directory_for_lassie,parsedEquation,constants,nameDic,time,species,leak=coLeak)
         directory_for_lassie_outputdir = directory_for_lassie
         command=[os.path.join(sys.path[0],path_to_lassie_ex), directory_for_lassie, directory_for_lassie_outputdir]
-        print("launching "+command[0]+" "+command[1]+" "+command[2])
+        print("launching "+command[0]+" "+command[1]+" "+command[2]+" -p float")
         subprocess.run(command,check=True)
 
         solution_path=os.path.join(sys.path[0], os.path.join(directory_for_lassie_outputdir, "output/Solution"))
@@ -168,24 +168,27 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
         KarrayA,stochio,maskA,maskComplementary = sparseParser(parsedEquation,constants)
     else:
         KarrayA,stochio,maskA,maskComplementary = parse(parsedEquation,constants)
-    KarrayA,T0,C0,kDic=setToUnits(constants,KarrayA,stochio)
+    KarrayA,T0,C0,constants=setToUnits(constants,KarrayA,stochio)
     print("Initialisation constant: time:"+str(T0)+" concentration:"+str(C0))
 
     speciesArray = obtainSpeciesArray(inputsArray,nameDic,leak,initializationDic,C0)
-    speciesArray = rescaleInputConcentration(speciesArray,nameDic=nameDic)
+    speciesArray,rescaleFactor = rescaleInputConcentration(speciesArray,nameDic=nameDic)
 
     time=np.arange(0,endTime,timeStep)
     coLeak = leak/C0
 
     ##SAVE EXPERIMENT PARAMETERS:
     attributesDic = {}
-    for k in initializationDic.keys():
-        attributesDic[k] = initializationDic[k]/C0
+    attributesDic["rescaleFactor"] = rescaleFactor
     attributesDic["leak"] = leak
     attributesDic["T0"] = T0
     attributesDic["C0"] = C0
     attributesDic["endTime"] = endTime
     attributesDic["time_step"] = timeStep
+    for k in initializationDic.keys():
+        attributesDic[k] = speciesArray[0,nameDic[k]]
+    for idx,cste in enumerate(constants):
+        attributesDic["Constant for reaction "+str(idx)] = cste
     experiment_path=saveAttribute(directory_for_network, attributesDic)
 
     shapeP=speciesArray.shape[0]
@@ -196,12 +199,12 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
 
     #let us find the species of the last layer in case:
     if outputList is None:
-        outputList = obtainOutputDic(nameDic)
+        outputList = obtainOutputArray(nameDic)
 
     t=tm()
     print("=======================Starting simulation===================")
     if(hasattr(funcForSolver,"__call__")):
-        copyArgs = obtainCopyArgs(modes,idxList,outputList,time,funcForSolver,speciesArray,KarrayA,stochio, maskA,maskComplementary,coLeak,nameDic)
+        copyArgs = obtainCopyArgs(modes,idxList,outputList,time,funcForSolver,speciesArray,KarrayA,stochio,maskA,maskComplementary,coLeak,nameDic)
         with multiprocessing.get_context("spawn").Pool(processes= len(idxList[:-1])) as pool:
             myoutputs = pool.map(scipyOdeSolverForMultiProcess, copyArgs)
         pool.close()
@@ -224,7 +227,10 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
     times = []
     for idx,m in enumerate(myoutputs):
         if("outputEqui" in modes):
-            outputArray[:,idxList[idx]:idxList[idx+1]] = m[modes.index("outputEqui")]
+            try:
+                outputArray[:,idxList[idx]:idxList[idx+1]] = m[modes.index("outputEqui")]
+            except:
+                raise Exception("error")
         if("outputPlot" in modes):
             outputArrayPlot[:,idxList[idx]:idxList[idx+1]] = m[modes.index("outputPlot")]
         if("time" in modes):
@@ -244,6 +250,7 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
         df=pandas.DataFrame(outputArray)
         df.to_csv(os.path.join(experiment_path, "output_equilibrium.csv"))
     elif("outputPlot" in modes):
+        assert len(outputArrayPlot == len(outputList))
         for idx,species in enumerate(outputList):
             df=pandas.DataFrame(outputArrayPlot[idx])
             df.to_csv(os.path.join(experiment_path, "output_full_"+str(species)+".csv"))

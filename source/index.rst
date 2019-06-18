@@ -8,8 +8,9 @@ Welcome to BioChemicalNN's documentation!
 
 This project aims at demonstrating that neural network can be used to find and optimize interesting reaction networks.
 The project is mainly based on the simulOfBioNN package, on which an introduction can be found in getting started.
-As for now the project only supports mass-action solve on the CPU, but will be quickly interfaced with a solve on the GPU.
-The paretoPlot package provide an easy way to obtain very fast pareto plot of the performance of a given architecture.
+As for now the project supports mass-action odinary equations solver on the CPU, and on the GPU.
+Coupled with these integrations, we use Tensorflow find interesting network architecture which we then test with a reaction network.
+The paretoPlot package provide an easy way to obtain very fast pareto plots of the performance of a given architecture.
 
 .. toctree::
    :maxdepth: 2
@@ -55,6 +56,30 @@ The paretoPlot package provide an easy way to obtain very fast pareto plot of th
    Such improvement will allow us to use the full dynamic.
 
 .. image:: images/odeSolveOnNN.png
+
+References
+==========
+
+Papers
+______
+
+.. hlist::
+   * LASSIE: Tangherloni, Andrea & Nobile, Marco & Besozzi, Daniela & Mauri, Giancarlo & Cazzaniga, Paolo. (2017). LASSIE: Simulating large-scale models of biochemical systems on GPUs. BMC Bioinformatics. 18. 10.1186/s12859-017-1666-0.
+   * NeuralODE: Ricky T. Q. Chen, Yulia Rubanova, Jesse Bettencourt, David Duvenaud, Neural Ordinary Differential Equations, https://arxiv.org/abs/1806.07366
+   * How can we be so dense: Subutai Ahmad, Luiz Scheinkman, How Can We Be So Dense? The Benefits of Using Highly Sparse Representations, https://arxiv.org/abs/1903.11257
+
+Software
+________
+
+.. hlist::
+   * LASSIE: https://github.com/aresio/LASSIE
+   * Tensorflow: https://www.tensorflow.org/
+   * Sparse package: https://sparse.pydata.org/en/latest/
+   * Numba: http://numba.pydata.org/numba-doc/latest/index.html#
+   * Cuda: https://docs.nvidia.com/cuda/#
+   * Scipy: https://www.scipy.org/
+   * Thurst: https://thrust.github.io/
+   *
 
 Indices and tables
 ==================

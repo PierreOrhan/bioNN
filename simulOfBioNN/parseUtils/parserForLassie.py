@@ -76,9 +76,12 @@ def convertToLassieInput(inputDir,equations,constants,nameDic,time,
         initArray = np.zeros(A.shape[1])
         for k in nameDic.keys():
             initArray[nameDic[k]] = initialization[k]
+        print("Dtype wrote is "+str(initArray.dtype)+" when type in input was "+str(type(list(initialization.values())[0])))
     else:
         initArray=initialization
+        print("Dtype wrote is "+str(initArray.dtype)+" when type in input was "+str(initArray.dtype))
     np.savetxt(os.path.join(inputDir,"M_0"),[initArray],delimiter="\t")
+
     print("wrote conversion")
     # ==== not-mandatory file for LASSIE: =====
     #generate alphabet:

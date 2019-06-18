@@ -9,7 +9,7 @@ import numpy as np
 import pandas
 import os
 
-from simulOfBioNN.parseUtils.equationWriter import killingTemplateWrite, autocatalysisWrite,templateActivationWrite,templateInhibWrite
+from simulOfBioNN.parseUtils.equationWriter import killingTemplateWrite, autocatalysisWrite,templateActivationWrite,templateInhibWrite, templateRealInhibitionWrite
 
 
 def parse(equations,kdic):
@@ -178,6 +178,7 @@ def generateLayer(nameInputs, nameOutputs, nameE, nameE2, mask, constantValues, 
         with open(pathConstants,"w") as file:
             pass
     assert len(constantValues)==len(mask)
+    inhibitedOutputs=[]
     for idx,equation in enumerate(mask):
         for idx2,speciesAction in enumerate(equation):
             if(speciesAction>0):
@@ -186,13 +187,20 @@ def generateLayer(nameInputs, nameOutputs, nameE, nameE2, mask, constantValues, 
                 else:
                     activationWriter(nameInputs[idx2], nameOutputs[idx], nameE, nameE2, constantValues[idx][idx2], pathEquations, pathConstants)
             elif(speciesAction<0):
-                nameT="T_"+str(idx)+"_"+str(idx2)
                 if complexity is not None:
-                    inhibitionWriter(nameInputs[idx2], nameT, nameOutputs[idx], nameE, nameE2, constantValues[idx][idx2], pathEquations, pathConstants,complexity)
+                    inhibitionWriter(nameInputs[idx2], nameOutputs[idx], nameE, nameE2, constantValues[idx][idx2], pathEquations, pathConstants,complexity)
                 else:
-                    inhibitionWriter(nameInputs[idx2], nameT, nameOutputs[idx], nameE, nameE2, constantValues[idx][idx2], pathEquations, pathConstants)
+                    inhibitionWriter(nameInputs[idx2], nameOutputs[idx], nameE, nameE2, constantValues[idx][idx2], pathEquations, pathConstants)
+                inhibitedOutputs+=[nameOutputs[idx]]
     for idx,nameY in enumerate(nameOutputs):
         endonucleasedWrite(nameY,endoConstants[idx],pathEquations,pathConstants)
+    if inhibitionWriter == templateInhibWrite:
+        for idx,nameY in enumerate(inhibitedOutputs):
+            if complexity is not None:
+                templateRealInhibitionWrite(nameY,nameE,constantValues[idx][idx2], pathEquations,pathConstants,complexity)
+            else:
+                templateRealInhibitionWrite(nameY,nameE,constantValues[idx][idx2], pathEquations,pathConstants)
+
 
 
 def generateNeuralNetwork(name,masks,activConstants=None,inhibConstants=None,endoConstant=None,erase=True):
@@ -265,7 +273,7 @@ def generateTemplateNeuralNetwork(name,masks,complexity=None,activConstants=None
                             26*10**6 for activation reaction with 2 species (complex + polymerase)
                             3 for reactions in the non-natural other way.
                             7*10**6 for activation reaction with 2 species (complex + nickase)
-    :param inhibConstants:
+    :param inhibConstants: constants for activation, if not provided default to similar values than activConstants for similar reactions.
     :param endoConstant: constant for endonuclease reaction default to 0.32
     :param erase: if we need to erase previous files for the equations, default to True (recommended)
     :return:
@@ -286,7 +294,7 @@ def generateTemplateNeuralNetwork(name,masks,complexity=None,activConstants=None
     if not inhibConstants:
         if complexity is not None:
             assert complexity=="normal"
-        inhibConstants=[26*10**6,3,17,26*10**6,3,3,26*10**12,3,17]
+        inhibConstants=[26*10**12,3,17,7*10**6,3,3,26*10**12,3,17]
     if not endoConstant:
         endoConstant=0.32
     nameE="E"
@@ -307,9 +315,14 @@ def generateTemplateNeuralNetwork(name,masks,complexity=None,activConstants=None
                     line+=[[None]]
             constantValues+=[line]
         endoConstants=[endoConstant for _ in range(np.array(masks[l]).shape[0])]
-        generateLayer(nameInputs, nameOutputs, nameE, nameE2, masks[l], constantValues, endoConstants,
-                      activationWriter=templateActivationWrite,inhibitionWriter=templateInhibWrite,complexity=complexity,
-                      pathEquations= pathEquations,pathConstants= pathConstants)
+        if complexity is None:
+            generateLayer(nameInputs, nameOutputs, nameE, nameE2, masks[l], constantValues, endoConstants,
+                          activationWriter=templateActivationWrite,inhibitionWriter=templateInhibWrite,
+                          pathEquations= pathEquations,pathConstants= pathConstants)
+        else:
+            generateLayer(nameInputs, nameOutputs, nameE, nameE2, masks[l], constantValues, endoConstants,
+                          activationWriter=templateActivationWrite,inhibitionWriter=templateInhibWrite,complexity=complexity,
+                          pathEquations= pathEquations,pathConstants= pathConstants)
 
 
 

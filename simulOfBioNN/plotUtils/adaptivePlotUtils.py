@@ -4,7 +4,6 @@ import pandas
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
 
-from tqdm import tqdm
 from scipy.spatial import cKDTree
 
 def plotEvolution(time, experiment_name, nameDic, X, wishToDisp=[""], displaySeparate=False, displayOther=True):
@@ -44,7 +43,8 @@ def plotEvolution(time, experiment_name, nameDic, X, wishToDisp=[""], displaySep
                 figIdx+=1
         for idx,fig in enumerate(figs):
             fig.savefig(os.path.join(resultPath,str(wishToDisp[idx])+".png"))
-
+        for fig in figs:
+            plt.close(fig)
     if(displayOther):
         try:
             assert X.shape[1]==len(list(nameDic.keys()))
@@ -57,12 +57,14 @@ def plotEvolution(time, experiment_name, nameDic, X, wishToDisp=[""], displaySep
             if(len(t)>=3):
                 txt_inter[t]=1
         resultPath=os.path.join(experiment_name,"resultData/")
-        plt.figure(figsize=(19.2,10.8), dpi=100)
+        figIntermediate = plt.figure(figsize=(19.2,10.8), dpi=100)
+        axIntermediate = figIntermediate.add_subplot(1,1,1)
         for idx,k in enumerate(nameDic.keys()):
             if(txt_inter[k]):
-                plt.plot(time,X[:,idx],label=k)
-        plt.legend()
-        plt.savefig(os.path.join(resultPath,"intermediateSpecies0.png"))
+                axIntermediate.plot(time,X[:,idx],label=k)
+        axIntermediate.legend()
+        figIntermediate.savefig(os.path.join(resultPath,"intermediateSpecies0.png"))
+        plt.close(figIntermediate)
 
         txt_inter={}
         for t in fulltxt:
@@ -70,12 +72,14 @@ def plotEvolution(time, experiment_name, nameDic, X, wishToDisp=[""], displaySep
         for t in fulltxt:
             if(len(t)<3):
                 txt_inter[t]=1
-        plt.figure(figsize=(19.2,10.8), dpi=100)
+        figMain = plt.figure(figsize=(19.2,10.8), dpi=100)
+        axMain = figMain.add_subplot(1,1,1)
         for idx,k in enumerate(nameDic.keys()):
             if(txt_inter[k]):
-                plt.plot(time,X[:,idx],label=k)
-        plt.legend()
-        plt.savefig(os.path.join(resultPath,"mainSpecies0.png"))
+                axMain.plot(time,X[:,idx],label=k)
+        axMain.legend()
+        figMain.savefig(os.path.join(resultPath,"mainSpecies0.png"))
+        plt.close(figMain)
 
 def colorDiagram(X,Y,Z,nameX,nameY,nameZ,figname,colorBarVal=None,equiPotential=True,lineToKeep=None,uselog=False):
     """
@@ -183,7 +187,7 @@ def colorDiagram(X,Y,Z,nameX,nameY,nameZ,figname,colorBarVal=None,equiPotential=
     fig.tight_layout()
     figpath=os.path.join(sys.path[0],figname)
     fig.savefig(figpath)
-
+    plt.close(fig)
 
 
     return lintoKeep
@@ -225,6 +229,7 @@ def neuronPlot(X1,X2,output,figname,figname2):
     plt.show()
     figpath=os.path.join(sys.path[0],figname)
     fig.savefig(figpath)
+    plt.close(fig)
 
     #output  vs X2:
     fig,ax=plt.subplots(figsize=(19.2,10.8), dpi=100)
@@ -252,6 +257,7 @@ def neuronPlot(X1,X2,output,figname,figname2):
     plt.show()
     figpath=os.path.join(sys.path[0],figname2)
     fig.savefig(figpath)
+    plt.close(fig)
 
 
 def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2):
@@ -292,7 +298,7 @@ def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2):
     plt.show()
     figpath=os.path.join(sys.path[0],figname)
     fig.savefig(figpath)
-
+    plt.close(fig)
     #output  vs X2:
     fig,ax=plt.subplots(figsize=(19.2,10.8), dpi=100)
     cmap = plt.get_cmap('jet',X1.shape[0])
@@ -320,7 +326,7 @@ def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2):
     plt.show()
     figpath=os.path.join(sys.path[0],figname2)
     fig.savefig(figpath)
-
+    plt.close(fig)
 
 def multipleComparePlot(X1,X2,outputs,courbs,figname,figname2,lineStyle=None,outputsNames=None):
     """
@@ -372,7 +378,7 @@ def multipleComparePlot(X1,X2,outputs,courbs,figname,figname2,lineStyle=None,out
     plt.show()
     figpath=os.path.join(sys.path[0],figname)
     fig.savefig(figpath)
-
+    plt.close(fig)
     #output  vs X2:
     fig,ax=plt.subplots(figsize=(19.2,10.8), dpi=100)
     cmap = plt.get_cmap('jet',X1.shape[0])
@@ -400,7 +406,7 @@ def multipleComparePlot(X1,X2,outputs,courbs,figname,figname2,lineStyle=None,out
     plt.show()
     figpath=os.path.join(sys.path[0],figname2)
     fig.savefig(figpath)
-
+    plt.close(fig)
 
 def timeCompare(dic,figname,xticks):
     """
@@ -437,6 +443,7 @@ def timeCompare(dic,figname,xticks):
     plt.show()
     figpath=os.path.join(sys.path[0],figname)
     fig.savefig(figpath)
+    plt.close(fig)
 
 def timeSinglePlot(dic,figname,xticks):
     """
@@ -475,6 +482,7 @@ def timeSinglePlot(dic,figname,xticks):
     plt.show()
 
     fig.savefig(figpath)
+    plt.close(fig)
 
 def compareEvolutionPlot(time, experiment_name, nameDic, Xs, wishToDisp=[""], displaySeparate=False, displayOther=True, experimentNames=None):
     """
@@ -522,7 +530,8 @@ def compareEvolutionPlot(time, experiment_name, nameDic, Xs, wishToDisp=[""], di
                 figIdx+=1
         for idx,fig in enumerate(figs):
             fig.savefig(os.path.join(resultPath,str(wishToDisp[idx])+".png"))
-
+        for fig in figs:
+            plt.close(fig)
     if(displayOther):
         try:
             assert Xs.shape[0]==len(list(nameDic.keys()))
@@ -535,7 +544,8 @@ def compareEvolutionPlot(time, experiment_name, nameDic, Xs, wishToDisp=[""], di
             if(len(t)>=3):
                 txt_inter[t]=1
         resultPath=os.path.join(experiment_name,"resultData/")
-        plt.figure(figsize=(19.2,10.8), dpi=100)
+        figInter = plt.figure(figsize=(19.2,10.8), dpi=100)
+        ax = figInter.add_sublpot(1,1,1)
         for idx,k in enumerate(nameDic.keys()):
             if(txt_inter[k]):
                 for e in range(Xs.shape[2]):
@@ -544,16 +554,17 @@ def compareEvolutionPlot(time, experiment_name, nameDic, Xs, wishToDisp=[""], di
                 ax.set_ylabel("concentration",fontsize="xx-large")
                 ax.tick_params(labelsize="xx-large")
                 ax.set_title(k)
-        plt.legend()
-        plt.savefig(os.path.join(resultPath,"intermediateSpecies0.png"))
-
+        ax.legend()
+        figInter.savefig(os.path.join(resultPath,"intermediateSpecies0.png"))
+        plt.close(figInter)
         txt_inter={}
         for t in fulltxt:
             txt_inter[t]=0#we wish to plot only intermediate species: that is species of name larger than 3
         for t in fulltxt:
             if(len(t)<3):
                 txt_inter[t]=1
-        plt.figure(figsize=(19.2,10.8), dpi=100)
+        figMain = plt.figure(figsize=(19.2,10.8), dpi=100)
+        ax = figMain.add_subplot(1,1,1)
         for idx,k in enumerate(nameDic.keys()):
             if(txt_inter[k]):
                 for e in range(Xs.shape[2]):
@@ -562,5 +573,6 @@ def compareEvolutionPlot(time, experiment_name, nameDic, Xs, wishToDisp=[""], di
                 ax.set_xlabel("time",fontsize="xx-large")
                 ax.set_ylabel("concentration",fontsize="xx-large")
                 ax.tick_params(labelsize="xx-large")
-        plt.legend()
-        plt.savefig(os.path.join(resultPath,"mainSpecies0.png"))
+        ax.legend()
+        figMain.savefig(os.path.join(resultPath,"mainSpecies0.png"))
+        plt.close(figMain)

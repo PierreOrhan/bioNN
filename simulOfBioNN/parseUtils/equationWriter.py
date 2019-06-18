@@ -30,20 +30,27 @@ def coopWrite(nameC, nameY1, nameY2, nameE, nameE2, constants, pathEquations, pa
         for c in constants:
             file.write(str(c)+"\n")
 
-def killingTemplateWrite(nameM,nameT,nameY,nameE,nameE2,constants,pathEquations,pathConstants):
+def killingTemplateWrite(nameM,nameY,nameE,nameE2,constants,pathEquations,pathConstants):
     """
-    :param nameM:
-    :param nameY:
-    :param nameE:
-    :param nameE2:
+        Writer for the generation of a killer template.
+        Implemented reactions are:
+            M+E=EM-E+MT
+            MT+E2=E2MT-E2+M+T
+            Y+T+E=EYT-E+TY
+            TY=T+Yd
+    :param nameM: name of inhibitor
+    :param nameY: name of inhibited
+    :param nameE: name of polymerase
+    :param nameE2: name of nickase
     :param pathEquations:
     :param pathConstants:
     :return:
     """
-    for n in [nameM,nameT,nameY,nameE,nameE2]:
+    for n in [nameM,nameY,nameE,nameE2]:
         assert "&" not in n
         assert "+" not in n
         assert "-" not in n
+    nameT="Templ_"+nameM+nameY
     nameEM = nameE+nameM
     nameE2MT = nameE2+nameM+nameT
     nameMT = nameM+nameT
@@ -109,11 +116,11 @@ def autocatalysisWrite(nameA,nameY,nameE,nameE2,constants,pathEquations,pathCons
         for c in constants:
             file.write(str(c)+"\n")
 
-def templateActivationWrite(nameA,nameY,nameE,nameE2,constants,pathEquations,pathConstants,complexity="normal"):
+def templateActivationWrite(nameA,nameY,nameE,nameE2,constants,pathEquations,pathConstants,complexity="normal",templateName=None):
     """
         Autogenerate equations for the template activation, and parse them in a file.
 
-        The template name, T, is wrote as Templ_inputoutput, so will here be Templ_AY
+        The template name, T, is wrote as Templ_output_input, so will here be Templ_Y_A, unless it is given
     :param nameA: small strand clipping on template
     :param nameY: generated species
     :param nameE: Polymerase name
@@ -139,30 +146,36 @@ def templateActivationWrite(nameA,nameY,nameE,nameE2,constants,pathEquations,pat
 
     if(complexity=="full"):
         assert len(constants)==8
-        nameT = "Templ_"+nameY+nameA
-        nameAT = nameA+nameT
-        nameEAT = nameE+nameAT
-        nameATY = nameAT+nameY
-        nameE2ATY = nameE2+nameATY
+        if templateName is None:
+            nameT = "Templ_"+nameY+"_"+nameA
+        else:
+            nameT = templateName
+        nameTA = nameT+nameA
+        nameETA = nameE+nameTA
+        nameTAY = nameTA+nameY
+        nameE2TAY = nameE2+nameTAY
         equations=[
-            nameA+"+"+nameT+"-"+nameAT,
-            nameAT+"-"+nameA+"+"+nameT,
-            nameAT+"+"+nameE+"-"+nameEAT,
-            nameEAT+"-"+nameAT+"+"+nameE,
-            nameEAT+"-"+nameE+"+"+nameATY,
-            nameATY+"+"+nameE2+"-"+nameE2ATY,
-            nameE2ATY+"-"+nameATY+"+"+nameE2,
-            nameE2ATY+"-"+nameE2+"+"+nameA+"+"+nameT+"+"+nameY
+            nameA+"+"+nameT+"-"+nameTA,
+            nameTA+"-"+nameA+"+"+nameT,
+            nameTA+"+"+nameE+"-"+nameETA,
+            nameETA+"-"+nameTA+"+"+nameE,
+            nameETA+"-"+nameE+"+"+nameTAY,
+            nameTAY+"+"+nameE2+"-"+nameE2TAY,
+            nameE2TAY+"-"+nameTAY+"+"+nameE2,
+            nameE2TAY+"-"+nameE2+"+"+nameA+"+"+nameT+"+"+nameY
         ]
     elif(complexity=="simple"):
         assert len(constants)==3
-        nameT = "Templ_"+nameY+nameA
-        nameAT = nameA+nameT
-        nameEAT = nameE+nameAT
+        if templateName is None:
+            nameT = "Templ_"+nameY+"_"+nameA
+        else:
+            nameT = templateName
+        nameTA = nameA+nameT
+        nameETA = nameE+nameTA
         equations=[
-            nameA+"+"+nameT+"+"+nameE+"-"+nameEAT,
-            nameEAT+"-"+nameA+"+"+nameT+"+"+nameE,
-            nameEAT+"-"+nameE+"+"+nameA+"+"+nameT+"+"+nameY
+            nameA+"+"+nameT+"+"+nameE+"-"+nameETA,
+            nameETA+"-"+nameA+"+"+nameT+"+"+nameE,
+            nameETA+"-"+nameE+"+"+nameA+"+"+nameT+"+"+nameY
         ]
     elif(complexity=="normal"):
         for n in [nameA,nameY,nameE,nameE2]:
@@ -170,18 +183,21 @@ def templateActivationWrite(nameA,nameY,nameE,nameE2,constants,pathEquations,pat
         assert "+" not in n
         assert "-" not in n
         assert len(constants)==6
-        nameT = "Templ_"+nameY+nameA
-        nameAT = nameA+nameT
-        nameEAT = nameE+nameAT
-        nameATY = nameAT+nameY
-        nameE2ATY = nameE2+nameATY
+        if templateName is None:
+            nameT = "Templ_"+nameY+"_"+nameA
+        else:
+            nameT = templateName
+        nameTA = nameA+nameT
+        nameETA = nameE+nameTA
+        nameTAY = nameTA+nameY
+        nameE2TAY = nameE2+nameTAY
         equations=[
-            nameA+"+"+nameT+"+"+nameE+"-"+nameEAT,
-            nameEAT+"-"+nameA+"+"+nameT+"+"+nameE,
-            nameEAT+"-"+nameE+"+"+nameATY,
-            nameATY+"+"+nameE2+"-"+nameE2ATY,
-            nameE2ATY+"-"+nameATY+"+"+nameE2,
-            nameE2ATY+"-"+nameE2+"+"+nameA+"+"+nameT+"+"+nameY
+            nameA+"+"+nameT+"+"+nameE+"-"+nameETA,
+            nameETA+"-"+nameA+"+"+nameT+"+"+nameE,
+            nameETA+"-"+nameE+"+"+nameTAY,
+            nameTAY+"+"+nameE2+"-"+nameE2TAY,
+            nameE2TAY+"-"+nameTAY+"+"+nameE2,
+            nameE2TAY+"-"+nameE2+"+"+nameA+"+"+nameT+"+"+nameY
         ]
     assert len(constants)==len(equations)
 
@@ -196,43 +212,63 @@ def templateInhibWrite(nameA,nameY,nameE,nameE2,constants,pathEquations,pathCons
     """
         Autogenerate equations for the template inhibition, and parse them in a file.
         The reaction are: The activation of a pseudo-template, with the complexity given by complexity.
-                            generate: A + T + E -> A + Td + T
-                          The clipping of Y on this pseudo-template:
-                            Y+Td + E = ETdY -> E + YAd +Td (we consider the little extension to be dependent on Td, itself dependent on A.
+                            generate: A + TYAd + E -> A + TY + TYAd
+        For every different nameY that this function is called to, one should call the function templateRealInhibtionWrite which produce:
+                         The clipping of Y on this pseudo-template:
+                            Y+TY + E = ETYY -> E + Yd +TY
                           similarly the complexity of the implementation of the clipping will depend on the complexity parameter.
-        The template name, T, is wrote as Templ_inputoutput, so will here be Templ_AY
+        The template name, TYAd, is wrote as Templ_output_inputd, so will here be Templ_Y_Ad
     :param nameA: small strand clipping on template
     :param nameY: generated species
     :param nameE: name for polymeraze
     :param nameE2: name for nickaze
+    :param constants: Array with the value for the reaction constants, len depends on the complexity.
     :param complexity: complexity of the activation step
     :return: add names in the txt file
     """
-    nameTd = "Templ_"+nameY+nameA+"d"
+    nameTd = "Templ_"+nameY+"_"+nameA+"d"
+    nameT = "T_"+nameY
     if complexity=="simple":
-        templateActivationWrite(nameA,nameTd,nameE,constants[:3],pathEquations,pathConstants,complexity)
-        constants=constants[3:]
+        templateActivationWrite(nameA,nameT,nameE,constants[:3],pathEquations,pathConstants,complexity,templateName=nameTd)
     elif complexity=="normal":
-        templateActivationWrite(nameA,nameTd,nameE,nameE2,constants[:6],pathEquations,pathConstants,complexity)
-        constants=constants[6:]
+        templateActivationWrite(nameA,nameT,nameE,nameE2,constants[:6],pathEquations,pathConstants,complexity,templateName=nameTd)
     elif complexity=="full":
-        templateActivationWrite(nameA,nameTd,nameE,nameE2,constants[:8],pathEquations,pathConstants,complexity)
-        constants=constants[8:]
+        templateActivationWrite(nameA,nameT,nameE,nameE2,constants[:8],pathEquations,pathConstants,complexity,templateName=nameTd)
     else:
         raise Exception("please provide a complexity in [simple,normal,full]")
+
+def templateRealInhibitionWrite(nameY,nameE,constants,pathEquations,pathConstants,complexity="normal"):
+    """
+    The clipping of Y on this pseudo-template:
+                            Y+TY + E = ETYY -> E + Yd +TY
+                          similarly the complexity of the implementation of the clipping will depend on the complexity parameter.
+    :param nameY: species to be inhibited
+    :param nameE: polymerase
+    :param constants: reaction constants
+    :param pathEquations:
+    :param pathConstants:
+    :param complexity:
+    :return:
+    """
+    if complexity=="simple":
+        constants = constants[3:]
+    elif complexity=="normal":
+        constants = constants[6:]
+    elif complexity=="full":
+        constants = constants[8:]
+    nameT = "T_"+nameY
     if complexity=="simple" or complexity=="normal":
         for n in [nameY]:
             assert "&" not in n
             assert "+" not in n
             assert "-" not in n
         assert len(constants)==3
-        nameYAd = nameY+nameA+"d"
-        nameETdY = nameE+nameTd+nameY
-
+        nameYd = nameY+"d"
+        nameETY = nameE+nameT+nameY
         equations=[
-            nameY+"+"+nameTd+"+"+nameE+"-"+nameETdY,
-            nameETdY+"-"+nameY+"+"+nameTd+"+"+nameE,
-            nameETdY+"-"+nameE+nameYAd+nameTd
+            nameY+"+"+nameT+"+"+nameE+"-"+nameETY,
+            nameETY+"-"+nameY+"+"+nameT+"+"+nameE,
+            nameETY+"-"+nameE+nameYd+nameT
         ]
     else:
         for n in [nameY]:
@@ -240,17 +276,15 @@ def templateInhibWrite(nameA,nameY,nameE,nameE2,constants,pathEquations,pathCons
             assert "+" not in n
             assert "-" not in n
         assert len(constants)==6
-        nameYAd = nameY+nameA+"d"
-        nameETdY = nameE+nameTd+nameY
-        nameTdY = nameTd+nameY
-
+        nameYd = nameY+"d"
+        nameETY = nameE+nameT+nameY
+        nameTY = nameT+nameY
         equations=[
-            nameY+"+"+nameTd+"-"+nameTdY,
-            nameTdY+"-"+nameY+"+"+nameTd,
-            nameTdY+"+"+nameE+"-"+nameETdY,
-            nameETdY+"-"+nameE+"+"+nameTdY,
-            nameETdY+"-"+nameY+"+"+nameTd+"+"+nameE,
-            nameETdY+"-"+nameE+nameYAd+nameTd
+            nameY+"+"+nameT+"-"+nameTY,
+            nameTY+"-"+nameY+"+"+nameT,
+            nameTY+"+"+nameE+"-"+nameETY,
+            nameETY+"-"+nameE+"+"+nameTY,
+            nameETY+"-"+nameE+nameYd+nameT
         ]
     assert len(constants)==len(equations)
 

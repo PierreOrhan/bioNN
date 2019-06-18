@@ -12,8 +12,8 @@ from simulOfBioNN.odeUtils.systemEquation import f
 from simulOfBioNN.odeUtils.utils import readAttribute
 from simulOfBioNN.plotUtils.adaptivePlotUtils import colorDiagram,neuronPlot
 
-name = "neuronSimul11"
-endTime = 10000
+name = "templateModel_activationSimulation_0"
+endTime = 1000
 masks = np.array([np.array([[1,-1,],[1,-1]]),np.array([[1,-1]])])
 modes = ["verbose","outputEqui"]
 generateNeuralNetwork(name,masks)

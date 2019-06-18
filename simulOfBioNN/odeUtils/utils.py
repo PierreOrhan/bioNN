@@ -42,14 +42,14 @@ def readAttribute(experiment_name,listToRead):
         Read the description of the experiment
     :param experiment_name: path where it was saved using saveAttribute function
     :param listToRead: list of string from parameters to retrieve from the file
-    :return:
+    :return: dictionary with parameters as float.
     """
     with open(os.path.join(experiment_name,"ExperimentDescriptif.txt"),'r') as file:
         lines = file.readlines()
     dicOut={}
     for l in lines:
         if(l.split(" ")[0] in listToRead):
-            dicOut[l.split(" ")[0]]=l.split(" ")[3].split("\n")[0]
+            dicOut[l.split(" ")[0]]=float(l.split(" ")[3].split("\n")[0])
     return dicOut
 
 
@@ -58,7 +58,7 @@ def findRightNumberProcessus(shapeP,num_workers):
     reste = shapeP % min(num_workers,shapeP)
 
     for i in range(len(idxList)):
-        idxList[i] = int(i*shapeP/min(num_workers,shapeP))
+        idxList[i] = i*int(shapeP/min(num_workers,shapeP))
     cum = 1
     for i in range(len(idxList)-reste,len(idxList)):
         idxList[i] = idxList[i] +cum
@@ -66,6 +66,15 @@ def findRightNumberProcessus(shapeP,num_workers):
     return idxList
 
 def obtainSpeciesArray(inputsArray,nameDic,leak,initializationDic,C0):
+    """
+        Gives the array with the initial concentration value for all species.
+    :param inputsArray: t*d array, where t is the number of test and d number of species in the first layer. Array of concentration for species in the first layer.
+    :param nameDic: Dictionary, species k index is nameDic[k].
+    :param leak: value of concentration all other species should have.
+    :param initializationDic: dictionary with initialization for other species than the first layer.
+    :param C0: normalization value, divide all initial value.
+    :return: an array of shape t*n, t: number of tests, n: number of species. The initial concentration for all species.
+    """
     speciesArray=np.zeros((inputsArray.shape[0], len(list(nameDic.keys()))))
     for idx,inputs in enumerate(inputsArray):
         SDic = getSpeciesAtLeak(nameDic, leak)
@@ -81,7 +90,7 @@ def obtainSpeciesArray(inputsArray,nameDic,leak,initializationDic,C0):
         speciesArray[idx] = species
     return speciesArray
 
-def obtainOutputDic(nameDic):
+def obtainOutputArray(nameDic):
     """
         Find the output species, that is species of the last layer:
         species are sorted as: X_nbLayer_neuronPosition
@@ -96,7 +105,7 @@ def obtainOutputDic(nameDic):
     outputDic = []
     for k in nameDic.keys():
         if "X_"+str(max) in k:
-            if "X_"+str(max)+"_"+k.split("_")[2]==k: #k is really of the form of X_nbLayer_neuronPosition
+            if "X_"+str(max)+"_"+k.split("_")[2]==k and k.split("_")[2].isdigit(): #k is really of the form of X_nbLayer_neuronPosition
                 outputDic += [k]
 
     return np.sort(outputDic)
@@ -159,9 +168,15 @@ def obtainCopyArgsLassie(modes,idxList,outputList,time,directory_for_network,par
                    {"mode":modes,"idx":idx}] for idx, myId in enumerate(idxList[:-1])]
     return copyArgs
 
-def _removeLastLayerFromDic(outputDic,nameDic):
+def _removeLastLayerFromDic(outputArray, nameDic):
+    """
+        Remove from name dic the species from the last layer, which we obtain with outputArray
+    :param outputArray:
+    :param nameDic:
+    :return:
+    """
     nameDic2 = {}
-    layer = outputDic[0].split("_")[0]+"_"+outputDic[0].split("_")[1]
+    layer = outputArray[0].split("_")[0] + "_" + outputArray[0].split("_")[1]
     for k in nameDic.keys():
         if not layer in k:
             nameDic2[k]=nameDic[k]
@@ -171,28 +186,134 @@ def rescaleInputConcentration(speciesArray,networkMask=None,nameDic=None):
     """
         This function enable to rescale concentrations when using more input species, or multi layers.
         Such rescale is crucial to obtain output of similar values despite having more species as inputs.
-        One should either gave the network mask or dictonary with all the names.
+        The key point is that these species use shared enzymes of fixed concentration.
+        As the number of species grows, the competition increases leading to very long reaction.
+        In order to reduce computation time it is of importance to keep these reactions length in a reasonable amount of time.
+        To do so, we diminish only the concentration of input species.
+        One should either gave the network mask or dictionary with all the species names.
         Initial version:
             A better heuristic should be derived.
             For now we simply divide by the total number of nodes in the network.
 
-    :param speciesArray: 1d-array, the concentration of every species.
+    :param speciesArray: t*n-array, the concentration of every species. t: number of test, n: number of species
     :param networkMask: optional, 2d-array with value in {0,1,-1}: mask of the network. (Same as considered by generateNeuralNetworkfunction)
                         using this is much faster.
     :param nameDic: optional, dictionary with name of species of the last layer.
-    :return: modified speciesArray.
+    :return: modified speciesArray,rescaleFactor
     """
+    firstLayer = []
     if networkMask is None and nameDic is None:
         raise Exception("please provide at least one mask")
     elif networkMask is not None:
         nbrNodes = networkMask.shape[0]*networkMask.shape[1]
     elif nameDic is not None:
-        outputDic = obtainOutputDic(nameDic)
-        lastLayerIndex = int(outputDic[0].split("_")[1])
-        nbrNodes=len(outputDic)
-        nameDic2 = _removeLastLayerFromDic(outputDic,nameDic)
+        outputArray = obtainOutputArray(nameDic)
+        lastLayerIndex = int(outputArray[0].split("_")[1])
+        nbrNodes=len(outputArray)
+        nameDic2 = _removeLastLayerFromDic(outputArray,nameDic)
         for i in range(lastLayerIndex): #while we are not at the first layer, we remove the last layer and add its nodes.
-            outputDic = obtainOutputDic(nameDic2)
-            nbrNodes+=len(outputDic)
-            nameDic2 = _removeLastLayerFromDic(outputDic,nameDic2)
-    return speciesArray/nbrNodes
+            outputArray = obtainOutputArray(nameDic2)
+            nbrNodes+=len(outputArray)
+            nameDic2 = _removeLastLayerFromDic(outputArray,nameDic2)
+        firstLayer = outputArray
+    for k in firstLayer:
+        speciesArray[:,nameDic[k]] = speciesArray[:,nameDic[k]]/nbrNodes
+
+    print("Rescaled input species concentration by "+str(nbrNodes))
+
+    return speciesArray,nbrNodes
+
+def obtainTemplateArray(nameDic = None,layer = None,masks = None,activ = None):
+    """
+          Gives back an array with the template name.
+          Template are of the form: Templ_X_layerinput_nodeinput_X_layeroutput_nodeinput
+
+          This function find the existing template from nameDic if they are provided.
+          Otherwise it gives back the template with respect to the masks and the previous notations.
+
+          One can also aks for template of a specific layer, or for activation or inhibition template.
+          In these case a mask (list of 2d-array of integer) describing the network, in a neural network like way, must be provided.
+                Mask axis are: 1st axis: layers, 2nd axis: output neurons, 3rd axis: input neurons.
+                    So if mask[i][j,k]==1, neuron k from layer i-1 activates neurons j from layer i
+    :param nameDic: dictionary with all species name as keys
+    :param layer: integer or list of integer, indicate the layer in which the template shall be taken. We consider layer of inputs
+    :param masks: (list of 2d-array of [-1,0,1]) describing the network, in a neural network like way.
+    :param activ: if False, consider inhibiting template. If True, consider activator template.
+    :return: Array with the template names.
+    """
+    templateArray=[]
+    if nameDic is not None:
+        if layer is not None or activ is not None:
+            try:
+                assert masks is not None
+            except:
+                raise Exception("Please provide a mask")
+            if layer is not None:
+                layerList = np.array(layer)
+            else:
+                layerList = np.arange(0,len(masks),1)
+            if activ == None:
+                keep = [-1,1]
+            elif activ:
+                keep = [1]
+            else:
+                keep = [-1]
+            for k in nameDic.keys():
+                if "Templ_" == k.split("_")[0]:
+                    supposedLayerOutput= k.split("_")[2]
+                    supposedNodeOutput= k.split("_")[3]
+                    supposedLayerInput = k.split("_")[5]
+                    supposedNodeInput  = k.split("_")[6]
+                    # Case of inhibitor, we must remove the d:
+                    if "d" in supposedNodeInput and -1 in keep:
+                        supposedNodeInput = supposedNodeInput.split("d")[0]
+                        if supposedNodeInput.isdigit() and supposedLayerInput.isdigit() and supposedNodeOutput.isdigit() and supposedLayerOutput.isdigit():
+                            if int(supposedLayerInput) in layerList and masks[supposedLayerInput][supposedNodeOutput,supposedNodeInput] == -1:
+                                if "Templ_X_"+supposedLayerOutput+"_"+supposedNodeOutput+"_X_"+supposedLayerInput+"_"+supposedNodeInput+"d" == k:
+                                    templateArray +=[k]
+                    else:
+                        if 1 in keep and supposedNodeInput.isdigit() and supposedLayerInput.isdigit() and supposedNodeOutput.isdigit() and supposedLayerOutput.isdigit():
+                            if int(supposedLayerInput) in layerList and masks[supposedLayerInput][supposedNodeOutput,supposedNodeInput] == 1:
+                                if "Templ_X_"+supposedLayerOutput+"_"+supposedNodeOutput+"_X_"+supposedLayerInput+"_"+supposedNodeInput+"d" == k:
+                                    templateArray +=[k]
+        else:
+            for k in nameDic.keys():
+                if "Templ_" == k.split("_")[0]:
+                    supposedLayerOutput= k.split("_")[2]
+                    supposedNodeOutput= k.split("_")[3]
+                    supposedLayerInput = k.split("_")[5]
+                    supposedNodeInput  = k.split("_")[6]
+                    if "d" in supposedNodeInput:
+                        supposedNodeInput = supposedNodeInput.split("d")[0]
+                        if supposedNodeInput.isdigit() and supposedLayerInput.isdigit() and supposedNodeOutput.isdigit() and supposedLayerOutput.isdigit():
+                            if "Templ_X_"+supposedLayerOutput+"_"+supposedNodeOutput+"_X_"+supposedLayerInput+"_"+supposedNodeInput+"d"== k:
+                                    templateArray +=[k]
+                    else:
+                        if supposedNodeInput.isdigit() and supposedLayerInput.isdigit() and supposedNodeOutput.isdigit() and supposedLayerOutput.isdigit():
+                            if "Templ_X_"+supposedLayerOutput+"_"+supposedNodeOutput+"_X_"+supposedLayerInput+"_"+supposedNodeInput== k:
+                                templateArray +=[k]
+    else:
+        try:
+            assert masks is not None
+        except:
+            raise Exception("Please provide a mask as no nameDic was given")
+        if layer is not None:
+            layerList = np.array(layer)
+        else:
+            layerList = np.arange(0,len(masks),1)
+        if activ == None:
+            keep = [-1,1]
+        elif activ:
+            keep = [1]
+        else:
+            keep = [-1]
+
+        for i in range(0,len(masks)):
+            for output in range(masks[i].shape[0]):
+                for input in range(masks[i].shape[1]):
+                    if masks[i][output,input] in keep and i in layerList:
+                        if masks[i][output,input]>0:
+                            templateArray+=["Templ_X_"+str(i+1)+"_"+str(output)+"_X_"+str(i)+"_"+str(input)]
+                        else:
+                            templateArray+=["Templ_X_"+str(i+1)+"_"+str(output)+"_X_"+str(i)+"_"+str(input)+"d"]
+    return templateArray

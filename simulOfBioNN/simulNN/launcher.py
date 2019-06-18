@@ -10,7 +10,7 @@ import pandas
 from simulOfBioNN.parseUtils.parser import generateNeuralNetwork
 from simulOfBioNN.simulNN import simulator
 from simulOfBioNN.odeUtils.systemEquation import fPythonSparse
-from simulOfBioNN.odeUtils.utils import obtainOutputDic
+from simulOfBioNN.odeUtils.utils import obtainOutputArray
 
 
 def launch(inputsArray,y,resultArray,directory_name="weightDic",layerInit=10**(-8),enzymeInit=10**(-6)):
