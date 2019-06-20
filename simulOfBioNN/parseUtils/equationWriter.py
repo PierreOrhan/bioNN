@@ -145,37 +145,38 @@ def templateActivationWrite(nameA,nameY,nameE,nameE2,constants,pathEquations,pat
         assert "-" not in n
 
     if(complexity=="full"):
+        #TODO Change this
         assert len(constants)==8
         if templateName is None:
-            nameT = "Templ_"+nameY+"_"+nameA
+            nameT_Y_A = "Templ_"+nameY+"_"+nameA
         else:
-            nameT = templateName
-        nameTA = nameT+nameA
-        nameETA = nameE+nameTA
-        nameTAY = nameTA+nameY
-        nameE2TAY = nameE2+nameTAY
+            nameT_Y_A = templateName
+        nameT_Y_AA = nameT_Y_A+nameA
+        nameETA = nameE+nameT_Y_AA
+        nameT_Y_AA = nameT_Y_AA+nameY
+        nameE2TA = nameE2+nameT_Y_AA
         equations=[
-            nameA+"+"+nameT+"-"+nameTA,
-            nameTA+"-"+nameA+"+"+nameT,
-            nameTA+"+"+nameE+"-"+nameETA,
-            nameETA+"-"+nameTA+"+"+nameE,
-            nameETA+"-"+nameE+"+"+nameTAY,
-            nameTAY+"+"+nameE2+"-"+nameE2TAY,
-            nameE2TAY+"-"+nameTAY+"+"+nameE2,
-            nameE2TAY+"-"+nameE2+"+"+nameA+"+"+nameT+"+"+nameY
+            nameA+"+"+nameT_Y_A+"-"+nameT_Y_AA,
+            nameT_Y_AA+"-"+nameA+"+"+nameT_Y_A,
+            nameT_Y_AA+"+"+nameE+"-"+nameETA,
+            nameETA+"-"+nameT_Y_AA+"+"+nameE,
+            nameETA+"-"+nameE+"+"+nameT_Y_AA,
+            nameT_Y_AA+"+"+nameE2+"-"+nameE2TA,
+            nameE2TA+"-"+nameT_Y_AA+"+"+nameE2,
+            nameE2TA+"-"+nameE2+"+"+nameA+"+"+nameT_Y_A+"+"+nameY
         ]
     elif(complexity=="simple"):
         assert len(constants)==3
         if templateName is None:
-            nameT = "Templ_"+nameY+"_"+nameA
+            nameT_Y_A = "Templ_"+nameY+"_"+nameA
         else:
-            nameT = templateName
-        nameTA = nameA+nameT
-        nameETA = nameE+nameTA
+            nameT_Y_A = templateName
+        nameT_Y_AA = nameA+nameT_Y_A
+        nameETA = nameE+nameT_Y_AA
         equations=[
-            nameA+"+"+nameT+"+"+nameE+"-"+nameETA,
-            nameETA+"-"+nameA+"+"+nameT+"+"+nameE,
-            nameETA+"-"+nameE+"+"+nameA+"+"+nameT+"+"+nameY
+            nameA+"+"+nameT_Y_A+"+"+nameE+"-"+nameETA,
+            nameETA+"-"+nameA+"+"+nameT_Y_A+"+"+nameE,
+            nameETA+"-"+nameE+"+"+nameA+"+"+nameT_Y_A+"+"+nameY
         ]
     elif(complexity=="normal"):
         for n in [nameA,nameY,nameE,nameE2]:
@@ -184,20 +185,19 @@ def templateActivationWrite(nameA,nameY,nameE,nameE2,constants,pathEquations,pat
         assert "-" not in n
         assert len(constants)==6
         if templateName is None:
-            nameT = "Templ_"+nameY+"_"+nameA
+            nameT_Y_A = "Templ_"+nameY+"_"+nameA
         else:
-            nameT = templateName
-        nameTA = nameA+nameT
-        nameETA = nameE+nameTA
-        nameTAY = nameTA+nameY
-        nameE2TAY = nameE2+nameTAY
+            nameT_Y_A = templateName
+        nameT_Y_AA = nameT_Y_A+nameA
+        nameETA = nameE+nameT_Y_AA
+        nameE2TA = nameE2+nameT_Y_AA
         equations=[
-            nameA+"+"+nameT+"+"+nameE+"-"+nameETA,
-            nameETA+"-"+nameA+"+"+nameT+"+"+nameE,
-            nameETA+"-"+nameE+"+"+nameTAY,
-            nameTAY+"+"+nameE2+"-"+nameE2TAY,
-            nameE2TAY+"-"+nameTAY+"+"+nameE2,
-            nameE2TAY+"-"+nameE2+"+"+nameA+"+"+nameT+"+"+nameY
+            nameA+"+"+nameT_Y_A+"+"+nameE+"-"+nameETA,
+            nameETA+"-"+nameA+"+"+nameT_Y_A+"+"+nameE,
+            nameETA+"-"+nameE+"+"+nameT_Y_AA,
+            nameT_Y_AA+"+"+nameE2+"-"+nameE2TA,
+            nameE2TA+"-"+nameT_Y_AA+"+"+nameE2,
+            nameE2TA+"-"+nameE2+"+"+nameA+"+"+nameT_Y_A+"+"+nameY
         ]
     assert len(constants)==len(equations)
 
@@ -229,11 +229,11 @@ def templateInhibWrite(nameA,nameY,nameE,nameE2,constants,pathEquations,pathCons
     nameTd = "Templ_"+nameY+"_"+nameA+"d"
     nameT = "T_"+nameY
     if complexity=="simple":
-        templateActivationWrite(nameA,nameT,nameE,constants[:3],pathEquations,pathConstants,complexity,templateName=nameTd)
+        templateActivationWrite(nameA,nameT,nameE,nameE2,constants[:3],pathEquations,pathConstants,complexity=complexity,templateName=nameTd)
     elif complexity=="normal":
-        templateActivationWrite(nameA,nameT,nameE,nameE2,constants[:6],pathEquations,pathConstants,complexity,templateName=nameTd)
+        templateActivationWrite(nameA,nameT,nameE,nameE2,constants[:6],pathEquations,pathConstants,complexity=complexity,templateName=nameTd)
     elif complexity=="full":
-        templateActivationWrite(nameA,nameT,nameE,nameE2,constants[:8],pathEquations,pathConstants,complexity,templateName=nameTd)
+        templateActivationWrite(nameA,nameT,nameE,nameE2,constants[:8],pathEquations,pathConstants,complexity=complexity,templateName=nameTd)
     else:
         raise Exception("please provide a complexity in [simple,normal,full]")
 
@@ -268,7 +268,7 @@ def templateRealInhibitionWrite(nameY,nameE,constants,pathEquations,pathConstant
         equations=[
             nameY+"+"+nameT+"+"+nameE+"-"+nameETY,
             nameETY+"-"+nameY+"+"+nameT+"+"+nameE,
-            nameETY+"-"+nameE+nameYd+nameT
+            nameETY+"-"+nameE+"+"+nameYd+"+"+nameT
         ]
     else:
         for n in [nameY]:
@@ -284,7 +284,138 @@ def templateRealInhibitionWrite(nameY,nameE,constants,pathEquations,pathConstant
             nameTY+"-"+nameY+"+"+nameT,
             nameTY+"+"+nameE+"-"+nameETY,
             nameETY+"-"+nameE+"+"+nameTY,
-            nameETY+"-"+nameE+nameYd+nameT
+            nameETY+"-"+nameE+"+"+nameYd+"+"+nameT
+        ]
+    assert len(constants)==len(equations)
+
+    with open(pathEquations,'a') as file:
+        for e in equations:
+            file.write(e+"\n")
+    with open(pathConstants,'a') as file:
+        for c in constants:
+            file.write(str(c)+"\n")
+
+
+def endonucleaseWrite2(nameY, nameEndo, constants, pathEquations, pathConstants):
+    """
+        Write the equation of a template eaten by an endonuclease.
+        The endonuclease bind to the target and then disolve it:
+            Y + Endo = YEndo - Endo
+    :param nameY: name for the species to be destroyed
+    :param nameEndo: name for the endonuclease
+    :param constants: reaction constants
+    :param pathEquations: file at which the reaction will be appended.
+    :param pathConstants: file at which the reaction will be appended.
+    :return:
+    """
+    assert "&" not in nameY
+    assert "+" not in nameY
+    assert "-" not in nameY
+
+    assert len(constants)==3
+
+    nameEndoY = nameEndo+nameY
+
+    equations = [
+        nameY+"+"+nameEndo+"-"+nameEndoY,
+        nameEndoY+"-"+nameY+"+"+nameEndo,
+        nameEndoY+"-"+nameEndo
+    ]
+
+    assert len(constants)==len(equations)
+    with open(pathEquations,'a') as file:
+        for e in equations:
+            file.write(e+"\n")
+    with open(pathConstants,'a') as file:
+        for c in constants:
+            file.write(str(c)+"\n")
+
+
+def endonucleaseWrite(nameY, constant, pathEquations, pathConstants):
+    """
+        Write the equation of a template eaten by an endonuclease.
+        The endonuclease is considered to remain of constant concentration, equal to 1.
+    :param nameY:
+    :param constantName:
+    :return:
+    """
+    assert "&" not in nameY
+    assert "+" not in nameY
+    assert "-" not in nameY
+    equation=nameY+"-"
+    with open(pathEquations,'a') as file:
+        file.write(equation+"\n")
+    with open(pathConstants,'a') as file:
+        file.write(str(constant)+"\n")
+
+def templateProtection(nameA, nameE, nameE2, constants, pathEquations, pathConstants, complexity="normal", nameAp=None, templateName=None):
+    """
+        Autogenerate equations for protection of an inputs by elongating it, and parse them in a file.
+
+        The template name, is wrote as Templ_output_input, so will here be Templ_Ap_A, unless it is given (in templateName)
+        The protected strand will be noted as the initial strand with an additional p at the end of the input name.
+    :param nameA: small strand clipping on template
+    :param nameE: Polymerase name
+    :param nameE2: Nickase name
+    :param complexity: the complexity of the model:
+            full:
+                In this case, we use the full decomposition of the reaction, only using 2 input for each reaction.
+                The reaction are: A+T = AT
+                                  AT + E = EAT -> E + ATY
+                                  ATY + E2 = E2ATY -> E2 + A + T + Y
+            simple:
+                In this case we summarize the dependence in enzymes under one enzyme name.
+            The reaction are: A + Templ_Ap_A + E = EATempl_Ap_A- Templ_Ap_A + Ap + A
+            normal:
+                The reaction are: A + Templ_Ap_A + E = EATempl_Ap_A-  ATempl_Ap_A
+                                  ATempl_Ap_A + E2 = E2ATempl_Ap_A - Templ_Ap_A + Ap + A +E2
+                          ATY + E2 = E2ATY -> E2 + A + T + Y
+    :param nameAp: string, generated species, if None will default to nameA+"p".
+    :param templateName: string, the template name, is wrote as Templ_output_input, so will here be Templ_Ap_A, unless it is given (in templateName)
+    :return: add names in the txt file
+    """
+    if nameAp is None:
+        nameAp = nameA +"p"
+    for n in [nameA,nameAp, nameE, nameE2]:
+        assert "&" not in n
+        assert "+" not in n
+        assert "-" not in n
+    if(complexity=="full"):
+        raise Exception("to be implemented")
+        #TODO: to implement
+    elif(complexity=="simple"):
+        assert len(constants)==3
+        if templateName is None:
+            nameT_Ap_A = "Templ_" + nameAp + "_" + nameA
+        else:
+            nameT_Ap_A = "Templ_"+nameAp+"_"+nameA
+
+        nameEAT_Ap_A = nameE+nameA+"Templ_"+nameAp+"_"+nameA
+        equations=[
+            nameT_Ap_A +"+" + nameE +"+" + nameA +"-" + nameEAT_Ap_A,
+            nameEAT_Ap_A + "-" + nameT_Ap_A +"+" + nameE +"+" + nameA,
+            nameEAT_Ap_A + "-" + nameAp+"+"+nameE+"+"+ nameT_Ap_A +"+"+ nameA
+        ]
+    elif(complexity=="normal"):
+        for n in [nameA, nameAp, nameE, nameE2]:
+            assert "&" not in n
+        assert "+" not in n
+        assert "-" not in n
+        assert len(constants)==6
+        if templateName is None:
+            nameT_Ap_A = "Templ_" + nameAp + "_" + nameA
+        else:
+            nameT_Ap_A = templateName
+        nameAT_Ap_A = nameT_Ap_A+nameA
+        nameETA = nameE+nameAT_Ap_A
+        nameE2AT_Ap_A = nameE2+nameAT_Ap_A
+        equations=[
+            nameA +"+" + nameT_Ap_A +"+" + nameE +"-" + nameETA,
+            nameETA +"-" + nameA +"+" + nameT_Ap_A +"+" + nameE,
+            nameETA +"-" + nameE +"+" + nameAT_Ap_A,
+            nameAT_Ap_A +"+" + nameE2 +"-" + nameE2AT_Ap_A,
+            nameE2AT_Ap_A +"-" + nameAT_Ap_A +"+" + nameE2,
+            nameE2AT_Ap_A +"-" + nameE2 +"+" + nameA +"+" + nameT_Ap_A +"+" + nameAp
         ]
     assert len(constants)==len(equations)
 

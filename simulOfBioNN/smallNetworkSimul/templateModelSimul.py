@@ -15,14 +15,28 @@ import sys
 
 if __name__ == '__main__':
 
-    name = "templateModel_activationSimulation_0"
-    endTime = 1000
+    name = "templateProtectedModel/activationSimulation_D4"
+    endTime = 10000
     timeStep = 0.1
     masks = np.array([np.array([[1,-1]])])
-    modes = ["verbose","outputEqui"]
-    outputMode = "last"
-    generateTemplateNeuralNetwork(name,masks)
-    FULL = True
+    modes = ["verbose","outputPlot"]
+    outputMode = "all"
+    complexity="simple"
+    useEndo = False  # if we want to use the complicated endo model
+    useProtectionOnActivator = True
+    #generate other layer concentration, for initialization:
+    leak=10**(-13)
+    layerInit = leak
+    enzymeInit = 10**(-6)
+    endoInit = 10**(-5)
+    activInit =  10**(-6)
+    inhibInit =  10**(-8)
+
+    if useEndo:
+        generateTemplateNeuralNetwork(name,masks,complexity=complexity,useProtectionOnActivator=useProtectionOnActivator)
+    else:
+        generateTemplateNeuralNetwork(name,masks,complexity=complexity,endoConstants=None,useProtectionOnActivator=useProtectionOnActivator)
+    FULL = False
 
     #generate the first layer concentration:
     if(FULL):
@@ -31,9 +45,8 @@ if __name__ == '__main__':
         #X2=np.arange( 10 ** (-8), 10 ** (-6), 10 ** (-8))
         X2 = X1
     else:
-        X1 = np.array([10**(-6),10**(-5),10**(-4)])
-        #X2=np.array([10**(-7),10**(-6),5*10**(-6),10**(-5)])
-        X2 = X1
+        X1 = np.array([10**(-7),10**(-4)])
+        X2 = np.array([10**(-7)])
 
     # generate concentration for all different experiments:
     x_test=[]
@@ -42,12 +55,7 @@ if __name__ == '__main__':
             x_test+=[[x1,x2]]
     x_test = np.array(x_test)
 
-    #generate other layer concentration, for initialization:
-    leak=10**(-13)
-    layerInit = 10**(-8)
-    enzymeInit = 10**(-6)
-    activInit =  10**(-6)
-    inhibInit =  10**(-6)
+
     # If we scale down the concentration of inhibiting template:
     # There is no need to differentiate concentration of input species.
 
@@ -62,19 +70,22 @@ if __name__ == '__main__':
     for k in activTemplateNames:
         initialization_dic[k] = activInit
     initialization_dic["E"] = enzymeInit
-    initialization_dic["E2"] = enzymeInit
+    if complexity!="simple":
+        initialization_dic["E2"] = enzymeInit
+    if complexity!=None and useEndo:
+        initialization_dic["Endo"] = endoInit
 
-    results = executeSimulation(f, name, x_test, initialization_dic, None, leak = leak, endTime=endTime,sparse=False, modes=modes, timeStep=0.1)
+    outputList = "all"
+    results = executeSimulation(f, name, x_test, initialization_dic, outputList= outputList, leak = leak, endTime=endTime,sparse=False, modes=modes, timeStep=0.1)
 
     if("outputPlot" in modes):
         shapeP = len(X1)*len(X2)
         nameDic = results[-1]
         X = results[modes.index("outputPlot")]
-        print(X.shape)
         myname=os.path.join(sys.path[0],name)
-        _,_,nameDic = read_file(os.path.join(myname,"equations.txt"),os.path.join(myname,"constants.txt"))
         if(outputMode=="all"):
-            outputList = list(nameDic.keys())
+            if outputList is None or type(outputList)==str:
+                outputList = list(nameDic.keys())
         else:
             outputList = obtainOutputArray(nameDic)
         specialnameDic ={}
@@ -82,7 +93,7 @@ if __name__ == '__main__':
             specialnameDic[e] = idx2
         for e in range(X.shape[1]):
             displayX = np.moveaxis(X[:,e,:],0,1)
-            plotEvolution(np.arange(0,endTime,timeStep),myname, specialnameDic, displayX, wishToDisp=outputList, displaySeparate=True, displayOther=True)
+            plotEvolution(np.arange(0,endTime,timeStep),os.path.join(myname,str(e)), specialnameDic, displayX, wishToDisp=outputList, displaySeparate=True, displayOther=True)
 
     if("outputEqui" in modes):
         experiment_path = name

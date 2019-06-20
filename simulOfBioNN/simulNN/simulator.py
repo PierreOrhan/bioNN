@@ -117,7 +117,7 @@ def lassieGPUsolverMultiProcess(X):
         convertToLassieInput(directory_for_lassie,parsedEquation,constants,nameDic,time,species,leak=coLeak)
         directory_for_lassie_outputdir = directory_for_lassie
         command=[os.path.join(sys.path[0],path_to_lassie_ex), directory_for_lassie, directory_for_lassie_outputdir]
-        print("launching "+command[0]+" "+command[1]+" "+command[2]+" -p float")
+        print("launching "+command[0]+" "+command[1]+" "+command[2])
         subprocess.run(command,check=True)
 
         solution_path=os.path.join(sys.path[0], os.path.join(directory_for_lassie_outputdir, "output/Solution"))
@@ -154,7 +154,8 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
     :param directory_for_network: directory path, where the files equations.txt and constants.txt may be found.
     :param inputsArray: The test concentrations, a t * n array where t is the number of test and n the number of node in the first layer.
     :param initializationDic: can contain initialization values for some species. If none, or the species don't appear in its key, then its value is set at leak.
-    :param outputList: list, directory_for_network of the species we would like to see as outputs, if default (None), then will find the species of the last layer.
+    :param outputList: list or string, species we would like to see as outputs, if default (None), then will find the species of the last layer.
+                                      if string and value is "nameDic" or "all", we will give all species taking part in the reaction (usefull for debug)
     :param leak: float, small leak to add at each time step at the concentration of all species
     :param endTime: final time
     :param sparse: if sparse
@@ -200,7 +201,11 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
     #let us find the species of the last layer in case:
     if outputList is None:
         outputList = obtainOutputArray(nameDic)
-
+    elif type(outputList)==str:
+        if outputList=="nameDic" or outputList=="all":
+            outputList=list(nameDic.keys())
+        else:
+            raise Exception("asked outputList is not taken into account.")
     t=tm()
     print("=======================Starting simulation===================")
     if(hasattr(funcForSolver,"__call__")):

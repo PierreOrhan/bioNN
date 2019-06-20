@@ -51,5 +51,5 @@ def generateEcoEvoNetwork(name,activConstants=None,inhibConstants=None,endoConst
     simulOfBioNN.parseUtils.equationWriter.autocatalysisWrite(namesA[1], namesY[1], nameE[0], nameE[1], constantsMask[1], pathEquations, pathConstants)
     simulOfBioNN.parseUtils.equationWriter.coopWrite(namesC[0], namesY[0], namesY[1], nameE[0], nameE[1], constantsMask[2], pathEquations, pathConstants)
     simulOfBioNN.parseUtils.equationWriter.coopWrite(namesC[1], namesY[1], namesY[0], nameE[0], nameE[1], constantsMask[3], pathEquations, pathConstants)
-    parser.endonucleasedWrite(namesY[0], endoConstant, pathEquations, pathConstants)
-    parser.endonucleasedWrite(namesY[1], endoConstant, pathEquations, pathConstants)
+    simulOfBioNN.parseUtils.equationWriter.endonucleaseWrite(namesY[0], endoConstant, pathEquations, pathConstants)
+    simulOfBioNN.parseUtils.equationWriter.endonucleaseWrite(namesY[1], endoConstant, pathEquations, pathConstants)
