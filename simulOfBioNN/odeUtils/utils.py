@@ -6,10 +6,10 @@
 import numpy as np
 import sys,os
 
-def getSpeciesAtLeak(nameDic, leak):
+def getSpeciesAtValue(nameDic, value):
     SDic={}
     for k in nameDic.keys():
-        SDic[k]=leak
+        SDic[k]=value
     return SDic
 
 def _getSpeciesArray(SDic,nameDic):
@@ -65,19 +65,19 @@ def findRightNumberProcessus(shapeP,num_workers):
         cum = cum+1
     return idxList
 
-def obtainSpeciesArray(inputsArray,nameDic,leak,initializationDic,C0):
+def obtainSpeciesArray(inputsArray, nameDic, initValue, initializationDic, C0):
     """
         Gives the array with the initial concentration value for all species.
     :param inputsArray: t*d array, where t is the number of test and d number of species in the first layer. Array of concentration for species in the first layer.
     :param nameDic: Dictionary, species k index is nameDic[k].
-    :param leak: value of concentration all other species should have.
+    :param initValue: value of concentration all other species should have.
     :param initializationDic: dictionary with initialization for other species than the first layer.
     :param C0: normalization value, divide all initial value.
     :return: an array of shape t*n, t: number of tests, n: number of species. The initial concentration for all species.
     """
     speciesArray=np.zeros((inputsArray.shape[0], len(list(nameDic.keys()))))
     for idx,inputs in enumerate(inputsArray):
-        SDic = getSpeciesAtLeak(nameDic, leak)
+        SDic = getSpeciesAtValue(nameDic, initValue)
         for idx2,inputConcentration in enumerate(inputs):
             if "X_0_"+str(idx2) in nameDic.keys():
                 SDic["X_0_"+str(idx2)]=inputConcentration

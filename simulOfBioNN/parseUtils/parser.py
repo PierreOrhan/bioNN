@@ -136,7 +136,8 @@ def read_file(pathEquations,path):
 
 
 def generateLayer(nameInputs, nameOutputs, nameE, nameE2, mask, constantValues, endoConstants, activationWriter, inhibitionWriter, complexity=None,
-                  pathEquations="models/equations.txt", pathConstants="models/constants.txt", nameEndo=None, useProtectionOnActivator=False):
+                  pathEquations="models/equations.txt", pathConstants="models/constants.txt", nameEndo=None, useProtectionOnActivator=False,
+                  useEndoOnInputs=True,useEndoOnOutputs=True):
     """
         Generate a layer with the given activation and inhibition writer.
 
@@ -151,6 +152,8 @@ def generateLayer(nameInputs, nameOutputs, nameE, nameE2, mask, constantValues, 
     :param nameEndo: name for the endonuclease, optional. Used when inhibitionWriter == templateInhibWrite.
                      In this case if none, then the EndoNuclease is not used, and a constant coefficient is used instead.
     :param useProtectionOnActivator: default to False. If True then the activators will be link to a protection reaction so that they are not degraded.
+    :param useEndoOnInputs: default to True, if the inputs are deactivated by endonuclease
+    :param useEndoOnOutputs: default to True, if the outpurs are deactivated by endonuclease. Please note that the deactivated template are always degraded by the endonuclease.
     :return: Parse the layer into the model
     """
     if(not os.path.exists(pathEquations)):
@@ -191,25 +194,24 @@ def generateLayer(nameInputs, nameOutputs, nameE, nameE2, mask, constantValues, 
                     inhibitionWriter(nameInputs[idx2], nameOutputs[idx], nameE, nameE2, constantValues[idx][idx2], pathEquations, pathConstants)
                 inhibitedOutputs+=[[nameOutputs[idx],constantValues[idx][idx2],endoConstants[idx]]]
     if inhibitionWriter == templateInhibWrite:
-        for idx,nameY in enumerate(nameOutputs):
-            if nameEndo is not None:
-                endonucleaseWrite2(nameY, nameEndo, endoConstants[idx], pathEquations, pathConstants)
-            else:
-                endonucleaseWrite(nameY, endoConstants[idx], pathEquations, pathConstants)
+        if useEndoOnOutputs:
+            for idx,nameY in enumerate(nameOutputs):
+                if nameEndo is not None:
+                    endonucleaseWrite2(nameY, nameEndo, endoConstants[idx], pathEquations, pathConstants)
+                else:
+                    endonucleaseWrite(nameY, endoConstants[idx], pathEquations, pathConstants)
         for idx,tupleY in enumerate(inhibitedOutputs):
             nameY,csteValues,endoCsteValues = tupleY
             if complexity is not None:
                 templateRealInhibitionWrite(nameY,nameE,csteValues, pathEquations,pathConstants,complexity)
-                if nameEndo is not None:
-                    endonucleaseWrite2(nameY+"d",nameEndo, endoCsteValues, pathEquations, pathConstants)
-                else:
-                    endonucleaseWrite(nameY+"d", endoConstants[idx], pathEquations, pathConstants)
             else:
                 templateRealInhibitionWrite(nameY,nameE,csteValues, pathEquations,pathConstants)
-                if nameEndo is not None:
-                    endonucleaseWrite2(nameY+"d",nameEndo, endoCsteValues, pathEquations, pathConstants)
-                else:
-                    endonucleaseWrite(nameY+"d", endoConstants[idx], pathEquations, pathConstants)
+            if nameEndo is not None:
+                endonucleaseWrite2(nameY+"d",nameEndo, endoCsteValues, pathEquations, pathConstants)
+                endonucleaseWrite2("T_"+nameY,nameEndo, endoCsteValues, pathEquations, pathConstants)
+            else:
+                endonucleaseWrite(nameY+"d", endoCsteValues, pathEquations, pathConstants)
+                endonucleaseWrite("T_"+nameY, endoCsteValues, pathEquations, pathConstants)
         if useProtectionOnActivator:
             for idx,tupleA in enumerate(activatorInputs):
                 nameA,csteValues = tupleA
@@ -217,12 +219,12 @@ def generateLayer(nameInputs, nameOutputs, nameE, nameE2, mask, constantValues, 
                     templateProtection(nameA,nameE,nameE2, csteValues, pathEquations, pathConstants, complexity=complexity)
                 else:
                     templateProtection(nameA,nameE,nameE2, csteValues, pathEquations, pathConstants)
-    else:
+    elif useEndoOnOutputs:
         for idx,nameY in enumerate(nameOutputs):
             endonucleaseWrite(nameY, endoConstants[idx], pathEquations, pathConstants)
 
     # We need to degrade inputs to the first layer (network inputs):
-    if nameInputs[0].split("_")[1]=="0":
+    if nameInputs[0].split("_")[1]=="0" and useEndoOnInputs:
         for idx,nameA in enumerate(nameInputs):
             if inhibitionWriter == templateInhibWrite:
                 if nameEndo is not None:
@@ -286,7 +288,8 @@ def generateNeuralNetwork(name,masks,activConstants=None,inhibConstants=None,end
                       activationWriter=autocatalysisWrite,inhibitionWriter=killingTemplateWrite,
                       pathEquations= pathEquations,pathConstants= pathConstants)
 
-def generateTemplateNeuralNetwork(name, masks, complexity=None, activConstants=None, inhibConstants=None, endoConstants=[7*10**6,3,0.32], erase=True, useProtectionOnActivator=False):
+def generateTemplateNeuralNetwork(name, masks, complexity=None, activConstants=None, inhibConstants=None, endoConstants=[7*10**6,3,0.32], erase=True,
+                                  useProtectionOnActivator=False,useEndoOnInputs=True,useEndoOnOutputs=True):
     """
         Generate a neural network using the template models.
         For each reaction a template is used: all species of interests are now small adn strands.
@@ -306,6 +309,8 @@ def generateTemplateNeuralNetwork(name, masks, complexity=None, activConstants=N
                           if is explicitely set at None, then we don't use endonuclease and replace it by a constant of value 0.32.
     :param erase: if we need to erase previous files for the equations, default to True (recommended)
     :param useProtectionOnActivator: default to False. If True then the activators will be link to a protection reaction so that they are not degraded.
+    :param useEndoOnInputs: default to True, if the inputs are deactivated by endonuclease
+    :param useEndoOnOutputs: default to True, if the outpurs are deactivated by endonuclease. Please note that the deactivated template are always degraded by the endonuclease.
     :return:
     """
     pathEquations = name+"/equations.txt"
@@ -369,11 +374,13 @@ def generateTemplateNeuralNetwork(name, masks, complexity=None, activConstants=N
         if complexity is None:
             generateLayer(nameInputs, nameOutputs, nameE, nameE2, masks[l], constantValues, endoConstantsList,
                           activationWriter=templateActivationWrite,inhibitionWriter=templateInhibWrite,
-                          pathEquations= pathEquations,pathConstants= pathConstants,nameEndo=nameEndo,useProtectionOnActivator=useProtectionOnActivator)
+                          pathEquations= pathEquations,pathConstants= pathConstants,nameEndo=nameEndo,useProtectionOnActivator=useProtectionOnActivator,
+                          useEndoOnOutputs=useEndoOnOutputs,useEndoOnInputs=useEndoOnInputs)
         else:
             generateLayer(nameInputs, nameOutputs, nameE, nameE2, masks[l], constantValues, endoConstantsList,
                           activationWriter=templateActivationWrite,inhibitionWriter=templateInhibWrite,complexity=complexity,
-                          pathEquations= pathEquations,pathConstants= pathConstants,nameEndo=nameEndo,useProtectionOnActivator=useProtectionOnActivator)
+                          pathEquations= pathEquations,pathConstants= pathConstants,nameEndo=nameEndo,useProtectionOnActivator=useProtectionOnActivator,
+                          useEndoOnOutputs=useEndoOnOutputs,useEndoOnInputs=useEndoOnInputs)
 
 
 

@@ -9,7 +9,7 @@
 import numpy as np
 from simulOfBioNN.parseUtils.parser import generateNeuralNetwork,read_file,parse
 from simulOfBioNN.odeUtils.systemEquation import f, setToUnits, obtainJacobianMasks
-from simulOfBioNN.odeUtils.utils import _getSpeciesArray,getSpeciesAtLeak,saveAttribute
+from simulOfBioNN.odeUtils.utils import _getSpeciesArray,getSpeciesAtValue,saveAttribute
 from simulOfBioNN.plotUtils.adaptivePlotUtils import neuronPlot,colorDiagram
 from scipy.integrate import odeint
 import pandas
@@ -82,7 +82,7 @@ speciesArray=np.zeros((len(X1), len(X2),len(list(nameDic.keys()))))
 for idx,x1 in enumerate(X1):
     for idxc,x2 in enumerate(X2):
         experiment_name=name+str(idx)+"_"+str(idxc)
-        SDic = getSpeciesAtLeak(nameDic, leak)
+        SDic = getSpeciesAtValue(nameDic, leak)
         SDic["X_0_0"]=x1
         SDic["X_0_1"]=x2
         SDic["X_1_0"]=y1

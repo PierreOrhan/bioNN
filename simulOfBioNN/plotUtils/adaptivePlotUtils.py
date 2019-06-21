@@ -39,7 +39,10 @@ def plotEvolution(time, experiment_name, nameDic, X, wishToDisp=[""], displaySep
                 ax=figs[figIdx].add_subplot(1,1,1)
                 #ax.set_yscale('log')
                 ax.plot(time,X[:,nameDic[k]],c="b")
-                ax.set_title(k)
+                ax.set_title(k+str(" max value:")+str(round(np.max(X[:,nameDic[k]]),8))+", final value:"+str(round(X[-1,nameDic[k]],8)),fontsize="xx-large")
+                ax.set_xlabel("time",fontsize="xx-large")
+                ax.set_ylabel("concentration",fontsize="xx-large")
+                ax.tick_params(labelsize="xx-large")
                 figIdx+=1
         for idx,fig in enumerate(figs):
             fig.savefig(os.path.join(resultPath,str(wishToDisp[idx])+".png"))

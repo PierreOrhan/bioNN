@@ -241,7 +241,7 @@ def templateRealInhibitionWrite(nameY,nameE,constants,pathEquations,pathConstant
     """
     The clipping of Y on this pseudo-template:
                             Y+TY + E = ETYY -> E + Yd +TY
-                          similarly the complexity of the implementation of the clipping will depend on the complexity parameter.
+        similarly the complexity of the implementation of the clipping will depend on the complexity parameter.
     :param nameY: species to be inhibited
     :param nameE: polymerase
     :param constants: reaction constants

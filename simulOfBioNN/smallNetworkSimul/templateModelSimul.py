@@ -15,38 +15,47 @@ import sys
 
 if __name__ == '__main__':
 
-    name = "templateProtectedModel/activationSimulation_D4"
-    endTime = 10000
+    name = "templateModel/Simulation"
+    endTime = 1000
     timeStep = 0.1
     masks = np.array([np.array([[1,-1]])])
-    modes = ["verbose","outputPlot"]
+    modes = ["verbose","outputEqui"]
     outputMode = "all"
+    outputList = None #"all"
     complexity="simple"
     useEndo = False  # if we want to use the complicated endo model
-    useProtectionOnActivator = True
-    #generate other layer concentration, for initialization:
-    leak=10**(-13)
-    layerInit = leak
+    useProtectionOnActivator = False
+    useEndoOnInputs = False
+    useEndoOnOutputs = True
+    useDerivativeLeak = True
+
+    leak = 10**(-10)
+
+    layerInit = 10**(-13) #initial concentation value for species in layers
+    initValue = 10**(-13) #initial concentration value for all species.
     enzymeInit = 10**(-6)
-    endoInit = 10**(-5)
+    endoInit = 10**(-5) #only used if useEndo == True
     activInit =  10**(-6)
-    inhibInit =  10**(-8)
+    inhibInit =  10**(-6)
 
     if useEndo:
-        generateTemplateNeuralNetwork(name,masks,complexity=complexity,useProtectionOnActivator=useProtectionOnActivator)
+        generateTemplateNeuralNetwork(name,masks,complexity=complexity,useProtectionOnActivator=useProtectionOnActivator,
+                                      useEndoOnOutputs=useEndoOnOutputs,useEndoOnInputs=useEndoOnInputs)
     else:
-        generateTemplateNeuralNetwork(name,masks,complexity=complexity,endoConstants=None,useProtectionOnActivator=useProtectionOnActivator)
-    FULL = False
+        generateTemplateNeuralNetwork(name,masks,complexity=complexity,endoConstants=None,useProtectionOnActivator=useProtectionOnActivator,
+                                      useEndoOnInputs=useEndoOnInputs,useEndoOnOutputs=useEndoOnOutputs)
+    FULL = True
 
     #generate the first layer concentration:
     if(FULL):
         X1 = np.arange(10**(-7),10**(-5),10**(-7))
         X1 = np.concatenate((X1,np.arange( 10 ** (-5), 0.8*10 ** (-4), 10 ** (-6))))
-        #X2=np.arange( 10 ** (-8), 10 ** (-6), 10 ** (-8))
-        X2 = X1
+        X2=np.arange( 10 ** (-8), 10 ** (-6), 10 ** (-8))
+        #X2 = X1
     else:
-        X1 = np.array([10**(-7),10**(-4)])
+        X1 = np.array([10**(-7),10**(-6),10**(-5),10**(-4)])
         X2 = np.array([10**(-7)])
+
 
     # generate concentration for all different experiments:
     x_test=[]
@@ -75,8 +84,15 @@ if __name__ == '__main__':
     if complexity!=None and useEndo:
         initialization_dic["Endo"] = endoInit
 
-    outputList = "all"
-    results = executeSimulation(f, name, x_test, initialization_dic, outputList= outputList, leak = leak, endTime=endTime,sparse=False, modes=modes, timeStep=0.1)
+
+    if useDerivativeLeak:
+        results = executeSimulation(f, name, x_test, initialization_dic, outputList= outputList,
+                                    leak = leak, endTime=endTime,sparse=False, modes=modes,
+                                    timeStep=timeStep, initValue= initValue)
+    else:
+        results = executeSimulation(f, name, x_test, initialization_dic, outputList= outputList,
+                                    leak = 0, endTime=endTime,sparse=False, modes=modes,
+                                    timeStep=timeStep, initValue= initValue)
 
     if("outputPlot" in modes):
         shapeP = len(X1)*len(X2)

@@ -4,7 +4,7 @@ from simulOfBioNN.parseUtils.parser import read_file,parse
 from simulOfBioNN.parseUtils.ecoEvoGenerator import generateEcoEvoNetwork
 from scipy.integrate import odeint
 from simulOfBioNN.plotUtils.adaptivePlotUtils import colorDiagram
-from simulOfBioNN.odeUtils.utils import saveAttribute,getSpeciesArray,getSpeciesAtLeak
+from simulOfBioNN.odeUtils.utils import saveAttribute,getSpeciesArray,getSpeciesAtValue
 from time import time as tm
 import pandas
 import os
@@ -52,7 +52,7 @@ for idx,rapport in enumerate(A2onA1):
     line=[]
     for idxc,c in enumerate(C):
         experiment_name="ecoEvoSimul/"+str(idx)+"_"+str(idxc)
-        SDic = getSpeciesAtLeak(nameDic, leak)
+        SDic = getSpeciesAtValue(nameDic, leak)
         SDic["A1"]=a10
         SDic["A2"]=rapport*a10
         SDic["Y1"]=y1

@@ -147,7 +147,7 @@ def lassieGPUsolverMultiProcess(X):
 
 def executeSimulation(funcForSolver, directory_for_network, inputsArray, initializationDic=None, outputList=None,
                       leak=10 ** (-13), endTime=1000, sparse=False, modes=["verbose","time", "outputPlot", "outputEqui"],
-                      timeStep=0.1):
+                      timeStep=0.1, initValue=10**(-13)):
     """
         Execute the simulation of the system saved under the directory_for_network directory.
         InputsArray contain the values for the input species.
@@ -160,6 +160,8 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
     :param endTime: final time
     :param sparse: if sparse
     :param modes: modes for outputs
+    :param timeStep: float, value of time steps to use in integration
+    :param initValue: initial concentration value to give to all species
     :return:
             A result tuple depending on the modes.
     """
@@ -172,11 +174,11 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
     KarrayA,T0,C0,constants=setToUnits(constants,KarrayA,stochio)
     print("Initialisation constant: time:"+str(T0)+" concentration:"+str(C0))
 
-    speciesArray = obtainSpeciesArray(inputsArray,nameDic,leak,initializationDic,C0)
+    speciesArray = obtainSpeciesArray(inputsArray,nameDic,initValue,initializationDic,C0)
     speciesArray,rescaleFactor = rescaleInputConcentration(speciesArray,nameDic=nameDic)
 
     time=np.arange(0,endTime,timeStep)
-    coLeak = leak/C0
+    derivativeLeak = leak
 
     ##SAVE EXPERIMENT PARAMETERS:
     attributesDic = {}
@@ -209,14 +211,14 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
     t=tm()
     print("=======================Starting simulation===================")
     if(hasattr(funcForSolver,"__call__")):
-        copyArgs = obtainCopyArgs(modes,idxList,outputList,time,funcForSolver,speciesArray,KarrayA,stochio,maskA,maskComplementary,coLeak,nameDic)
+        copyArgs = obtainCopyArgs(modes,idxList,outputList,time,funcForSolver,speciesArray,KarrayA,stochio,maskA,maskComplementary,derivativeLeak,nameDic)
         with multiprocessing.get_context("spawn").Pool(processes= len(idxList[:-1])) as pool:
             myoutputs = pool.map(scipyOdeSolverForMultiProcess, copyArgs)
         pool.close()
         pool.join()
     else:
         assert type(funcForSolver)==str
-        copyArgs = obtainCopyArgsLassie(modes,idxList,outputList,time,directory_for_network,parsedEquation,constants,coLeak,nameDic,speciesArray,funcForSolver)
+        copyArgs = obtainCopyArgsLassie(modes,idxList,outputList,time,directory_for_network,parsedEquation,constants,derivativeLeak,nameDic,speciesArray,funcForSolver)
         with multiprocessing.get_context("spawn").Pool(processes= len(idxList[:-1])) as pool:
             myoutputs = pool.map(lassieGPUsolverMultiProcess, copyArgs)
         pool.close()
