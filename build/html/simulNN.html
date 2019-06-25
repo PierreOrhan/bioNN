@@ -174,27 +174,45 @@ Here we proceed to the simulation of a graph, against some inputs.
 Equations are solved in parallel on the CPU</p>
 <dl class="function">
 <dt id="simulOfBioNN.simulNN.simulator.executeSimulation">
-<code class="descclassname">simulOfBioNN.simulNN.simulator.</code><code class="descname">executeSimulation</code><span class="sig-paren">(</span><em>funcForSolver, name, inputsArray, initializationDic=None, outputList=None, leak=1e-13, endTime=1000, sparse=False, modes=['verbose', 'time', 'outputPlot', 'outputEqui'], timeStep=0.1</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.simulNN.simulator.executeSimulation" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">simulOfBioNN.simulNN.simulator.</code><code class="descname">executeSimulation</code><span class="sig-paren">(</span><em>funcForSolver, directory_for_network, inputsArray, initializationDic=None, outputList=None, leak=1e-13, endTime=1000, sparse=False, modes=['verbose', 'time', 'outputPlot', 'outputEqui'], timeStep=0.1, initValue=1e-13</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.simulNN.simulator.executeSimulation" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
-<div><p>Execute the simulation of the system saved under the name directory.
+<div><p>Execute the simulation of the system saved under the directory_for_network directory.
 InputsArray contain the values for the input species.</p>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> – directory path, where the files equations.txt and constants.txt may be found.</p></li>
+<li><p><strong>directory_for_network</strong> – directory path, where the files equations.txt and constants.txt may be found.</p></li>
 <li><p><strong>inputsArray</strong> – The test concentrations, a t * n array where t is the number of test and n the number of node in the first layer.</p></li>
 <li><p><strong>initializationDic</strong> – can contain initialization values for some species. If none, or the species don’t appear in its key, then its value is set at leak.</p></li>
-<li><p><strong>outputList</strong> – list, name of the species we would like to see as outputs, if default (None), then will find the species of the last layer.</p></li>
-<li><p><strong>leak</strong> – necessity for a leak</p></li>
+<li><p><strong>outputList</strong> – list or string, species we would like to see as outputs, if default (None), then will find the species of the last layer.
+if string and value is “nameDic” or “all”, we will give all species taking part in the reaction (usefull for debug)</p></li>
+<li><p><strong>leak</strong> – float, small leak to add at each time step at the concentration of all species</p></li>
 <li><p><strong>endTime</strong> – final time</p></li>
 <li><p><strong>sparse</strong> – if sparse</p></li>
 <li><p><strong>modes</strong> – modes for outputs</p></li>
+<li><p><strong>timeStep</strong> – float, value of time steps to use in integration</p></li>
+<li><p><strong>initValue</strong> – initial concentration value to give to all species</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The equilibrium values for everySpecies
-The nameDic to analyze them, useful to navigate in the created files for other plot. (But not necessary)</p>
+<dd class="field-even"><p>A result tuple depending on the modes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.simulNN.simulator.lassieGPUsolverMultiProcess">
+<code class="descclassname">simulOfBioNN.simulNN.simulator.</code><code class="descname">lassieGPUsolverMultiProcess</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.simulNN.simulator.lassieGPUsolverMultiProcess" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Multiple lassie instance launch on parallel processus.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>X</strong> – speciesArray,time, directory_for_network,parsedEquation,constants,nameDic,outputDic</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
 </dd>
 </dl>
 </dd></dl>

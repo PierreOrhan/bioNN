@@ -27,11 +27,11 @@ def sigClippedTensorDot(deviceName,inputs,kernel,rank):
             filtered=tf.transpose(tf.stack([tf.where(minLine<0,-1*minLine,Xzero)]))
             sumALLInhib=tf.stop_gradient(tf.matmul(inputs,filtered))
             #kernel for activators:
-            kernelActivator=tf.stop_gradient(tf.where(tf.less(kernel,0),Tzero,clippedKernel))
-            product=tf.stop_gradient(tf.tensordot(inputs, kernelActivator, [[rank - 1], [0]],name="clipped"))
+            kernelActivator = tf.stop_gradient(tf.where(tf.less(kernel,0),Tzero,clippedKernel))
+            activator = tf.stop_gradient(tf.tensordot(inputs, kernelActivator, [[rank - 1], [0]],name="clipped"))
 
             forBackProp = standard_ops.tensordot(inputs,kernel,[[rank - 1], [0]],name="normal")
-            outputs = tf.stop_gradient(tf.divide(product,1+product+sumALLInhib)-forBackProp)
+            outputs = tf.stop_gradient(tf.divide(activator,1+activator+sumALLInhib)-forBackProp)
             return tf.add(forBackProp,outputs,name=scope)
 
 def sigClippedMatMul(deviceName,inputs,kernel):

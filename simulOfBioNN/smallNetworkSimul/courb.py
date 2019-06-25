@@ -9,16 +9,15 @@ def f(k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd,TA,TI,E0,A,I):
     k5M = k5/(k5n+k6)
     k3M = k3/(k3n+k4)
     Cactiv = k2*k1M*TA*E0
-    CInhib = k6*k5M*k4*k3M*TI*E0
+    CInhib = k6*k5M*k4*k3M*TI*E0*E0
     Kactiv = k1M*TA
     Kinhib = k3M*TI
     print("Cactiv value is :"+str(Cactiv))
     print("Cinhib value is :"+str(CInhib))
     print("kd is :"+str(kd))
-    cp =kd + Kactiv*A + Kinhib*I
-    return Cactiv*A/(cp + CInhib*I/cp), kd + Kactiv*(A+100*10**(-6)) + Kinhib*(I+100*10**(-6)) ,  CInhib*I
 
-
+    cp =kd*(1 + Kactiv*(A+100*10**(-6)) + Kinhib*(I+100*10**(-6)))
+    return Cactiv*A/(cp + CInhib*I/cp), cp ,  CInhib*I
 
 
 k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd=(26*10**12,3,17,26*10**12,3,17,26*10**12,3,17,0.32)
@@ -26,15 +25,15 @@ k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd=(26*10**12,3,17,26*10**12,3,17,26*10**12,3,17,0
 
 A=np.array([10**-8,10**-6,10**-5,10**-4])
 I = np.logspace(-13,-4,100)
-TA = 10**(-4)
+TA = 10**(-6)
 TI = 10**(-6)
-E0 = 10**(-6)
+E0 = 10**(-5)
 
 k1M = k1/(k1n+k2)
 k5M = k5/(k5n+k6)
 k3M = k3/(k3n+k4)
 Cactiv = k2*k1M*TA*E0
-CInhib = k6*k5M*k4*k3M*TI*E0
+CInhib = k6*k5M*k4*k3M*TI*E0*E0
 Kactiv = k1M*TA
 Kinhib = k3M*TI
 print("Cactiv value is :"+str(Cactiv))
@@ -64,6 +63,7 @@ I = np.array([10**-8,10**-6,10**-5,10**-4])
 for i in I:
     Out, cp , K = f(k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd,TA,TI,E0,A,i)
     plt.plot(A,Out,label="Xinhib="+str(i))
+#plt.xscale('log')
 plt.legend()
 plt.xlabel("activator",fontsize="xx-large")
 plt.ylabel("output",fontsize="xx-large")

@@ -173,83 +173,31 @@ It is also in this module that one can add function for automatic construction o
 <p>Format is described in the function.
 Some special parsing heuristics are all-ready given, for example to create feed-forward neural network of biochemical reactions.</p>
 <dl class="function">
-<dt id="simulOfBioNN.parseUtils.parser.autocatalysisWrite">
-<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">autocatalysisWrite</code><span class="sig-paren">(</span><em>nameA</em>, <em>nameY</em>, <em>nameE</em>, <em>nameE2</em>, <em>constants</em>, <em>pathEquations</em>, <em>pathConstants</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.autocatalysisWrite" title="Permalink to this definition">¶</a></dt>
+<dt id="simulOfBioNN.parseUtils.parser.generateLayer">
+<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">generateLayer</code><span class="sig-paren">(</span><em>nameInputs</em>, <em>nameOutputs</em>, <em>nameE</em>, <em>nameE2</em>, <em>mask</em>, <em>constantValues</em>, <em>endoConstants</em>, <em>activationWriter</em>, <em>inhibitionWriter</em>, <em>complexity=None</em>, <em>pathEquations='models/equations.txt'</em>, <em>pathConstants='models/constants.txt'</em>, <em>nameEndo=None</em>, <em>useProtectionOnActivator=False</em>, <em>useEndoOnInputs=True</em>, <em>useEndoOnOutputs=True</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.generateLayer" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
-<div><p>Autogenerate equations for the autocatalysis, and parse them in a file:</p>
+<div><p>Generate a layer with the given activation and inhibition writer.</p>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>nameA</strong> – Template</p></li>
-<li><p><strong>nameY</strong> – catalyzed species</p></li>
-<li><p><strong>nameE</strong> – Polymerase name</p></li>
-<li><p><strong>nameE2</strong> – Nickase name</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>add names in the txt file</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="simulOfBioNN.parseUtils.parser.coopWrite">
-<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">coopWrite</code><span class="sig-paren">(</span><em>nameC</em>, <em>nameY1</em>, <em>nameY2</em>, <em>nameE</em>, <em>nameE2</em>, <em>constants</em>, <em>pathEquations</em>, <em>pathConstants</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.coopWrite" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div><p>Autogenerate equations for the autocatalysis, and parse them in a file:</p>
-</div></blockquote>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>nameC</strong> – Template used for cooperation</p></li>
-<li><p><strong>nameY1</strong> – catalyzed species</p></li>
-<li><p><strong>nameE</strong> – Polymerase name</p></li>
-<li><p><strong>nameE2</strong> – Nickase name</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>add names in the txt file</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="simulOfBioNN.parseUtils.parser.endonucleasedWrite">
-<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">endonucleasedWrite</code><span class="sig-paren">(</span><em>nameY</em>, <em>constant</em>, <em>pathEquations</em>, <em>pathConstants</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.endonucleasedWrite" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div><p>Write the equation of a template eaten by an endonuclease.
-The endonuclease is for the moment considered to remain of constant concentration</p>
-</div></blockquote>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>nameY</strong> – </p></li>
-<li><p><strong>constantName</strong> – </p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="simulOfBioNN.parseUtils.parser.generateLayerKillerTemplate">
-<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">generateLayerKillerTemplate</code><span class="sig-paren">(</span><em>nameInputs</em>, <em>nameOutputs</em>, <em>nameE</em>, <em>nameE2</em>, <em>mask</em>, <em>constantValues</em>, <em>endoConstants</em>, <em>pathEquations='models/equations.txt'</em>, <em>pathConstants='models/constants.txt'</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.generateLayerKillerTemplate" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div><p>Generate a layer with killer Template inhibition.</p>
-</div></blockquote>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>nameInputs</strong> – the inputs species name</p></li>
-<li><p><strong>nameOutputs</strong> – the output species name</p></li>
+<li><p><strong>nameInputs</strong> – string array, the inputs species name</p></li>
+<li><p><strong>nameOutputs</strong> – string array, the output species name</p></li>
 <li><p><strong>mask</strong> – the mask connecting input to outputs</p></li>
+<li><p><strong>constantValues</strong> – array with values for reactions constants.</p></li>
+<li><p><strong>endoConstants</strong> – array with values for the reaction with the endonuclease.</p></li>
+<li><p><strong>activationWriter</strong> – function to call for the activation. Should take args as other pre-defined activation function. If provided, the complexity arg is added at the end.</p></li>
+<li><p><strong>inhibitionWriter</strong> – function to call for the inhibition. Should take args as other pre-defined inhibition function. If provided, the complexity arg is added at the end.</p></li>
+<li><p><strong>complexity</strong> – string, optional parameter for activation or inhibition function that require it.</p></li>
+<li><p><strong>nameEndo</strong> – name for the endonuclease, optional. Used when inhibitionWriter == templateInhibWrite.
+In this case if none, then the EndoNuclease is not used, and a constant coefficient is used instead.</p></li>
+<li><p><strong>useProtectionOnActivator</strong> – default to False. If True then the activators will be link to a protection reaction so that they are not degraded.</p></li>
+<li><p><strong>useEndoOnInputs</strong> – default to True, if the inputs are deactivated by endonuclease</p></li>
+<li><p><strong>useEndoOnOutputs</strong> – default to True, if the outpurs are deactivated by endonuclease. Please note that the deactivated template are always degraded by the endonuclease.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Parse into the model the layer</p>
+<dd class="field-even"><p>Parse the layer into the model</p>
 </dd>
 </dl>
 </dd></dl>
@@ -259,7 +207,7 @@ The endonuclease is for the moment considered to remain of constant concentratio
 <code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">generateNeuralNetwork</code><span class="sig-paren">(</span><em>name</em>, <em>masks</em>, <em>activConstants=None</em>, <em>inhibConstants=None</em>, <em>endoConstant=None</em>, <em>erase=True</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.generateNeuralNetwork" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
 <div><dl class="simple">
-<dt>Generate a neural network</dt><dd><p>The reaction constants are believed to be similar among all reactions. (in future dev: either fully given, either modified by a small amount consistently)
+<dt>Generate a neural network using the autocatalysis models.</dt><dd><p>The reaction constants are believed to be similar among all reactions. (in future dev: either fully given, either modified by a small amount consistently)
 if not provided, we use values from Montagne paper.</p>
 </dd>
 </dl>
@@ -269,8 +217,18 @@ if not provided, we use values from Montagne paper.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>name</strong> – models name</p></li>
 <li><p><strong>masks</strong> – neural network architecture: contains the mask at each layer</p></li>
-<li><p><strong>activConstants</strong> – </p></li>
+<li><p><strong>activConstants</strong> – <p>reactions constants for activations,
+if not provided default to:</p>
+<blockquote>
+<div><p>26*10**12 for activation reaction with 3 species (template + activator + polymerase)
+26*10**6 for activation reaction with 2 species (complex + polymerase)
+3 for reactions in the non-natural other way.
+7*10**6 for activation reaction with 2 species (complex + nickase)</p>
+</div></blockquote>
+</p></li>
 <li><p><strong>inhibConstants</strong> – </p></li>
+<li><p><strong>endoConstant</strong> – constant for endonuclease reaction default to 0.32</p></li>
+<li><p><strong>erase</strong> – if we need to erase previous files for the equations, default to True (recommended)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -280,17 +238,33 @@ if not provided, we use values from Montagne paper.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="simulOfBioNN.parseUtils.parser.killingTemplateWrite">
-<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">killingTemplateWrite</code><span class="sig-paren">(</span><em>nameM</em>, <em>nameT</em>, <em>nameY</em>, <em>nameE</em>, <em>nameE2</em>, <em>constants</em>, <em>pathEquations</em>, <em>pathConstants</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.killingTemplateWrite" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dt id="simulOfBioNN.parseUtils.parser.generateTemplateNeuralNetwork">
+<code class="descclassname">simulOfBioNN.parseUtils.parser.</code><code class="descname">generateTemplateNeuralNetwork</code><span class="sig-paren">(</span><em>name, masks, complexity=None, activConstants=None, inhibConstants=None, endoConstants=[7000000, 3, 0.32], erase=True, useProtectionOnActivator=False, useEndoOnInputs=True, useEndoOnOutputs=True</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.parser.generateTemplateNeuralNetwork" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Generate a neural network using the template models.
+For each reaction a template is used: all species of interests are now small adn strands.
+The reaction constants are believed to be similar among all reactions. (in future dev: either fully given, either modified by a small amount consistently)
+if not provided, we use values from Montagne paper.</p>
+</div></blockquote>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>nameM</strong> – </p></li>
-<li><p><strong>nameY</strong> – </p></li>
-<li><p><strong>nameE</strong> – </p></li>
-<li><p><strong>nameE2</strong> – </p></li>
-<li><p><strong>pathEquations</strong> – </p></li>
-<li><p><strong>pathConstants</strong> – </p></li>
+<li><p><strong>name</strong> – models name</p></li>
+<li><p><strong>masks</strong> – neural network architecture: contains the mask at each layer</p></li>
+<li><p><strong>complexity</strong> – to be chosen between [simple,normal,full], default to normal. Represent the level of chemical description we use.
+Please refer to module equationWriter for more precisions.</p></li>
+<li><p><strong>activConstants</strong> – if not provided default to: ONLY SUPPORTED FOR THE NORMAL MODE!!!
+26*10**12 for activation reaction with 3 species (template + activator + polymerase)
+26*10**6 for activation reaction with 2 species (complex + polymerase)
+3 for reactions in the non-natural other way.
+7*10**6 for activation reaction with 2 species (complex + nickase)</p></li>
+<li><p><strong>inhibConstants</strong> – constants for activation, if not provided default to similar values than activConstants for similar reactions.</p></li>
+<li><p><strong>endoConstants</strong> – constant for endonuclease reaction default to [7*10**6,0.32]
+if is explicitely set at None, then we don’t use endonuclease and replace it by a constant of value 0.32.</p></li>
+<li><p><strong>erase</strong> – if we need to erase previous files for the equations, default to True (recommended)</p></li>
+<li><p><strong>useProtectionOnActivator</strong> – default to False. If True then the activators will be link to a protection reaction so that they are not degraded.</p></li>
+<li><p><strong>useEndoOnInputs</strong> – default to True, if the inputs are deactivated by endonuclease</p></li>
+<li><p><strong>useEndoOnOutputs</strong> – default to True, if the outpurs are deactivated by endonuclease. Please note that the deactivated template are always degraded by the endonuclease.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -403,7 +377,8 @@ In the sparsity case, stochio is as bit different:</p>
 <dt id="simulOfBioNN.parseUtils.ecoEvoGenerator.generateEcoEvoNetwork">
 <code class="descclassname">simulOfBioNN.parseUtils.ecoEvoGenerator.</code><code class="descname">generateEcoEvoNetwork</code><span class="sig-paren">(</span><em>name</em>, <em>activConstants=None</em>, <em>inhibConstants=None</em>, <em>endoConstant=None</em>, <em>erase=True</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.parseUtils.ecoEvoGenerator.generateEcoEvoNetwork" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
-<div><p>For the moment a simple equation is written done, but could be easily changed to a more complex one, either by hand or by creating other features.</p>
+<div><p>Generate an network with an ecological competition between two species.
+For the moment a simple equation is written down, but could be easily changed to a more complex one, either by hand or by creating other features.</p>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

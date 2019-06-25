@@ -152,8 +152,9 @@
 <h1>Welcome to BioChemicalNN’s documentation!<a class="headerlink" href="#welcome-to-biochemicalnn-s-documentation" title="Permalink to this headline">¶</a></h1>
 <p>This project aims at demonstrating that neural network can be used to find and optimize interesting reaction networks.
 The project is mainly based on the simulOfBioNN package, on which an introduction can be found in getting started.
-As for now the project only supports mass-action solve on the CPU, but will be quickly interfaced with a solve on the GPU.
-The paretoPlot package provide an easy way to obtain very fast pareto plot of the performance of a given architecture.</p>
+As for now the project supports mass-action odinary equations solver on the CPU, and on the GPU.
+Coupled with these integrations, we use Tensorflow find interesting network architecture which we then test with a reaction network.
+The paretoPlot package provide an easy way to obtain very fast pareto plots of the performance of a given architecture.</p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
@@ -200,6 +201,36 @@ We therefore need to either improve our implementation or change the computation
 Such improvement will allow us to use the full dynamic.</p>
 </div></blockquote>
 <img alt="_images/odeSolveOnNN.png" src="_images/odeSolveOnNN.png" />
+</div>
+<div class="section" id="references">
+<h1>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="papers">
+<h2>Papers<a class="headerlink" href="#papers" title="Permalink to this headline">¶</a></h2>
+<table class="hlist"><tr><td><ul class="simple">
+<li><p>LASSIE: Tangherloni, Andrea &amp; Nobile, Marco &amp; Besozzi, Daniela &amp; Mauri, Giancarlo &amp; Cazzaniga, Paolo. (2017). LASSIE: Simulating large-scale models of biochemical systems on GPUs. BMC Bioinformatics. 18. 10.1186/s12859-017-1666-0.</p></li>
+<li><p>NeuralODE: Ricky T. Q. Chen, Yulia Rubanova, Jesse Bettencourt, David Duvenaud, Neural Ordinary Differential Equations, <a class="reference external" href="https://arxiv.org/abs/1806.07366">https://arxiv.org/abs/1806.07366</a></p></li>
+</ul>
+</td><td><ul class="simple">
+<li><p>How can we be so dense: Subutai Ahmad, Luiz Scheinkman, How Can We Be So Dense? The Benefits of Using Highly Sparse Representations, <a class="reference external" href="https://arxiv.org/abs/1903.11257">https://arxiv.org/abs/1903.11257</a></p></li>
+</ul>
+</td></tr></table>
+</div>
+<div class="section" id="software">
+<h2>Software<a class="headerlink" href="#software" title="Permalink to this headline">¶</a></h2>
+<table class="hlist"><tr><td><ul class="simple">
+<li><p>LASSIE: <a class="reference external" href="https://github.com/aresio/LASSIE">https://github.com/aresio/LASSIE</a></p></li>
+<li><p>Tensorflow: <a class="reference external" href="https://www.tensorflow.org/">https://www.tensorflow.org/</a></p></li>
+<li><p>Sparse package: <a class="reference external" href="https://sparse.pydata.org/en/latest/">https://sparse.pydata.org/en/latest/</a></p></li>
+<li><p>Numba: <a class="reference external" href="http://numba.pydata.org/numba-doc/latest/index">http://numba.pydata.org/numba-doc/latest/index</a>.html#</p></li>
+</ul>
+</td><td><ul class="simple">
+<li><p>Cuda: <a class="reference external" href="https://docs.nvidia.com/cuda">https://docs.nvidia.com/cuda</a>/#</p></li>
+<li><p>Scipy: <a class="reference external" href="https://www.scipy.org/">https://www.scipy.org/</a></p></li>
+<li><p>Thurst: <a class="reference external" href="https://thrust.github.io/">https://thrust.github.io/</a></p></li>
+<li></li>
+</ul>
+</td></tr></table>
+</div>
 </div>
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>

@@ -10,13 +10,31 @@ from simulOfBioNN.parseUtils.parser import generateNeuralNetwork,generateTemplat
 from simulOfBioNN.simulNN.simulator import executeSimulation
 from simulOfBioNN.odeUtils.systemEquation import f
 from simulOfBioNN.odeUtils.utils import readAttribute,obtainTemplateArray,obtainOutputArray
-from simulOfBioNN.plotUtils.adaptivePlotUtils import colorDiagram,neuronPlot,plotEvolution
+from simulOfBioNN.plotUtils.adaptivePlotUtils import colorDiagram,neuronPlot,plotEvolution,fitComparePlot
 import sys
+import pandas
+
+def chemf(k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd,TA,TI,E0,A,I,otherConcentrations=0):
+    k1M = k1/(k1n+k2)
+    k5M = k5/(k5n+k6)
+    k3M = k3/(k3n+k4)
+    Cactiv = k2*k1M*TA*E0
+    CInhib = k6*k5M*k4*k3M*TI*E0*E0
+    Kactiv = k1M*TA
+    Kinhib = k3M*TI
+    print("Cactiv value is :"+str(Cactiv))
+    print("Cinhib value is :"+str(CInhib))
+    print("kd is :"+str(kd))
+
+    cp =kd*(1 + Kactiv*(A+otherConcentrations) + Kinhib*(I+otherConcentrations))
+    return Cactiv*A/(cp + CInhib*I/cp)
+
+
 
 if __name__ == '__main__':
 
-    name = "templateModel/Simulation"
-    endTime = 1000
+    name = "templateModel/Simulation3"
+    endTime = 10000
     timeStep = 0.1
     masks = np.array([np.array([[1,-1]])])
     modes = ["verbose","outputEqui"]
@@ -33,7 +51,7 @@ if __name__ == '__main__':
 
     layerInit = 10**(-13) #initial concentation value for species in layers
     initValue = 10**(-13) #initial concentration value for all species.
-    enzymeInit = 10**(-6)
+    enzymeInit = 10**(-8)
     endoInit = 10**(-5) #only used if useEndo == True
     activInit =  10**(-6)
     inhibInit =  10**(-6)
@@ -63,10 +81,6 @@ if __name__ == '__main__':
         for x2 in X2:
             x_test+=[[x1,x2]]
     x_test = np.array(x_test)
-
-
-    # If we scale down the concentration of inhibiting template:
-    # There is no need to differentiate concentration of input species.
 
     initialization_dic={}
     for layer in range(0,len(masks)): ## the first layer need not to be initiliazed
@@ -121,3 +135,53 @@ if __name__ == '__main__':
         X2 = X2/(C0*rescaleFactor)
         colorDiagram(X1,X2,output,"Initial concentration of X1","Initial concentration of X2","Equilibrium concentration of the output",figname=os.path.join(experiment_path, "neuralDiagramm.png"),equiPotential=False)
         neuronPlot(X1,X2,output,figname=os.path.join(experiment_path, "activationX1.png"),figname2=os.path.join(experiment_path, "activationX2.png"))
+        df = pandas.DataFrame(X1)
+        df.to_csv(os.path.join(experiment_path,"inputX1.csv"))
+        df2 = pandas.DataFrame(X2)
+        df2.to_csv(os.path.join(experiment_path,"inputX2.csv"))
+
+        #we try to fit:
+        nbrConstant = int(readAttribute(experiment_path,["Numbers_of_Constants"])["Numbers_of_Constants"])
+        k1,k1n,k2,k3,k3n,k4,_,k5,k5n,k6,kd,_=[readAttribute(experiment_path,["k"+str(i)])["k"+str(i)] for i in range(0,nbrConstant)]
+
+        TA = activInit/C0
+        TI = inhibInit/C0
+        E0 = enzymeInit/C0
+        k1M = k1/(k1n+k2)
+        k5M = k5/(k5n+k6)
+        k3M = k3/(k3n+k4)
+
+        Cactiv = k2*k1M*TA*E0
+        CInhib = k6*k5M*k4*k3M*TI*E0*E0
+        Kactiv = k1M*TA
+        Kinhib = k3M*TI
+        print("Cactiv value is :"+str(Cactiv))
+        print("Cinhib value is :"+str(CInhib))
+        print("Kactiv value is :"+str(Kactiv))
+        print("Kinhib value is :"+str(Kinhib))
+
+        # X1improved = X1- k1M*X1*TA*E0
+        # TAimproved = TA- k1M*X1*TA*E0
+        #
+        # X2improved = X2- k3M*X2*TI*E0
+        # TIimproved = TI- k3M*X2*TI*E0
+        #
+        #
+        # X1 = X1improved
+        # TA = TAimproved
+        # TI = TIimproved
+        # X2 = X2improved
+
+        fitOutput = []
+        for idx,x1 in enumerate(X1):
+            fitOutput += [chemf(k1, k1n, k2, k3, k3n, k4, k5, k5n, k6, kd, TA, TI, E0, x1, X2)]
+        fitOutput = np.array(fitOutput)
+
+
+        colorDiagram(X1,X2,fitOutput,"Initial concentration of X1","Initial concentration of X2","Equilibrium concentration of the output",figname=os.path.join(experiment_path, "AnalyticNeuralDiagramm.png"),equiPotential=False)
+        neuronPlot(X1,X2,fitOutput,figname=os.path.join(experiment_path, "AnalyticActivationX1.png"),figname2=os.path.join(experiment_path, "AnalyticActivationX2.png"))
+
+        courbs=[0,int(fitOutput.shape[1]/2),fitOutput.shape[1]-1,int(fitOutput.shape[1]/3),int(2*fitOutput.shape[1]/3)]
+        fitComparePlot(X1,X2,output,fitOutput,courbs,
+               figname=os.path.join(experiment_path, "fitComparisonX1.png"),
+               figname2=os.path.join(experiment_path, "fitComparisonX2.png"))

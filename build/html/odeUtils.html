@@ -210,7 +210,7 @@ The original function can be applied by just changing the masks</p>
 
 <dl class="function">
 <dt id="simulOfBioNN.odeUtils.systemEquation.setToUnits">
-<code class="descclassname">simulOfBioNN.odeUtils.systemEquation.</code><code class="descname">setToUnits</code><span class="sig-paren">(</span><em>kDic</em>, <em>KarrayA</em>, <em>inputStochio</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.systemEquation.setToUnits" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">simulOfBioNN.odeUtils.systemEquation.</code><code class="descname">setToUnits</code><span class="sig-paren">(</span><em>constants</em>, <em>KarrayA</em>, <em>inputStochio</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.systemEquation.setToUnits" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
 <div><p>This function parametrize the system in simpler range of work.
 The three parameters should be the output of the parse function.</p>
@@ -218,14 +218,17 @@ The three parameters should be the output of the parse function.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>kDic</strong> – a d-array with the reaction constant for the equation</p></li>
+<li><p><strong>constants</strong> – a d-array with the reaction constant for the equation</p></li>
 <li><p><strong>KarrayA</strong> – The array with the reactions</p></li>
 <li><p><strong>inputStochio</strong> – The stochiometry</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>karrayA,T0,C0
-a new KarrayA with modified values as well as a constant: T0 for time and C0 to use to set to units every input concentration.</p>
+<dd class="field-even"><p>karrayA,T0,C0,kdic
+karrayA: A new KarrayA with modified values.
+T0: value used to rescale with regard to time.
+C0: value used to rescale with regard to concentrations.
+constants: modified d-array with the reaction constant for the equation</p>
 </dd>
 </dl>
 </dd></dl>
@@ -272,8 +275,17 @@ The merge is also dependent on the output modes that has been chosen.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="simulOfBioNN.odeUtils.utils.obtainOutputDic">
-<code class="descclassname">simulOfBioNN.odeUtils.utils.</code><code class="descname">obtainOutputDic</code><span class="sig-paren">(</span><em>nameDic</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.utils.obtainOutputDic" title="Permalink to this definition">¶</a></dt>
+<dt id="simulOfBioNN.odeUtils.utils.obtainCopyArgsLassie">
+<code class="descclassname">simulOfBioNN.odeUtils.utils.</code><code class="descname">obtainCopyArgsLassie</code><span class="sig-paren">(</span><em>modes</em>, <em>idxList</em>, <em>outputList</em>, <em>time</em>, <em>directory_for_network</em>, <em>parsedEquation</em>, <em>constants</em>, <em>coLeak</em>, <em>nameDic</em>, <em>speciesArray</em>, <em>lassieEx</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.utils.obtainCopyArgsLassie" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produce a list with each elements being a list of parameters used by a sub-process for integration.
+The merge is also dependent on the output modes that has been chosen.
+Note that here we give for each thread a directory in which the thread will generate sub-directory for communication with LASSIE.
+:param lassieEx: the path to the executive file of lassie.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.odeUtils.utils.obtainOutputArray">
+<code class="descclassname">simulOfBioNN.odeUtils.utils.</code><code class="descname">obtainOutputArray</code><span class="sig-paren">(</span><em>nameDic</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.utils.obtainOutputArray" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
 <div><p>Find the output species, that is species of the last layer:
 species are sorted as: X_nbLayer_neuronPosition</p>
@@ -284,6 +296,60 @@ species are sorted as: X_nbLayer_neuronPosition</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>the sorted list of species from the last layer, which might be interesting to overview.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.odeUtils.utils.obtainSpeciesArray">
+<code class="descclassname">simulOfBioNN.odeUtils.utils.</code><code class="descname">obtainSpeciesArray</code><span class="sig-paren">(</span><em>inputsArray</em>, <em>nameDic</em>, <em>initValue</em>, <em>initializationDic</em>, <em>C0</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.utils.obtainSpeciesArray" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Gives the array with the initial concentration value for all species.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inputsArray</strong> – t*d array, where t is the number of test and d number of species in the first layer. Array of concentration for species in the first layer.</p></li>
+<li><p><strong>nameDic</strong> – Dictionary, species k index is nameDic[k].</p></li>
+<li><p><strong>initValue</strong> – value of concentration all other species should have.</p></li>
+<li><p><strong>initializationDic</strong> – dictionary with initialization for other species than the first layer.</p></li>
+<li><p><strong>C0</strong> – normalization value, divide all initial value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>an array of shape t*n, t: number of tests, n: number of species. The initial concentration for all species.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.odeUtils.utils.obtainTemplateArray">
+<code class="descclassname">simulOfBioNN.odeUtils.utils.</code><code class="descname">obtainTemplateArray</code><span class="sig-paren">(</span><em>nameDic=None</em>, <em>layer=None</em>, <em>masks=None</em>, <em>activ=None</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.utils.obtainTemplateArray" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Gives back an array with the template name.
+Template are of the form: Templ_X_layerinput_nodeinput_X_layeroutput_nodeinput</p>
+<p>This function find the existing template from nameDic if they are provided.
+Otherwise it gives back the template with respect to the masks and the previous notations.</p>
+<p>One can also aks for template of a specific layer, or for activation or inhibition template.
+In these case a mask (list of 2d-array of integer) describing the network, in a neural network like way, must be provided.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>Mask axis are: 1st axis: layers, 2nd axis: output neurons, 3rd axis: input neurons.</dt><dd><p>So if mask[i][j,k]==1, neuron k from layer i-1 activates neurons j from layer i</p>
+</dd>
+</dl>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nameDic</strong> – dictionary with all species name as keys</p></li>
+<li><p><strong>layer</strong> – integer or list of integer, indicate the layer in which the template shall be taken. We consider layer of inputs</p></li>
+<li><p><strong>masks</strong> – (list of 2d-array of [-1,0,1]) describing the network, in a neural network like way.</p></li>
+<li><p><strong>activ</strong> – if False, consider inhibiting template. If True, consider activator template.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Array with the template names.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -302,7 +368,39 @@ species are sorted as: X_nbLayer_neuronPosition</p>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dd class="field-even"><p>dictionary with parameters as float.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="simulOfBioNN.odeUtils.utils.rescaleInputConcentration">
+<code class="descclassname">simulOfBioNN.odeUtils.utils.</code><code class="descname">rescaleInputConcentration</code><span class="sig-paren">(</span><em>speciesArray</em>, <em>networkMask=None</em>, <em>nameDic=None</em><span class="sig-paren">)</span><a class="headerlink" href="#simulOfBioNN.odeUtils.utils.rescaleInputConcentration" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>This function enable to rescale concentrations when using more input species, or multi layers.
+Such rescale is crucial to obtain output of similar values despite having more species as inputs.
+The key point is that these species use shared enzymes of fixed concentration.
+As the number of species grows, the competition increases leading to very long reaction.
+In order to reduce computation time it is of importance to keep these reactions length in a reasonable amount of time.
+To do so, we diminish only the concentration of input species.
+One should either gave the network mask or dictionary with all the species names.
+Initial version:</p>
+<blockquote>
+<div><p>A better heuristic should be derived.
+For now we simply divide by the total number of nodes in the network.</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>speciesArray</strong> – t*n-array, the concentration of every species. t: number of test, n: number of species</p></li>
+<li><p><strong>networkMask</strong> – optional, 2d-array with value in {0,1,-1}: mask of the network. (Same as considered by generateNeuralNetworkfunction)
+using this is much faster.</p></li>
+<li><p><strong>nameDic</strong> – optional, dictionary with name of species of the last layer.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>modified speciesArray,rescaleFactor</p>
 </dd>
 </dl>
 </dd></dl>

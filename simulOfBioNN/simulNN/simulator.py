@@ -191,7 +191,8 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
     for k in initializationDic.keys():
         attributesDic[k] = speciesArray[0,nameDic[k]]
     for idx,cste in enumerate(constants):
-        attributesDic["Constant for reaction "+str(idx)] = cste
+        attributesDic["k"+str(idx)] = cste
+    attributesDic["Numbers_of_Constants"] = len(constants)
     experiment_path=saveAttribute(directory_for_network, attributesDic)
 
     shapeP=speciesArray.shape[0]

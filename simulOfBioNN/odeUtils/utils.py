@@ -219,7 +219,7 @@ def rescaleInputConcentration(speciesArray,networkMask=None,nameDic=None):
     for k in firstLayer:
         speciesArray[:,nameDic[k]] = speciesArray[:,nameDic[k]]/nbrNodes
 
-    print("Rescaled input species concentration by "+str(nbrNodes))
+    print("Rescaled input species concentration by "+str(nbrNodes)+" for "+str(firstLayer))
 
     return speciesArray,nbrNodes
 
