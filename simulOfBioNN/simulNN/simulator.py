@@ -147,13 +147,13 @@ def lassieGPUsolverMultiProcess(X):
 
 def executeSimulation(funcForSolver, directory_for_network, inputsArray, initializationDic=None, outputList=None,
                       leak=10 ** (-13), endTime=1000, sparse=False, modes=["verbose","time", "outputPlot", "outputEqui"],
-                      timeStep=0.1, initValue=10**(-13)):
+                      timeStep=0.1, initValue=10**(-13), rescaleFactor=None):
     """
         Execute the simulation of the system saved under the directory_for_network directory.
         InputsArray contain the values for the input species.
     :param directory_for_network: directory path, where the files equations.txt and constants.txt may be found.
     :param inputsArray: The test concentrations, a t * n array where t is the number of test and n the number of node in the first layer.
-    :param initializationDic: can contain initialization values for some species. If none, or the species don't appear in its key, then its value is set at leak.
+    :param initializationDic: can contain initialization values for some species. If none, or the species don't appear in its key, then its value is set at initValue (default to 10**(-13)).
     :param outputList: list or string, species we would like to see as outputs, if default (None), then will find the species of the last layer.
                                       if string and value is "nameDic" or "all", we will give all species taking part in the reaction (usefull for debug)
     :param leak: float, small leak to add at each time step at the concentration of all species
@@ -162,6 +162,7 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
     :param modes: modes for outputs
     :param timeStep: float, value of time steps to use in integration
     :param initValue: initial concentration value to give to all species
+    :param rescaleFactor: if None, then computed as the number of nodes, else: used to divide the value of the inputs
     :return:
             A result tuple depending on the modes.
     """
@@ -175,7 +176,7 @@ def executeSimulation(funcForSolver, directory_for_network, inputsArray, initial
     print("Initialisation constant: time:"+str(T0)+" concentration:"+str(C0))
 
     speciesArray = obtainSpeciesArray(inputsArray,nameDic,initValue,initializationDic,C0)
-    speciesArray,rescaleFactor = rescaleInputConcentration(speciesArray,nameDic=nameDic)
+    speciesArray,rescaleFactor = rescaleInputConcentration(speciesArray,nameDic=nameDic,rescaleFactor=rescaleFactor)
 
     time=np.arange(0,endTime,timeStep)
     derivativeLeak = leak

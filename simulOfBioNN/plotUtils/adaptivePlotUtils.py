@@ -126,14 +126,12 @@ def colorDiagram(X,Y,Z,nameX,nameY,nameZ,figname,colorBarVal=None,equiPotential=
         Z=np.array(Z[lineToKeep])
         X=np.array(X[lineToKeep])
 
-    if(uselog):
-        Z=np.log(Z)
+    # if(uselog):
+    #     Z=np.log(Z)
 
     fig, ax = plt.subplots(figsize=(19.2,10.8), dpi=100)
 
     cmap = plt.get_cmap('jet',Z.shape[0]*Z.shape[1])
-
-    im= ax.imshow(np.transpose(Z),aspect='auto',cmap=cmap)
 
     xTicks = np.arange(0,X.shape[0],int(X.shape[0]/min(10,X.shape[0])))
     ax.set_xticks(xTicks)
@@ -157,6 +155,13 @@ def colorDiagram(X,Y,Z,nameX,nameY,nameZ,figname,colorBarVal=None,equiPotential=
             norm = clr.Normalize(vmin=np.min(Z), vmax=np.max(Z))
         else:
             norm=clr.Normalize(vmin=colorBarVal[0],vmax=colorBarVal[1])
+
+
+    if(uselog):
+        im= ax.imshow(np.transpose(Z),aspect='auto',cmap=cmap,norm = norm)
+    else:
+        im= ax.imshow(np.transpose(Z),aspect='auto',cmap=cmap, norm = norm)
+
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
@@ -195,7 +200,7 @@ def colorDiagram(X,Y,Z,nameX,nameY,nameZ,figname,colorBarVal=None,equiPotential=
 
     return lintoKeep
 
-def neuronPlot(X1,X2,output,figname,figname2):
+def neuronPlot(X1,X2,output,figname,figname2,doShow=True,useLogX = False):
     """
         Similar to color diagram.
         Plot X1=f(output) with X1  as color and X1=f(output) with X2 as color
@@ -204,16 +209,22 @@ def neuronPlot(X1,X2,output,figname,figname2):
     :param output: 1d-array
     :param figname: name for X1=f(output) with X2 as color
     :param figname2: name for X1=f(output) with X1
+    :param doShow: if True execute the show command from matplotlib, if not doesn't show. In all cases the fig is closed.
+    :param useLogX: if the X-axis should be displayed with a log.
     :return:
     """
     #output  vs X1:
     fig,ax=plt.subplots(figsize=(19.2,10.8), dpi=100)
     cmap = plt.get_cmap('jet',X2.shape[0])
     ##time to plot:
+
+
     for idx in range(output.shape[1]):
         X=X1
         Y=output[:,idx]
-        ax.plot(X,Y,c=cmap(idx)) #,label=str(X2[idx-1])
+        ax.plot(X,Y,c=cmap(idx))#,label=str(X2[idx-1])
+        if(useLogX):
+            ax.set_xscale("log")
         ax.tick_params(labelsize="xx-large")
 
     norm = clr.Normalize(vmin=X2[0],vmax=X2[-1])
@@ -229,7 +240,8 @@ def neuronPlot(X1,X2,output,figname,figname2):
     ax.set_xlabel("Initial concentration of X1",fontsize="xx-large")
     ax.set_ylabel("equilibrium concentration of the output rescaled unit",fontsize="xx-large")
     ax.tick_params(labelsize="xx-large")
-    plt.show()
+    if doShow:
+        plt.show()
     figpath=os.path.join(sys.path[0],figname)
     fig.savefig(figpath)
     plt.close(fig)
@@ -242,6 +254,8 @@ def neuronPlot(X1,X2,output,figname,figname2):
         X=X2
         Y=output[idx,:]
         ax.plot(X,Y,c=cmap(idx)) #,label=str(X2[idx-1])
+        if(useLogX):
+            ax.set_xscale("log")
         ax.tick_params(labelsize="xx-large")
 
     norm = clr.Normalize(vmin=X1[0],vmax=X1[-1])
@@ -257,13 +271,14 @@ def neuronPlot(X1,X2,output,figname,figname2):
     ax.set_xlabel("Initial concentration of X2",fontsize="xx-large")
     ax.set_ylabel("Equilibrium concentration of the output rescaled unit",fontsize="xx-large")
     ax.tick_params(labelsize="xx-large")
-    plt.show()
+    if doShow:
+        plt.show()
     figpath=os.path.join(sys.path[0],figname2)
     fig.savefig(figpath)
     plt.close(fig)
 
 
-def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2):
+def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2,useLogX = False):
     """
         Plot on the same graph:
          the evolution of output for X1,X2 (colorbar)
@@ -272,6 +287,7 @@ def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2):
     :param X2: simulated input X2
     :param output: simulated f(X1,X2) at equilibrium
     :param fitOutput: fitted f(fitX1,fitX2) at equilibrium
+    :param useLogX: if we should display the X-axis as a logarithm axis
     :return:
     """
     #output  vs X1:
@@ -282,6 +298,8 @@ def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2):
         if idx in courbs:
             ax.plot(X1, output[:,idx], c=cmap(idx),label="simulated for X2="+str(round(X2[idx],4)))
             ax.plot(X1, fitOutput[:,idx], c=cmap(idx), linestyle="dashed",label="fitted for X2="+str(round(X2[idx],4)))
+            if useLogX:
+                ax.set_xscale("log")
             ax.tick_params(labelsize="xx-large")
 
     norm = clr.Normalize(vmin=X2[0],vmax=X2[-1])
@@ -310,6 +328,8 @@ def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2):
         if idx in courbs:
             ax.plot(X2, output[idx,:], c=cmap(idx),label="simulated for X1="+str(round(X1[idx],4)))
             ax.plot(X2, fitOutput[idx,:], c=cmap(idx), linestyle="dashed",label="fitted for X1="+str(round(X1[idx],4)))
+            if useLogX:
+                ax.set_xscale("log")
             ax.tick_params(labelsize="xx-large")
 
     norm = clr.Normalize(vmin=X1[0],vmax=X1[-1])

@@ -182,7 +182,7 @@ def _removeLastLayerFromDic(outputArray, nameDic):
             nameDic2[k]=nameDic[k]
     return nameDic2
 
-def rescaleInputConcentration(speciesArray,networkMask=None,nameDic=None):
+def rescaleInputConcentration(speciesArray,networkMask=None,nameDic=None,rescaleFactor=None):
     """
         This function enable to rescale concentrations when using more input species, or multi layers.
         Such rescale is crucial to obtain output of similar values despite having more species as inputs.
@@ -194,11 +194,11 @@ def rescaleInputConcentration(speciesArray,networkMask=None,nameDic=None):
         Initial version:
             A better heuristic should be derived.
             For now we simply divide by the total number of nodes in the network.
-
     :param speciesArray: t*n-array, the concentration of every species. t: number of test, n: number of species
     :param networkMask: optional, 2d-array with value in {0,1,-1}: mask of the network. (Same as considered by generateNeuralNetworkfunction)
                         using this is much faster.
-    :param nameDic: optional, dictionary with name of species of the last layer.
+    :param nameDic: optional, dictionary with name of species of the layers.
+    :param rescaleFactor: optional,float, if not None then this value replace the value found by the default heuristic (that is the number of nodes)
     :return: modified speciesArray,rescaleFactor
     """
     firstLayer = []
@@ -216,12 +216,14 @@ def rescaleInputConcentration(speciesArray,networkMask=None,nameDic=None):
             nbrNodes+=len(outputArray)
             nameDic2 = _removeLastLayerFromDic(outputArray,nameDic2)
         firstLayer = outputArray
+    if rescaleFactor is None:
+        rescaleFactor=nbrNodes
     for k in firstLayer:
-        speciesArray[:,nameDic[k]] = speciesArray[:,nameDic[k]]/nbrNodes
+        speciesArray[:,nameDic[k]] = speciesArray[:,nameDic[k]]/rescaleFactor
 
-    print("Rescaled input species concentration by "+str(nbrNodes)+" for "+str(firstLayer))
+    print("Rescaled input species concentration by "+str(rescaleFactor)+" for "+str(firstLayer))
 
-    return speciesArray,nbrNodes
+    return speciesArray,rescaleFactor
 
 def obtainTemplateArray(nameDic = None,layer = None,masks = None,activ = None):
     """
