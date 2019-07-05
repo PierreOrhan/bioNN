@@ -278,7 +278,7 @@ def neuronPlot(X1,X2,output,figname,figname2,doShow=True,useLogX = False):
     plt.close(fig)
 
 
-def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2,useLogX = False):
+def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2,useLogX = False,doShow=True,ylabel=None):
     """
         Plot on the same graph:
          the evolution of output for X1,X2 (colorbar)
@@ -288,8 +288,14 @@ def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2,useLogX = Fals
     :param output: simulated f(X1,X2) at equilibrium
     :param fitOutput: fitted f(fitX1,fitX2) at equilibrium
     :param useLogX: if we should display the X-axis as a logarithm axis
+    :param doShow: if showing the result, default to True
+    :param ylabel: optionnal, name to give to the y axis
     :return:
     """
+    if ylabel is None:
+        ylabel = "equilibrium concentration of the output"
+
+
     #output  vs X1:
     fig,ax=plt.subplots(figsize=(19.2,10.8), dpi=100)
     cmap = plt.get_cmap('jet',X2.shape[0])
@@ -313,10 +319,11 @@ def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2,useLogX = Fals
     cbar.ax.set_ylabel("Initial concentration of X2",fontsize="xx-large")
     cbar.ax.tick_params(labelsize="xx-large")
     ax.set_xlabel("Initial concentration of X1",fontsize="xx-large")
-    ax.set_ylabel("equilibrium concentration of the output rescaled unit",fontsize="xx-large")
+    ax.set_ylabel(ylabel,fontsize="xx-large")
     ax.tick_params(labelsize="xx-large")
     plt.legend()
-    plt.show()
+    if doShow:
+        plt.show()
     figpath=os.path.join(sys.path[0],figname)
     fig.savefig(figpath)
     plt.close(fig)
@@ -343,10 +350,11 @@ def fitComparePlot(X1,X2,output,fitOutput,courbs,figname,figname2,useLogX = Fals
     cbar.ax.set_ylabel("Initial concentration of X1",fontsize="xx-large")
     cbar.ax.tick_params(labelsize="x-large")
     ax.set_xlabel("Initial concentration of X2",fontsize="xx-large")
-    ax.set_ylabel("Equilibrium concentration of the output rescaled unit",fontsize="xx-large")
+    ax.set_ylabel(ylabel,fontsize="xx-large")
     ax.tick_params(labelsize="xx-large")
     plt.legend()
-    plt.show()
+    if doShow:
+        plt.show()
     figpath=os.path.join(sys.path[0],figname2)
     fig.savefig(figpath)
     plt.close(fig)
