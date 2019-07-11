@@ -168,6 +168,49 @@ def obtainCopyArgsLassie(modes,idxList,outputList,time,directory_for_network,par
                    {"mode":modes,"idx":idx}] for idx, myId in enumerate(idxList[:-1])]
     return copyArgs
 
+def obtainCopyArgsFixedPoint(idxList,modes,speciesArray,nameDic,outputList,masks,constants,chemicalModel="templateModel"):
+    """
+       Produce a list with each elements being a list of parameters used by a sub-process for computing equilibrium.
+       The merge is also dependent on the output modes that has been chosen.
+   """
+    # constantArray,masks,X0,chemicalModel="templateModel",verbose=True
+
+    ###Let us produce the constantArray:
+    verbose = False
+    if "verbose" in modes:
+        verbose = True
+
+    # for now we use the same constants for all equations...
+    k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kdI,kdT,TA,TI,E0 = constants
+    k1 = [np.zeros(m.shape)+k1 for m in masks]
+    k1n = [np.zeros(m.shape)+k1n for m in masks]
+    k2 = [np.zeros(m.shape)+k2 for m in masks]
+    k3 = [np.zeros(m.shape)+k3 for m in masks]
+    k3n = [np.zeros(m.shape)+k3n for m in masks]
+    k4 = [np.zeros(m.shape)+k4 for m in masks]
+    k5 = [np.zeros(m.shape)+k5 for m in masks]
+    k5n = [np.zeros(m.shape)+k5n for m in masks]
+    k6 = [np.zeros(m.shape)+k6 for m in masks]
+    kdT = [np.zeros(m.shape)+kdT for m in masks]
+    kdI = [np.zeros(m.shape)+kdI for m in masks]
+    TA0 = [np.where(m>0,TA,0) for m in masks]
+    TI0 = [np.where(m<0,TI,0) for m in masks]
+
+    constantArray = [k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kdI,kdT,TA0,TI0,E0 ]
+
+    if "outputEqui" in modes:
+        outputCollector=[np.zeros((len(outputList), idxList[idx + 1] - id)) for idx, id in enumerate(idxList[:-1])]
+        copyArgs=[[ speciesArray[myId:idxList[idx+1]],(constantArray,masks,chemicalModel,verbose),
+                   {"mode":modes,"nameDic":nameDic,"idx":idx,"output":outputCollector[idx],
+                    "outputList":outputList}] for idx, myId in enumerate(idxList[:-1])]
+    else:
+        copyArgs=[[ speciesArray[myId:idxList[idx+1]],(constantArray,masks,chemicalModel,verbose),
+                   {"mode":modes,"idx":idx}] for idx, myId in enumerate(idxList[:-1])]
+    return copyArgs
+
+
+
+
 def _removeLastLayerFromDic(outputArray, nameDic):
     """
         Remove from name dic the species from the last layer, which we obtain with outputArray
