@@ -40,7 +40,6 @@ def obtainBornSup(k6,kdT,kdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks):
                 #Terms for the previous layers
                 CactivsOld = np.where(masks[layeridx-1][inpIdx,:]>0,Cactiv0[layeridx-1][inpIdx],0)
                 CinhibsOld = np.where(masks[layeridx-1][inpIdx,:]<0,Cinhib0[layeridx-1][inpIdx],0)
-                Inhib = np.sum(CinhibsOld*olderX[layeridx-1]/kdT[layeridx-1][inpIdx])
                 #computing of new equilibrium
                 x_eq = np.sum(CactivsOld*olderX[layeridx-1]/kdT[layeridx-1][inpIdx])
                 layerEq[inpIdx] = x_eq
@@ -216,7 +215,7 @@ def computeCPonly(k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kdI,kdT,TA0,TI0,E0,X0,masks,fitt
     Kactiv0 = [k1M[l]*TA0[l] for l in range(len(k1M))] # element to element product
     Kinhib0 = [k3M[l]*TI0[l] for l in range(len(k3M))]
     Cactiv0 = [k2[l]*k1M[l]*TA0[l]*E0 for l in range(len(k1M))]
-    Cinhib0 =[np.stack([k6[l]*k5M[l]]*k4[l].shape[1],axis=1)*k4[l]*k3M[l]*TI0[l]*E0*E0 for l in range(len(k3M))]
+    Cinhib0 =[np.stack([k6[l]*k5M[l]]*(k4[l].shape[1]),axis=1)*k4[l]*k3M[l]*TI0[l]*E0*E0 for l in range(len(k3M))]
 
     if fittedValue is None:
         cp0max=obtainBornSup(k6,kdT,kdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks)# we start from an upper bound

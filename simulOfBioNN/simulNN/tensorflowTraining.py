@@ -124,9 +124,9 @@ def trainWithChemTemplateNN(savePath):
     unique = list(np.sort(np.unique(x_test)))
     myLogSpace = np.logspace(-8,-4,len(unique))
     x_test = myLogSpace[x_test]
-    x_test = np.reshape(x_test,(x_test.shape[0],(x_test.shape[1]*x_test.shape[2])))
+    x_test = np.reshape(x_test,(x_test.shape[0],(x_test.shape[1]*x_test.shape[2]))).astype(dtype=np.float32)
     x_train = myLogSpace[x_train]
-    x_train = np.reshape(x_train,(x_train.shape[0],(x_train.shape[1]*x_train.shape[2])))
+    x_train = np.reshape(x_train,(x_train.shape[0],(x_train.shape[1]*x_train.shape[2]))).astype(dtype=np.float32)
 
 
     constantList,enzymeInit,activInit,inhibInit = _findConstant(savePath)
@@ -141,11 +141,14 @@ def trainWithChemTemplateNN(savePath):
     model = chemTemplateNNModel(None,useGPU=useGPU,nbUnits=nbUnits,sparsities=sparsities,inputShape=x_train.shape[1],
                                 reactionConstants= constantList, enzymeInitC=enzymeInit, activTempInitC=activInit,
                                 inhibTempInitC=inhibInit, randomConstantParameter=None)
-    model.compile(optimizer=tf.train.AdamOptimizer(),
+    model.compile(optimizer=tf.optimizers.Adam(),
                   loss='sparse_categorical_crossentropy',
-                  metrics=['accuracy'],run_eagerly=True)
+                  metrics=['accuracy'])
     model.build(input_shape=x_train.shape)
-    #model.fit(x_train, y_train, epochs=epochs,verbose=True)
+    model.fit(x_train, y_train, epochs=epochs,verbose=True)
+    res = model.call(x_test[:10])
+    print("finished the call, trying to print")
+    print(res)
     print(model.summary())
     _,acc=model.evaluate(x_test, y_test)
     _,accNoise=model.evaluate(x_test_noise, y_test)

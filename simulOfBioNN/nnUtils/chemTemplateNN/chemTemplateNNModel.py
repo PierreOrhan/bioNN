@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from simulOfBioNN.odeUtils.equilibrium import obtainBornSup,computeCPonly
+from simulOfBioNN.nnUtils.chemTemplateNN.tensorflowFixedPointSearch import computeCPonly
 from simulOfBioNN.nnUtils.chemTemplateNN.chemTemplateLayers import chemTemplateLayer
 
 class chemTemplateNNModel(tf.keras.Model):
@@ -48,23 +48,11 @@ class chemTemplateNNModel(tf.keras.Model):
         """
         super(chemTemplateNNModel,self).__init__(name="")
         nbLayers = len(nbUnits)
-        if sess is not None:
-            self.sess = sess
-        else:
-            self.sess = tf.Session()
-        deviceList = self.sess.list_devices()
-        print("at initialization:"+str(tf.executing_eagerly()))
-        if useGPU:
-            for l in deviceList:
-                if "GPU" in l.name:
-                    Deviceidx = l.name
-                    break
-        else:
-            for l in deviceList:
-                if "CPU" in l.name:
-                    Deviceidx= l.name
-                    break
 
+        if tf.test.is_gpu_available():
+            Deviceidx = "/gpu:0"
+        else:
+            Deviceidx = "/cpu:0"
         # Test of the inputs
         assert len(sparsities)==len(nbUnits)
         assert len(reactionConstants) == 11
@@ -76,31 +64,28 @@ class chemTemplateNNModel(tf.keras.Model):
         self.layerList = []
         inputShapes = [inputShape]+nbUnits[:-1]
         for e in range(nbLayers):
-            self.layerList += [chemTemplateLayer(Deviceidx,inputShapes[e],units=nbUnits[e],sparsity=sparsities[e])]
-        #We force the initialization of the kernels in each layer, making sure they have a mask:
-        # for l in self.layerList:
-        #     sess.run(tf.global_variables_initializer())
-        self.rescaleFactor = np.sum([l.get_rescaleOps().numpy() for l in self.layerList])
-        print("rescale Factor: "+str(self.rescaleFactor))
+            self.layerList += [chemTemplateLayer(Deviceidx,inputShapes[e],units=nbUnits[e],sparsity=sparsities[e],dynamic=True)]
+
+
+        self.rescaleFactor = tf.keras.backend.sum([l.get_rescaleOps() for l in self.layerList],axis=-1)
         for l in self.layerList:
             l.set_constants(reactionConstants,enzymeInitC,activTempInitC,inhibTempInitC,self.rescaleFactor)
-            l.rescale(self.rescaleFactor)
 
-        self.k1 = [l.k1 for l in self.layerList]
-        self.k1n = [l.k1n for l in self.layerList]
-        self.k2 = [l.k2 for l in self.layerList]
-        self.k3 = [l.k3 for l in self.layerList]
-        self.k3n = [l.k3n for l in self.layerList]
-        self.k4 = [l.k4 for l in self.layerList]
-        self.k5 = [l.k5 for l in self.layerList]
-        self.k5n = [l.k5n for l in self.layerList]
-        self.k6 = [l.k6 for l in self.layerList]
-        self.kdI = [l.kdI for l in self.layerList]
-        self.kdT = [l.kdT for l in self.layerList]
-        self.TA0 = [l.TA0 for l in self.layerList]
-        self.TI0 = [l.TI0 for l in self.layerList]
+        self.k1 = [tf.transpose(l.k1) for l in self.layerList]
+        self.k1n = [tf.transpose(l.k1n) for l in self.layerList]
+        self.k2 = [tf.transpose(l.k2) for l in self.layerList]
+        self.k3 = [tf.transpose(l.k3) for l in self.layerList]
+        self.k3n = [tf.transpose(l.k3n) for l in self.layerList]
+        self.k4 = [tf.transpose(l.k4) for l in self.layerList]
+        self.k5 = [tf.transpose(l.k5) for l in self.layerList]
+        self.k5n = [tf.transpose(l.k5n) for l in self.layerList]
+        self.k6 = [tf.transpose(l.k6) for l in self.layerList]
+        self.kdI = [tf.transpose(l.kdI) for l in self.layerList]
+        self.kdT = [tf.transpose(l.kdT) for l in self.layerList]
+        self.TA0 = [tf.transpose(l.TA0) for l in self.layerList]
+        self.TI0 = [tf.transpose(l.TI0) for l in self.layerList]
         self.E0 = self.layerList[0].E0
-        self.masks = [l.get_mask().numpy() for l in self.layerList]
+        self.masks = [tf.transpose(l.get_mask().numpy()) for l in self.layerList]
 
 
     def call(self, inputs, training=None, mask=None):
@@ -115,50 +100,60 @@ class chemTemplateNNModel(tf.keras.Model):
         """
         # if len(inputs.shape)==1:
         #     inputs=tf.stack(inputs)
+        @tf.function
         def func(input):
+            tf.print("starting cp computing")
             # rescaling:
             if training:
-                newRescaleFactor = np.sum([l.get_rescaleOps().numpy() for l in self.layerList])
-                if self.rescaleFactor!= newRescaleFactor:
+                newRescaleFactor = tf.keras.backend.sum([l.get_rescaleOps() for l in self.layerList],axis=-1)
+                if(False in tf.equal(self.rescaleFactor,newRescaleFactor)):
                     self.rescaleFactor = newRescaleFactor
                     for l in self.layerList:
-                        l.rescale(self.rescaleFactor)
+                            l.rescale(self.rescaleFactor)
             # We also need to update the information the model has: we gather from all layers their weights matrix
-                self.k1 = [l.k1 for l in self.layerList]
-                self.k1n = [l.k1n for l in self.layerList]
-                self.k2 = [l.k2 for l in self.layerList]
-                self.k3 = [l.k3 for l in self.layerList]
-                self.k3n = [l.k3n for l in self.layerList]
-                self.k4 = [l.k4 for l in self.layerList]
-                self.k5 = [l.k5 for l in self.layerList]
-                self.k5n = [l.k5n for l in self.layerList]
-                self.k6 = [l.k6 for l in self.layerList]
-                self.kdI = [l.kdI for l in self.layerList]
-                self.kdT = [l.kdT for l in self.layerList]
-                self.TA0 = [l.TA0 for l in self.layerList]
-                self.TI0 = [l.TI0 for l in self.layerList]
+                self.k1 = [tf.transpose(l.k1) for l in self.layerList]
+                self.k1n = [tf.transpose(l.k1n) for l in self.layerList]
+                self.k2 = [tf.transpose(l.k2) for l in self.layerList]
+                self.k3 = [tf.transpose(l.k3) for l in self.layerList]
+                self.k3n = [tf.transpose(l.k3n) for l in self.layerList]
+                self.k4 = [tf.transpose(l.k4) for l in self.layerList]
+                self.k5 = [tf.transpose(l.k5) for l in self.layerList]
+                self.k5n = [tf.transpose(l.k5n) for l in self.layerList]
+                self.k6 = [tf.transpose(l.k6) for l in self.layerList]
+                self.kdI = [tf.transpose(l.kdI) for l in self.layerList]
+                self.kdT = [tf.transpose(l.kdT) for l in self.layerList]
+                self.TA0 = [tf.transpose(l.TA0) for l in self.layerList]
+                self.TI0 = [tf.transpose(l.TI0) for l in self.layerList]
                 self.E0 = self.layerList[0].E0
-                self.masks = [l.get_mask().numpy() for l in self.layerList]
+                self.masks = [tf.transpose(l.get_mask()) for l in self.layerList]
 
             #rescaling of the inputs
             input = input/self.rescaleFactor
 
             #We compute competition ==> dependant on the inputs, results of a fixed-point solve.
-            cp = computeCPonly(self.k1,self.k1n,self.k2,self.k3,self.k3n,self.k4,self.k5,self.k5n,self.k6,self.kdI,
-                               self.kdT,self.TA0,self.TI0,self.E0,input,self.masks,fittedValue=None,verbose=False)
-
+            #cp = computeCPonly(self.k1,self.k1n,self.k2,self.k3,self.k3n,self.k4,self.k5,self.k5n,self.k6,self.kdI,
+            #                   self.kdT,self.TA0,self.TI0,self.E0,input,self.masks,fittedValue=None,verbose=False)
+            cp = 10
             for l in self.layerList:
-                l.updateCp(cp)
-
+                l.update_cp(cp)
+            tf.print("ended cp computing")
             x = self.layerList[0](inputs)
             for l in self.layerList[1:]:
+                tf.print("next layer")
                 x = l(x)
             return x
         print("tensorflow is executing eagerly: "+str(tf.executing_eagerly()))
-        print("model is executing eagerly: "+str(self.run_eagerly))
+        # print("model is executing eagerly: "+str(self.run_eagerly))
         from tensorflow.python.eager import context
         print("context is executing eagerly:"+str(context.executing_eagerly()))
-        X0s = inputs
-        result = [func(X0) for X0 in X0s]
-        return tf.convert_to_tensor(np.array(result))
+        if len(inputs.shape)>1:
+            tf.print("using map funtion")
+            X0s = tf.convert_to_tensor(inputs)
+            tf.print(X0s.shape)
+            result = tf.map_fn(func,X0s)
+            tf.print("ended use of map")
+        else:
+            tf.print("using normal pipeline")
+            result = func(inputs)
+        return result
 

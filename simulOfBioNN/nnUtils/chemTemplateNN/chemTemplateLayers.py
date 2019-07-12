@@ -15,7 +15,7 @@ def chemTemplateClippedTensorDot(deviceName, inputs, kernel, rank, cp,CinhibMat,
         Clipping follow the rule: weights<0.2 take value -1, weighs>0.2 take value 1 and other take value 0.
     """
     with tf.device(deviceName):
-        with ops.name_scope("clippedTensorDotOp", [inputs, kernel]) as scope:
+        with ops.name_scope(None,default_name="clippedTensorDotOp",values=[inputs, kernel]) as scope:
             Tminus = tf.cast(tf.fill(kernel.shape,-1),dtype=tf.float32)
             Tplus = tf.cast(tf.fill(kernel.shape,1),dtype=tf.float32)
             Tzero = tf.cast(tf.fill(kernel.shape,0),dtype=tf.float32)
@@ -43,7 +43,10 @@ def chemTemplateClippedMatMul(deviceName, inputs, kernel,cp,CinhibMat,CactivMat,
         Clipping follow the rule: weights<0.2 take value -1, weighs>0.2 take value 1 and other take value 0.
     '''
     with tf.device(deviceName):
-        with ops.name_scope("clippedMatMulOp", [inputs, kernel]) as scope:
+        with ops.name_scope(None,default_name="clippedMatMulOp", values = [inputs, kernel]) as scope:
+
+            if len(inputs.shape.as_list())==1:
+                inputs = tf.stack([inputs])
 
             Tminus = tf.cast(tf.fill(kernel.shape,-1),dtype=tf.float32)
             Tplus = tf.cast(tf.fill(kernel.shape,1),dtype=tf.float32)
@@ -75,7 +78,7 @@ class chemTemplateLayer(Dense):
         Adds a constant bias to the input
         :param theta: bias to be added after each multipication
     """
-    def __init__(self, deviceName, inputShape, sparsity=0.9, min=-1, max=1, **kwargs):
+    def __init__(self, deviceName, input_shape, sparsity=0.9, min=-1, max=1, **kwargs):
         """
 
             :param deviceName: device to use for computation
@@ -89,25 +92,27 @@ class chemTemplateLayer(Dense):
         self.supports_masking = False
         self.sparseInitializer = sparseInitializer(sparsity, minval=min, maxval=max)
         self.deviceName=deviceName #the device on which the main operations will be conducted (forward and backward propagations)
-        self.build(inputShape) #We directly build the layer
-        self.shape = [inputShape,self.units]
-        self.k1 = np.zeros(self.shape)
-        self.k1n = np.zeros(self.shape)
-        self.k2 = np.zeros(self.shape)
-        self.k3 = np.zeros(self.shape)
-        self.k3n = np.zeros(self.shape)
-        self.k4 = np.zeros(self.shape)
+        self.build(input_shape) #We directly build the layer
+        self.shape = [input_shape,self.units]
+        self.k1 = tf.Variable(tf.zeros(self.shape),trainable=False)
+        self.k1n = tf.Variable(tf.zeros(self.shape),trainable=False)
+        self.k2 = tf.Variable(tf.zeros(self.shape),trainable=False)
+        self.k3 = tf.Variable(tf.zeros(self.shape),trainable=False)
+        self.k3n = tf.Variable(tf.zeros(self.shape),trainable=False)
+        self.k4 = tf.Variable(tf.zeros(self.shape),trainable=False)
 
-        self.k5 = np.zeros(self.shape[0])
-        self.k5n = np.zeros(self.shape[0])
-        self.k6 = np.zeros(self.shape[0])
-        self.kdI = np.zeros(self.shape[0])
-        self.kdT = np.zeros(self.shape[0])
+        #only one inhibition by outputs (units):
+        self.k5 = tf.Variable(tf.zeros(self.shape[1]),trainable=False)
+        self.k5n = tf.Variable(tf.zeros(self.shape[1]),trainable=False)
+        self.k6 = tf.Variable(tf.zeros(self.shape[1]),trainable=False)
+        self.kdI = tf.Variable(tf.zeros(self.shape[1]),trainable=False)
+        self.kdT = tf.Variable(tf.zeros(self.shape[1]),trainable=False)
 
-        self.TA0 = np.zeros(self.shape)
-        self.TI0 = np.zeros(self.shape)
-        self.E0 = 0
-        self.cp = 1
+        self.TA0 = tf.Variable(tf.zeros(self.shape),trainable=False)
+        self.TI0 = tf.Variable(tf.zeros(self.shape),trainable=False)
+        self.E0 = tf.Variable(0,trainable=False,dtype=tf.float32)
+        self.cp = tf.Variable(1,trainable=False,dtype=tf.float32)
+        self.rescaleFactor = tf.Variable(1,dtype=tf.float32,trainable=False)
 
     def build(self, input_shape):
         # We just change the way bias is added and remove it from trainable variable!
@@ -140,56 +145,62 @@ class chemTemplateLayer(Dense):
 
     def set_constants(self,constantArray,activInitC,inhibInitC,enzymeInit,computedRescaleFactor):
         """
-            Set the values for constants.
+            Define the ops assigning the values for the network constants.
         :return:
         """
-        self.rescaleFactor = computedRescaleFactor
-        enzymeInit = enzymeInit*(computedRescaleFactor**0.5)
-        self.k1.fill(constantArray[0])
-        self.k1n.fill(constantArray[1])
-        self.k2.fill(constantArray[2])
-        self.k3.fill(constantArray[3])
-        self.k3n.fill(constantArray[4])
-        self.k4.fill(constantArray[5])
-        self.k5.fill(constantArray[6])
-        self.k5n.fill(constantArray[7])
-        self.k6.fill(constantArray[8])
-        self.kdI.fill(constantArray[9])
-        self.kdT.fill(constantArray[10])
-        self.TA0.fill(activInitC)
-        self.TI0.fill(inhibInitC)
-        self.E0 = enzymeInit
+        self.rescaleFactor.assign(computedRescaleFactor)
+        enzymeInitTensor = enzymeInit*(computedRescaleFactor**0.5)
+        self.k1.assign(tf.fill(self.k1.shape,constantArray[0]))
+        self.k1n.assign(tf.fill(self.k1n.shape,constantArray[1]))
+        self.k2.assign(tf.fill(self.k2.shape,constantArray[2]))
+        self.k3.assign(tf.fill(self.k3.shape,constantArray[3]))
+        self.k3n.assign(tf.fill(self.k3n.shape,constantArray[4]))
+        self.k4.assign(tf.fill(self.k4.shape,constantArray[5]))
+        self.k5.assign(tf.fill(self.k5.shape,constantArray[6]))
+        self.k5n.assign(tf.fill(self.k5n.shape,constantArray[7]))
+        self.k6.assign(tf.fill(self.k6.shape,constantArray[8]))
+        self.kdI.assign(tf.fill(self.kdI.shape,constantArray[9]))
+        self.kdT.assign(tf.fill(self.kdT.shape,constantArray[10]))
+        self.TA0.assign(tf.fill(self.TA0.shape,activInitC))
+        self.TI0.assign(tf.fill(self.TI0.shape,inhibInitC))
+        self.E0.assign(enzymeInitTensor)
 
     def update_cp(self,cp):
-        self.cp = cp
+        self.cp.assign(cp)
 
     def rescale(self,rescaleFactor):
-        self.E0 = self.E0*(rescaleFactor**0.5)/(self.rescaleFactor**0.5)
-        self.rescaleFactor = rescaleFactor
+        """
+            Rescale the enzyme value
+        :param rescaleFactor: 0d Tensor: float with the new rescale
+        :return:
+        """
+        self.E0.assign(self.E0.read_value()*(rescaleFactor**0.5)/(self.rescaleFactor.read_value()**0.5))
+        self.rescaleFactor.assign(rescaleFactor)
 
     def call(self, inputs):
         inputs = ops.convert_to_tensor(inputs)
         rank = common_shapes.rank(inputs)
-        Cactiv = tf.convert_to_tensor(self.k2*self.k1/(self.k1n+self.k2)*self.E0*self.TA0)
+        k1M = self.k1/(self.k1n+self.k2)
+        Cactiv = tf.convert_to_tensor(self.k2*k1M*self.E0*self.TA0,dtype=tf.float32) #convert to tensor might not be needed.
         k5M = self.k5/(self.k5+self.k6)
         k3M = self.k3/(self.k3n+self.k4)
-        Cinhib = tf.convert_to_tensor(self.k6*self.k4*k5M*k3M*self.E0*self.E0*self.TI0/self.kdT)
+        Cinhib = tf.convert_to_tensor(tf.stack([self.k6*k5M/self.kdT]*(self.k4.shape[0]),axis=0)*self.k4*k3M*self.E0*self.E0*self.TI0,dtype=tf.float32)
         if rank > 2:
             # Broadcasting is required for the inputs.
-            kd = tf.convert_to_tensor(self.kdI)
-            outputs=chemTemplateClippedTensorDot(self.deviceName, inputs, self.kernel, rank,self.cp,Cactiv,Cinhib,kd)
+            kd = tf.convert_to_tensor(self.kdI,dtype=tf.float32)
+            outputs=chemTemplateClippedTensorDot(self.deviceName, inputs, self.kernel, rank,self.cp.read_value(),Cactiv,Cinhib,kd)
             # Reshape the output back to the original ndim of the input.
             if not context.executing_eagerly():
                 shape = inputs.get_shape().as_list()
                 output_shape = shape[:-1] + [self.units]
                 outputs.set_shape(output_shape)
         else:
-            kd = tf.convert_to_tensor(self.kdI)
-            outputs = chemTemplateClippedMatMul(self.deviceName, inputs, self.kernel,self.cp,Cactiv,Cinhib,kd)
+            kd = tf.convert_to_tensor(self.kdI,dtype=tf.float32)
+            outputs = chemTemplateClippedMatMul(self.deviceName, inputs, self.kernel,self.cp.read_value(),Cactiv,Cinhib,kd)
         return outputs
 
     def get_config(self):
-        config = {'cp': float(self.cp),'E0':float(self.E0)}
+        config = {'cp': float(self.cp.read_value()),'E0':float(self.E0.read_value())}
         base_config = super(chemTemplateLayer, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
