@@ -10,7 +10,7 @@ from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import clippedSparseBioDens
 from simulOfBioNN.nnUtils.clippedBinaryLayer import clippedBinaryLayer
 from simulOfBioNN.nnUtils.clippedSparseBioSigLayer import clippedSparseBioSigLayer
 from simulOfBioNN.nnUtils.chemTemplateNN.chemTemplateNNModel import chemTemplateNNModel
-
+import tensorflow as tf
 
 import os
 import numpy as np
@@ -112,7 +112,6 @@ def _findConstant(savePath):
 
 
 def trainWithChemTemplateNN(savePath):
-    import tensorflow as tf
 
     x_train,x_test,y_train,y_test,x_test_noise=loadMnist(rescaleFactor=2,fashion=False,size=None,mean=0,var=0.01,path="../../Data/mnist")
     if(np.max(x_test)<=1):
@@ -135,17 +134,18 @@ def trainWithChemTemplateNN(savePath):
     use_bias = False
     useGPU = False
     epochs = 5
+    my_batchsize = 32
     #tf.enable_eager_execution()
     # sess=tf.Session()
     # with sess.as_default():
-    model = chemTemplateNNModel(None,useGPU=useGPU,nbUnits=nbUnits,sparsities=sparsities,inputShape=x_train.shape[1],
-                                reactionConstants= constantList, enzymeInitC=enzymeInit, activTempInitC=activInit,
-                                inhibTempInitC=inhibInit, randomConstantParameter=None)
+    model = chemTemplateNNModel(None,useGPU=useGPU,nbUnits=nbUnits,sparsities=sparsities)
     model.compile(optimizer=tf.optimizers.Adam(),
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
-    model.build(input_shape=x_train.shape)
-    model.fit(x_train, y_train, epochs=epochs,verbose=True)
+    model.build(input_shape=(None,x_train.shape[-1]),reactionConstants= constantList, enzymeInitC=enzymeInit, activTempInitC=activInit,
+                inhibTempInitC=inhibInit, randomConstantParameter=None)
+    print("starting to fit")
+    model.fit(x_train, y_train,batch_size=my_batchsize,epochs=epochs,verbose=True)
     res = model.call(x_test[:10])
     print("finished the call, trying to print")
     print(res)

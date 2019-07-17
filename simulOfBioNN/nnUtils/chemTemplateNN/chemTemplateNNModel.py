@@ -1,3 +1,9 @@
+"""
+    Module for the Neural Network model we use in TF 2.0
+        Tf 2.0 is still in beta and far from being perfectly documented. We found additional insights here: https://pgaleone.eu/tensorflow/tf.function/2019/03/21/dissecting-tf-function-part-1/.
+"""
+
+
 import tensorflow as tf
 import numpy as np
 from simulOfBioNN.nnUtils.chemTemplateNN.tensorflowFixedPointSearch import computeCPonly
@@ -14,10 +20,34 @@ class chemTemplateNNModel(tf.keras.Model):
         We provide support for the simple model:
             exonuclease reactions model at order 1, polymerase and nickase are grouped under the same enzyme.
     """
-    def __init__(self, sess, useGPU, nbUnits, sparsities, inputShape, reactionConstants,
-                  enzymeInitC, activTempInitC, inhibTempInitC, randomConstantParameter=None):
+    def __init__(self, sess, useGPU, nbUnits, sparsities):
         """
             Initialization of the model:
+                    Here we simply add layers, they remain to be built once the input shape is known.
+                    Next steps are made at the build level, when the input shape becomes usable.
+            Be careful: we here consider the system to have been rescaled by using T0 and C0 constants.
+        :param sess: tensorflow session: we use to to obtain GPU or CPU name where we dispatch some of our operations.
+        :param useGPU: boolean, if True: we use GPU, else CPU.
+        :param nbUnits: list, for each layer its number of units
+        :param sparsities: the value of sparsity in each layer
+                """
+        super(chemTemplateNNModel,self).__init__(name="")
+        nbLayers = len(nbUnits)
+
+        if tf.test.is_gpu_available():
+            Deviceidx = "/gpu:0"
+        else:
+            Deviceidx = "/cpu:0"
+        # Test of the inputs
+        assert len(sparsities)==len(nbUnits)
+
+        self.layerList = []
+        for e in range(nbLayers):
+            self.layerList += [chemTemplateLayer(Deviceidx,units=nbUnits[e],sparsity=sparsities[e],dynamic=True)]
+
+    def build(self,input_shape,reactionConstants,enzymeInitC,activTempInitC, inhibTempInitC, randomConstantParameter=None):
+        """
+            Build the model and make the following initialization steps:
                 1) Intermediate layer use a random heuristic to obtain a sparse initialization
                 2) Based on the initialized topology, we can rescale our system.
                         We diminish the concentration of template.
@@ -28,65 +58,75 @@ class chemTemplateNNModel(tf.keras.Model):
                 4) If the random constant parameter is provided (default to None), we use a gaussian noise to randomise:
                         1) the concentration of template.
                         2) the constant parameters for each reactions.
-            Be carefull: we here consider the system to have been rescaled by using T0 and C0 constants.
-        :param sess: tensorflow session: we use to to obtain GPU or CPU name where we dispatch some of our operations.
-        :param useGPU: boolean, if True: we use GPU, else CPU.
-        :param nbUnits: list, for each layer its number of units
-        :param sparsities: the value of sparsity in each layer
-        :param inputShape: int, size of the input.
-                    We need it here because we need to compute at initialization time the rescale factor.
-                    This way we don't have to compute it at every initialization.
-        :param reactionConstants: standard value for the constant
+        :param input_shape:
+        :param reactionConstants: standard value for the constants
         :param enzymeInitC: concentration value for the enzyme that proved to be working well for a small neuron.
-                            Will be rescaled to compensate for larger number.
+                             Will be rescaled to compensate for larger number.
         :param activTempInitC: concentration value for the activating template that proved to be working well for a small neuron.
-                            Will be rescaled to compensate for larger number.
+                                Will be rescaled to compensate for larger number.
         :param inhibTempInitC: concentration value for the inhibiting template that proved to be working well for a small neuron.
-                            Will be rescaled to compensate for larger number.
-        :param randomConstantParameter: tuple of size 2 of list, default to None. First value is used for template (list of size 2),
-                                                                                  Second value for reactions constant (list of size reaction constants).
+                                Will be rescaled to compensate for larger number.
+        :param randomConstantParameter: randomConstantParameter: tuple of size 2 of list, default to None. First value is used for template (list of size 2),
+                                        Second value for reactions constant (list of size reaction constants).
+        :return:
         """
-        super(chemTemplateNNModel,self).__init__(name="")
-        nbLayers = len(nbUnits)
+        self.rescaleFactor = tf.Variable(0,trainable=False,dtype=tf.float32)
+        # Initiate variable for the call to the herited build which will compile the call and thus need it.
+        # CONCERNING THE SHAPE WE DO NOT USE TRADITIONNAL (INPUT,OUTPUT) format in the way we compute cp.
+        #   Therefore we define the following heuristic here:
+        #       ==> at the model level we store the reaction constants with this shape format (output,input) so that they are used for cp computation
+        #       ==> at the layer model we store the reaction constants with the (input,ouput) shape format
+        modelsConstantShape =[(self.layerList[0].units,input_shape[-1])]+[(self.layerList[idx+1].units,l.units) for idx,l in enumerate(self.layerList[:-1])]
+        modelsOutputConstantShape = [l.units for l in self.layerList]
 
-        if tf.test.is_gpu_available():
-            Deviceidx = "/gpu:0"
-        else:
-            Deviceidx = "/cpu:0"
-        # Test of the inputs
-        assert len(sparsities)==len(nbUnits)
+        print("models shapes are "+str(modelsConstantShape))
+        print("outputs shapes are"+str(modelsOutputConstantShape))
+        self.k1 = [tf.Variable(tf.zeros(modelsConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+        self.k1n = [tf.Variable(tf.zeros(modelsConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+        self.k2 = [tf.Variable(tf.zeros(modelsConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+        self.k3 = [tf.Variable(tf.zeros(modelsConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+        self.k3n = [tf.Variable(tf.zeros(modelsConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+        self.k4 = [tf.Variable(tf.zeros(modelsConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+        self.TA0 = [tf.Variable(tf.zeros(modelsConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+        self.TI0 = [tf.Variable(tf.zeros(modelsConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+
+        self.k5 = [tf.Variable(tf.zeros(modelsOutputConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+        self.k5n = [tf.Variable(tf.zeros(modelsOutputConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+        self.k6 = [tf.Variable(tf.zeros(modelsOutputConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+        self.kdI = [tf.Variable(tf.zeros(modelsOutputConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+        self.kdT = [tf.Variable(tf.zeros(modelsOutputConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+
+        self.E0 = tf.Variable(tf.zeros(1,dtype=tf.float32),trainable=False)
+        self.masks = [tf.Variable(tf.zeros(modelsConstantShape[idx],dtype=tf.float32),trainable=False) for idx,l in enumerate(self.layerList)]
+
+        super(chemTemplateNNModel,self).build(input_shape)
+
         assert len(reactionConstants) == 11
         assert type(enzymeInitC) == float
         assert type(activTempInitC) == float
         assert type(inhibTempInitC) == float
         if randomConstantParameter is not None:
             assert type(randomConstantParameter) == tuple
-        self.layerList = []
-        inputShapes = [inputShape]+nbUnits[:-1]
-        for e in range(nbLayers):
-            self.layerList += [chemTemplateLayer(Deviceidx,inputShapes[e],units=nbUnits[e],sparsity=sparsities[e],dynamic=True)]
 
-
-        self.rescaleFactor = tf.keras.backend.sum([l.get_rescaleOps() for l in self.layerList],axis=-1)
+        self.rescaleFactor.assign(tf.keras.backend.sum([l.get_rescaleOps() for l in self.layerList],axis=-1))
         for l in self.layerList:
             l.set_constants(reactionConstants,enzymeInitC,activTempInitC,inhibTempInitC,self.rescaleFactor)
-
-        self.k1 = [tf.transpose(l.k1) for l in self.layerList]
-        self.k1n = [tf.transpose(l.k1n) for l in self.layerList]
-        self.k2 = [tf.transpose(l.k2) for l in self.layerList]
-        self.k3 = [tf.transpose(l.k3) for l in self.layerList]
-        self.k3n = [tf.transpose(l.k3n) for l in self.layerList]
-        self.k4 = [tf.transpose(l.k4) for l in self.layerList]
-        self.k5 = [tf.transpose(l.k5) for l in self.layerList]
-        self.k5n = [tf.transpose(l.k5n) for l in self.layerList]
-        self.k6 = [tf.transpose(l.k6) for l in self.layerList]
-        self.kdI = [tf.transpose(l.kdI) for l in self.layerList]
-        self.kdT = [tf.transpose(l.kdT) for l in self.layerList]
-        self.TA0 = [tf.transpose(l.TA0) for l in self.layerList]
-        self.TI0 = [tf.transpose(l.TI0) for l in self.layerList]
-        self.E0 = self.layerList[0].E0
-        self.masks = [tf.transpose(l.get_mask().numpy()) for l in self.layerList]
-
+        for idx,l in enumerate(self.layerList):
+            self.k1[idx].assign(tf.transpose(l.k1)) #transpose enable to switch the shape format here as previously explained.
+            self.k1n[idx].assign(tf.transpose(l.k1n))
+            self.k2[idx].assign(tf.transpose(l.k2))
+            self.k3[idx].assign(tf.transpose(l.k3))
+            self.k3n[idx].assign(tf.transpose(l.k3n))
+            self.k4[idx].assign(tf.transpose(l.k4))
+            self.k5[idx].assign(tf.transpose(l.k5))
+            self.k5n[idx].assign(tf.transpose(l.k5n))
+            self.k6[idx].assign(tf.transpose(l.k6))
+            self.kdI[idx].assign(tf.transpose(l.kdI))
+            self.kdT[idx].assign(tf.transpose(l.kdT))
+            self.TA0[idx].assign(tf.transpose(l.TA0))
+            self.TI0[idx].assign(tf.transpose(l.TI0))
+            self.masks[idx].assign(tf.transpose(l.get_mask().numpy()))
+        self.E0.assign(self.layerList[0].E0)
 
     def call(self, inputs, training=None, mask=None):
         """
@@ -100,60 +140,54 @@ class chemTemplateNNModel(tf.keras.Model):
         """
         # if len(inputs.shape)==1:
         #     inputs=tf.stack(inputs)
-        @tf.function
-        def func(input):
-            tf.print("starting cp computing")
-            # rescaling:
-            if training:
-                newRescaleFactor = tf.keras.backend.sum([l.get_rescaleOps() for l in self.layerList],axis=-1)
-                if(False in tf.equal(self.rescaleFactor,newRescaleFactor)):
-                    self.rescaleFactor = newRescaleFactor
-                    for l in self.layerList:
-                            l.rescale(self.rescaleFactor)
-            # We also need to update the information the model has: we gather from all layers their weights matrix
-                self.k1 = [tf.transpose(l.k1) for l in self.layerList]
-                self.k1n = [tf.transpose(l.k1n) for l in self.layerList]
-                self.k2 = [tf.transpose(l.k2) for l in self.layerList]
-                self.k3 = [tf.transpose(l.k3) for l in self.layerList]
-                self.k3n = [tf.transpose(l.k3n) for l in self.layerList]
-                self.k4 = [tf.transpose(l.k4) for l in self.layerList]
-                self.k5 = [tf.transpose(l.k5) for l in self.layerList]
-                self.k5n = [tf.transpose(l.k5n) for l in self.layerList]
-                self.k6 = [tf.transpose(l.k6) for l in self.layerList]
-                self.kdI = [tf.transpose(l.kdI) for l in self.layerList]
-                self.kdT = [tf.transpose(l.kdT) for l in self.layerList]
-                self.TA0 = [tf.transpose(l.TA0) for l in self.layerList]
-                self.TI0 = [tf.transpose(l.TI0) for l in self.layerList]
-                self.E0 = self.layerList[0].E0
-                self.masks = [tf.transpose(l.get_mask()) for l in self.layerList]
-
-            #rescaling of the inputs
-            input = input/self.rescaleFactor
-
-            #We compute competition ==> dependant on the inputs, results of a fixed-point solve.
-            #cp = computeCPonly(self.k1,self.k1n,self.k2,self.k3,self.k3n,self.k4,self.k5,self.k5n,self.k6,self.kdI,
-            #                   self.kdT,self.TA0,self.TI0,self.E0,input,self.masks,fittedValue=None,verbose=False)
-            cp = 10
-            for l in self.layerList:
-                l.update_cp(cp)
-            tf.print("ended cp computing")
-            x = self.layerList[0](inputs)
-            for l in self.layerList[1:]:
-                tf.print("next layer")
-                x = l(x)
-            return x
         print("tensorflow is executing eagerly: "+str(tf.executing_eagerly()))
         # print("model is executing eagerly: "+str(self.run_eagerly))
         from tensorflow.python.eager import context
         print("context is executing eagerly:"+str(context.executing_eagerly()))
         if len(inputs.shape)>1:
-            tf.print("using map funtion")
             X0s = tf.convert_to_tensor(inputs)
-            tf.print(X0s.shape)
-            result = tf.map_fn(func,X0s)
-            tf.print("ended use of map")
+            if training:
+                self.verifyMask()
+            result = self.funcTesting(X0s)
         else:
             tf.print("using normal pipeline")
-            result = func(inputs)
+            X0s = tf.convert_to_tensor(inputs)
+            result = self.funcTesting(X0s)
         return result
+
+    @tf.function
+    def verifyMask(self):
+        tf.print("starting mask verifying")
+        newRescaleFactor = tf.keras.backend.sum([l.get_rescaleOps() for l in self.layerList],axis=-1)
+        if(False in tf.equal(self.rescaleFactor,newRescaleFactor)):
+            self.rescaleFactor.assign(newRescaleFactor)
+            for l in self.layerList:
+                l.rescale(self.rescaleFactor)
+        # We also need to update the information the model has: E0 and the masks might have change
+        self.E0.assign(self.layerList[0].E0)
+        for idx in range(len(self.layerList)): #becareful! enumerate is not yet supported in tf.function
+            self.masks[idx].assign(tf.transpose(self.layerList[idx].get_mask().numpy()))
+        tf.print("ended mask update")
+
+    @tf.function
+    def lambdaComputecp(self,input):
+        return computeCPonly(self.k1,self.k1n,self.k2,self.k3,self.k3n,self.k4,self.k5,self.k5n,self.k6,self.kdI,
+                             self.kdT,self.TA0,self.TI0,self.E0,input,self.masks)
+    @tf.function
+    def funcTesting(self,inputs):
+        print("starting cp computing")
+        tf.print("starting cp computing")
+        #rescaling of the inputs
+        inputs = inputs/self.rescaleFactor
+        cps = tf.map_fn(self.lambdaComputecp,inputs)
+        print("ended cp computing,starting output computation")
+        tf.print("ended cp computing,starting output computation")
+        for l in self.layerList:
+            l.update_cp(cps)
+        x = self.layerList[0](inputs)
+        for l in self.layerList[1:]:
+            tf.print("next layer")
+            x = l(x)
+        tf.print("ended output computaton")
+        return x
 

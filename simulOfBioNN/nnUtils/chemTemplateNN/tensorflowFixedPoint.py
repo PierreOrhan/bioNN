@@ -26,32 +26,35 @@
 import tensorflow as tf
 
 @tf.function
-def brentq(f, xa, xb, xtol=10**(-12), rtol=4.4408920985006262*10**(-16), iter=100, args=()):
+def brentq(f, xa, xb, xtol=10**(-12), rtol=4.4408920985006262*10**(-16), iter=100, test =[10,10,10,10,10,101,10,10,10,101,1,1,10,10],args=()):
+
+    # test2 = []
+    # for t in tf.range(len(test)):
+    #     print(t)
+    #     test2 += [test[t]]
     xpre = xa
     xcur = xb
-    xblk = 0.0
-    fblk = 0.0
-    spre = 0.0
-    scur = 0.0
-
+    xblk = tf.constant(0.)
+    fblk = tf.constant(0.)
+    spre = tf.constant(0.)
+    scur = tf.constant(0.)
     fpre = f(xpre, args)
     fcur = f(xcur, args)
-    if (fpre*fcur > 0):
+    if tf.math.greater(fpre*fcur,0):
         return 0.0
-    if (fpre == 0):
+    if tf.equal(fpre,0):
         return xpre
-
-    if (fcur == 0):
+    if tf.equal(fcur,0):
         return xcur
 
-    for i in range(iter):
-
-        if (fpre*fcur < 0):
+    for i in tf.range(iter):
+        print(i)
+        if tf.less(fpre*fcur,0):
             xblk = xpre
             fblk = fpre
             spre = xcur - xpre
             scur = xcur - xpre
-        if (abs(fblk) < abs(fcur)):
+        if tf.less(tf.abs(fblk),tf.abs(fcur)):
             xpre = xcur
             xcur = xblk
             xblk = xpre
@@ -60,13 +63,13 @@ def brentq(f, xa, xb, xtol=10**(-12), rtol=4.4408920985006262*10**(-16), iter=10
             fcur = fblk
             fblk = fpre
 
-        delta = (xtol + rtol*abs(xcur))/2
+        delta = (xtol + rtol*tf.abs(xcur))/2
         sbis = (xblk - xcur)/2
-        if (fcur == 0 or abs(sbis) < delta):
+        if tf.equal(fcur,0) or tf.less(tf.abs(sbis),delta):
             i = iter #BREAK FAILS HERE!!! ==> strange behavior?
         else:
-            if (abs(spre) > delta and abs(fcur) < abs(fpre)):
-                if (xpre == xblk):
+            if tf.greater(tf.abs(spre),delta) and tf.less(tf.abs(fcur),tf.abs(fpre)):
+                if tf.equal(xpre,xblk):
                 # /* interpolate */
                     stry = -fcur*(xcur - xpre)/(fcur - fpre)
                 else :
@@ -75,32 +78,52 @@ def brentq(f, xa, xb, xtol=10**(-12), rtol=4.4408920985006262*10**(-16), iter=10
                     dblk = (fblk - fcur)/(xblk - xcur)
                     stry = -fcur*(fblk*dblk - fpre*dpre)/(dblk*dpre*(fblk - fpre))
 
-                mymin = tf.minimum(abs(spre), 3*abs(sbis) - delta) #Here would not understand...
-                spre=tf.where(tf.less(2*abs(stry)-mymin,0),scur,sbis)
-                scur=tf.where(tf.less(2*abs(stry)-mymin,0),stry,sbis)
-                #     # /* good short step */
-                #if(2*abs(stry) < mymin):
-                #     spre = scur
-                #     scur = stry
-                # else:
-                #     # /* bisect */
-                #     spre = sbis
-                #     scur = sbis
+                mymin = tf.minimum(tf.abs(spre), 3*tf.abs(sbis) - delta) #Here would not understand...
+                spre=tf.where(tf.less(2*tf.abs(stry)-mymin,0),scur,sbis)
+                scur=tf.where(tf.less(2*tf.abs(stry)-mymin,0),stry,sbis)
             else:
                 # /* bisect */
                 spre = sbis
                 scur = sbis
             xpre = xcur
             fpre = fcur
-            if (abs(scur) > delta):
+            if tf.greater(tf.abs(scur),delta):
                 xcur += scur
             else:
-                if sbis >0:
+                if tf.greater(sbis,0):
                     xcur += delta
                 else:
-                    xcur+= -delta
+                    xcur += -delta
         fcur = f(xcur, args)
     return xcur
 
+@tf.function
+def f(x,args):
+    return (x-1)**3
 
+@tf.function
+def g(iter,x):
+    t=tf.zeros((10,10))
+    for i in tf.range(iter):
+        x.assign(i)
+        tf.print(x)
+        tf.print(i)
+        tf.print(t[i])
+    return iter
+
+import time
+if __name__=="__main__":
+    t=time.time()
+    # print(brentq(f,tf.constant(-4.),tf.constant(4.)))
+    # print(t-time.time())
+    # t=time.time()
+    # print(brentq(f,tf.constant(-4.),tf.constant(4.)))
+    # print(t-time.time())
+    # t=time.time()
+    # print(brentq(f,tf.constant(-10.),tf.constant(10.)))
+    # print(t-time.time())
+    # t=time.time()
+    x = tf.Variable(tf.constant(0))
+    e = g(10,x)
+    print(g.__code__)
 
