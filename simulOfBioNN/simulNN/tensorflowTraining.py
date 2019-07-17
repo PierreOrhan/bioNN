@@ -142,7 +142,7 @@ def trainWithChemTemplateNN(savePath):
     model.compile(optimizer=tf.optimizers.Adam(),
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
-    model.build(input_shape=(None,x_train.shape[-1]),reactionConstants= constantList, enzymeInitC=enzymeInit, activTempInitC=activInit,
+    model.build(input_shape=(my_batchsize,x_train.shape[-1]),reactionConstants= constantList, enzymeInitC=enzymeInit, activTempInitC=activInit,
                 inhibTempInitC=inhibInit, randomConstantParameter=None)
     print("starting to fit")
     model.fit(x_train, y_train,batch_size=my_batchsize,epochs=epochs,verbose=True)

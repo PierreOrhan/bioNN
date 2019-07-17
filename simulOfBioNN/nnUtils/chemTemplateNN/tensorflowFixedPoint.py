@@ -26,7 +26,7 @@
 import tensorflow as tf
 
 @tf.function
-def brentq(f, xa, xb, xtol=10**(-12), rtol=4.4408920985006262*10**(-16), iter=100, test =[10,10,10,10,10,101,10,10,10,101,1,1,10,10],args=()):
+def brentq(f, xa, xb, iter,xtol=10**(-12), rtol=4.4408920985006262*10**(-16), test =[10,10,10,10,10,101,10,10,10,101,1,1,10,10],args=()):
 
     # test2 = []
     # for t in tf.range(len(test)):
@@ -48,7 +48,6 @@ def brentq(f, xa, xb, xtol=10**(-12), rtol=4.4408920985006262*10**(-16), iter=10
         return xcur
 
     for i in tf.range(iter):
-        print(i)
         if tf.less(fpre*fcur,0):
             xblk = xpre
             fblk = fpre
@@ -100,21 +99,34 @@ def brentq(f, xa, xb, xtol=10**(-12), rtol=4.4408920985006262*10**(-16), iter=10
 @tf.function
 def f(x,args):
     return (x-1)**3
-
-@tf.function
-def g(iter,x):
-    t=tf.zeros((10,10))
-    for i in tf.range(iter):
-        x.assign(i)
-        tf.print(x)
-        tf.print(i)
-        tf.print(t[i])
-    return iter
-
+#
+# @tf.function
+# def g(iter,x):
+#     t=tf.zeros((10,10))
+#     for i in tf.range(iter):
+#         x.assign(i)
+#         tf.print(x)
+#         tf.print(i)
+#         tf.print(t[i])
+#     return iter
+# @tf.function
+# def g(m):
+#     for i in tf.range(4):
+#         z =tf.zeros((i,i))
+#         tf.print(z)
+#         m = tf.sequence_mask([i]*4,4)
+#         tf.print(tf.boolean_mask(tf.zeros((4,4)),m))
+#
 import time
+import numpy as np
 if __name__=="__main__":
     t=time.time()
-    # print(brentq(f,tf.constant(-4.),tf.constant(4.)))
+    z =tf.TensorShape((100,None))
+    layerlist = np.zeros(100)
+    m=[(10,10)]*100
+    z = tf.stack([tf.RaggedTensor.from_tensor(tf.zeros(m[idx],dtype=tf.float32)) for idx in range(layerlist.shape[0])])
+    print(z.shape)
+    print(brentq(f,tf.constant(-4.),tf.constant(4.),iter=z.shape[0]))
     # print(t-time.time())
     # t=time.time()
     # print(brentq(f,tf.constant(-4.),tf.constant(4.)))
@@ -123,7 +135,9 @@ if __name__=="__main__":
     # print(brentq(f,tf.constant(-10.),tf.constant(10.)))
     # print(t-time.time())
     # t=time.time()
-    x = tf.Variable(tf.constant(0))
-    e = g(10,x)
-    print(g.__code__)
+    # x = tf.Variable(tf.constant(0))
+    # e = g(10,x)
+    # print(g.__code__)
+    # mask = tf.sequence_mask([2]*10,10)
+    # g(mask)
 
