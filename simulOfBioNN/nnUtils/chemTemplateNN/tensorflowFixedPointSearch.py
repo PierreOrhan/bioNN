@@ -140,7 +140,7 @@ def cpEquilibriumFunc(cp,args):
         new_cp += tf.reshape(Inhib2/(E0*cp)*x_eq,shape=())
     return cp - new_cp
 
-def computeCPonly(vk1,vk1n,vk2,vk3,vk3n,vk4,vk5,vk5n,vk6,vkdI,vkdT,vTA0,vTI0,vE0,X0,vmasks):
+def computeCPonly(vk1,vk1n,vk2,vk3,vk3n,vk4,vk5,vk5n,vk6,vkdI,vkdT,vTA0,vTI0,E0,X0,vmasks):
     """
          This function computes the competition's value by solving a fixed point equation.
          It is based on the most simplest chemical model for the template model: no endonuclease; polymerase and nickase are considered together.
@@ -165,7 +165,6 @@ def computeCPonly(vk1,vk1n,vk2,vk3,vk3n,vk4,vk5,vk5n,vk6,vkdI,vkdT,vTA0,vTI0,vE0
     kdT = vkdT.getRagged()
     TA0 = vTA0.getRagged()
     TI0 = vTI0.getRagged()
-    E0 = vE0.getRagged()
     masks = vmasks.getRagged()
 
     # Computation of the different constants that are required.
@@ -211,10 +210,4 @@ def computeCPonly(vk1,vk1n,vk2,vk3,vk3n,vk4,vk5,vk5n,vk6,vkdI,vkdT,vTA0,vTI0,vE0
     tf.print("computedCp: "+str(computedCp))
     return computedCp
 
-class cpComputer():
-    def __init__(self,k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kdI,kdT,TA0,TI0,E0,masks):
-        self.myArgs = (k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kdI,kdT,TA0,TI0,E0,masks)
-    def do_protected_compute(self,X0):
-        k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kdI,kdT,TA0,TI0,E0,masks = self.myArgs
-        computeCPonly(k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kdI,kdT,TA0,TI0,E0,X0,masks)
 

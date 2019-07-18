@@ -117,6 +117,25 @@ def f(x,args):
 #         m = tf.sequence_mask([i]*4,4)
 #         tf.print(tf.boolean_mask(tf.zeros((4,4)),m))
 #
+
+
+
+class VariableRaggedTensor(tf.Module):
+    def __init__(self,raggedTensor):
+        self.var_rowsplits = tf.Variable(raggedTensor.row_splits,trainable=False)
+        self.multiDim = False
+        if type(raggedTensor.values)==tf.RaggedTensor:
+            self.var_values = VariableRaggedTensor(raggedTensor.values)
+            self.multiDim = True
+        else:
+            self.var_values = tf.Variable(raggedTensor.values,trainable=False)
+        self.shape0 = tf.Variable(raggedTensor.shape[0],trainable=False)
+    @tf.function
+    def getRagged(self):
+        if self.multiDim:
+            return tf.RaggedTensor.from_row_splits(row_splits=self.var_rowsplits,values=self.var_values.getRagged())
+        return tf.RaggedTensor.from_row_splits(row_splits=self.var_rowsplits,values=self.var_values)
+
 import time
 import numpy as np
 if __name__=="__main__":
@@ -125,8 +144,11 @@ if __name__=="__main__":
     layerlist = np.zeros(100)
     m=[(10,10)]*100
     z = tf.stack([tf.RaggedTensor.from_tensor(tf.zeros(m[idx],dtype=tf.float32)) for idx in range(layerlist.shape[0])])
-    print(z.shape)
-    print(brentq(f,tf.constant(-4.),tf.constant(4.),iter=z.shape[0]))
+    print(z[0].shape)
+    vz = VariableRaggedTensor(z)
+    print(vz.getRagged()[0].shape)
+
+    #print(brentq(f,tf.constant(-4.),tf.constant(4.),iter=z.shape[0]))
     # print(t-time.time())
     # t=time.time()
     # print(brentq(f,tf.constant(-4.),tf.constant(4.)))

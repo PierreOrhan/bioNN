@@ -101,7 +101,7 @@ class chemTemplateLayer(Dense):
                              'should be defined. Found `None`.')
         if not input_shape.is_fully_defined():
             print("the input shape used for build is not fully defined")
-        print("the input shape has rank"+str(input_shape.rank))
+
         self.input_spec = tf.keras.layers.InputSpec(shape = input_shape,dtype=tf.float32,min_ndim=2)
         self.kernel = self.add_weight(
             'kernel',
@@ -141,11 +141,13 @@ class chemTemplateLayer(Dense):
         #other intermediates variable:
         self.k1M = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
         self.Cactiv = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.k5M = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
         self.k3M = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
         self.Cinhib = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
 
+        self.k5M = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float32),trainable=False)
+
         self.built = True
+        print("Layer successfully built")
 
 
     def get_rescaleOps(self):
@@ -185,7 +187,7 @@ class chemTemplateLayer(Dense):
         self.Cactiv.assign(self.k2*self.k1M*self.E0*self.TA0)
         self.k5M.assign(self.k5/(self.k5+self.k6))
         self.k3M.assign(self.k3/(self.k3n+self.k4))
-        self.Cinhib.assign(tf.stack([self.k6*self.k5M/self.kdT]*(self.k4.shape[1]),axis=1)*self.k4*self.k3M*self.E0*self.E0*self.TI0)
+        self.Cinhib.assign(tf.stack([self.k6*self.k5M/self.kdT]*(self.k4.shape[0]),axis=0)*self.k4*self.k3M*self.E0*self.E0*self.TI0)
 
     def update_cp(self,cps):
         self.cps.assign(cps)

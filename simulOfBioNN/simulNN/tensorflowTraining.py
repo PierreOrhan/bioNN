@@ -144,9 +144,12 @@ def trainWithChemTemplateNN(savePath):
                   metrics=['accuracy'])
     model.build(input_shape=(my_batchsize,x_train.shape[-1]),reactionConstants= constantList, enzymeInitC=enzymeInit, activTempInitC=activInit,
                 inhibTempInitC=inhibInit, randomConstantParameter=None)
+    print("testing against 10 example:")
+    res = model.call(x_test[:2])
+    print(res)
     print("starting to fit")
     model.fit(x_train, y_train,batch_size=my_batchsize,epochs=epochs,verbose=True)
-    res = model.call(x_test[:10])
+
     print("finished the call, trying to print")
     print(res)
     print(model.summary())
