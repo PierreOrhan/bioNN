@@ -22,7 +22,7 @@ class chemTemplateNNModel(tf.keras.Model):
         We provide support for the simple model:
             exonuclease reactions model at order 1, polymerase and nickase are grouped under the same enzyme.
     """
-    def __init__(self, sess, useGPU, nbUnits, sparsities):
+    def __init__(self, sess, useGPU, nbUnits, sparsities, reactionConstants,enzymeInitC,activTempInitC, inhibTempInitC, randomConstantParameter=None):
         """
             Initialization of the model:
                     Here we simply add layers, they remain to be built once the input shape is known.
@@ -45,13 +45,28 @@ class chemTemplateNNModel(tf.keras.Model):
 
         self.layerList = []
         for e in range(nbLayers):
-            self.layerList += [chemTemplateLayer(Deviceidx,units=nbUnits[e],sparsity=sparsities[e],dynamic=True)]
+            self.layerList += [chemTemplateLayer(Deviceidx,units=nbUnits[e],sparsity=sparsities[e],dynamic=False)]
 
         self.cpLayer = chemTemplateCpLayer(Deviceidx)
 
+        self.reactionConstants = reactionConstants
+        self.enzymeInitC = enzymeInitC
+        self.activTempInitC = activTempInitC
+        self.inhibTempInitC = inhibTempInitC
+        self.randomConstantParameter =randomConstantParameter
+
+        assert len(self.reactionConstants) == 11
+        assert type(self.enzymeInitC) == float
+        assert type(self.activTempInitC) == float
+        assert type(self.inhibTempInitC) == float
+        if self.randomConstantParameter is not None:
+            assert type(self.randomConstantParameter) == tuple
+            #TODO: implement randomized constants
+
+
         self.built = False
 
-    def build(self,input_shape,reactionConstants,enzymeInitC,activTempInitC, inhibTempInitC, randomConstantParameter=None):
+    def build(self,input_shape):
         """
             Build the model and make the following initialization steps:
                 1) Intermediate layer use a random heuristic to obtain a sparse initialization
@@ -88,39 +103,30 @@ class chemTemplateNNModel(tf.keras.Model):
         # THUS this instantation shall be made in non-eager mode, and the only moment to catch it is within the call function (see call).
         #self.non_eager_building(input_shape)
 
-
-        super(chemTemplateNNModel,self).build(input_shape)
-        modelsConstantShape =[(input_shape[-1]),self.layerList[0].units]+[(l.units,self.layerList[idx+1].units) for idx,l in enumerate(self.layerList[:-1])]
+        modelsConstantShape =[(input_shape[-1],self.layerList[0].units)]+[(l.units,self.layerList[idx+1].units) for idx,l in enumerate(self.layerList[:-1])]
+        input_shapes = [input_shape]+[(input_shape[0],l.units) for l in self.layerList[:-1]]
         for idx,l in enumerate(self.layerList):
-            l.build(modelsConstantShape[idx])
+            l.build(input_shapes[idx])
 
         self.cpLayer.build(input_shape,self.layerList)
 
-        print("mask for cpLayer shape are "+str([[k.shape for k in e] for e in self.cpLayer.masks.getRagged()]))
-        mask = tf.stack([tf.RaggedTensor.from_tensor(tf.transpose(l.get_mask())) for l in self.layerList])
-        print("mask for all layer is computed as "+str([[k.shape for k in e] for e in mask]))
-
-        assert len(reactionConstants) == 11
-        assert type(enzymeInitC) == float
-        assert type(activTempInitC) == float
-        assert type(inhibTempInitC) == float
-        if randomConstantParameter is not None:
-            assert type(randomConstantParameter) == tuple
-
         self.rescaleFactor.assign(tf.keras.backend.sum([l.get_rescaleOps() for l in self.layerList],axis=-1))
         for l in self.layerList:
-            l.set_constants(reactionConstants,enzymeInitC,activTempInitC,inhibTempInitC,self.rescaleFactor)
+            l.set_constants(self.reactionConstants,self.enzymeInitC,self.activTempInitC,self.inhibTempInitC,self.rescaleFactor)
 
-        mask = tf.stack([tf.RaggedTensor.from_tensor(tf.transpose(l.get_mask())) for l in self.layerList])
-        print("mask for all layer is computed as "+str([[k.shape for k in e] for e in mask]))
+        # mask = tf.stack([tf.RaggedTensor.from_tensor(tf.transpose(l.get_mask())) for l in self.layerList])
+        # print("mask for all layer is computed as "+str([[k.shape for k in e] for e in mask]))
 
         self.cpLayer.assignConstantFromLayers(self.layerList)
         self.cpLayer.assignMasksFromLayers(self.layerList)
         self.cpLayer.E0.assign(self.layerList[0].E0)
         self.built = True
-        print("At end of build")
-        print("mask0 for cp layer is computed as "+str(self.cpLayer.masks.getRagged()[0].shape))
+        # print("At end of build")
+        # print("mask0 for cp layer is computed as "+str(self.cpLayer.masks.getRagged()[0].shape))
+        super(chemTemplateNNModel,self).build(input_shape)
+        print("model successfully built")
 
+    # @tf.function
     def call(self, inputs, training=None, mask=None):
         """
             Call function for out chemical model.
@@ -133,42 +139,44 @@ class chemTemplateNNModel(tf.keras.Model):
         """
         # if len(inputs.shape)==1:
         #     inputs=tf.stack(inputs)
-        if(self.built):
-            tf.print("model has well been built and a call is tried")
-            mask = tf.stack([tf.RaggedTensor.from_tensor(tf.transpose(l.get_mask())) for l in self.layerList])
-            tf.print("mask for all layer is computed as "+str(mask[0].shape))
-            tf.print("mask0 for cp layer is computed as "+str(self.cpLayer.masks.getRagged()[0].shape))
-            self.cpLayer.assignMasksFromLayers(self.layerList)
-            tf.print("mask0 for cpLayer after assign is computed as "+str(self.cpLayer.masks.getRagged()[0].shape))
+        # if(self.built):
+        #     tf.print("model has well been built and a call is tried")
+        #     mask = tf.stack([tf.RaggedTensor.from_tensor(tf.transpose(l.get_mask())) for l in self.layerList])
+        #     tf.print("mask for all layer is computed as "+str(mask[0].shape))
+        #     tf.print("mask0 for cp layer is computed as "+str(self.cpLayer.masks.getRagged()[0].shape))
+        #     self.cpLayer.assignMasksFromLayers(self.layerList)
+        #     tf.print("mask0 for cpLayer after assign is computed as "+str(self.cpLayer.masks.getRagged()[0].shape))
         """
             We would like to proceed with a batching point of view.
             The problem here, is that tf.map_fn creates a graph for each realisation, making us loose the initialization on the current graph...
             Thus we cannot use it here, while this has not been fixed in tensorflow!
         """
-        if(self.built):
-            if len(inputs.shape)>1:
-                # X0s = tf.convert_to_tensor(inputs)
-                if training:
-                    self.verifyMask()
-                result = self.funcTesting(inputs)
-            else:
-                tf.print("using normal pipeline")
-                # X0s = tf.convert_to_tensor(inputs)
-                result = self.funcTesting(inputs)
+        inputs = tf.convert_to_tensor(inputs)
+
+        if len(inputs.shape)>1:
+            # X0s = tf.convert_to_tensor(inputs)
+            if training:
+                self.verifyMask()
+            result = self.funcTesting(inputs)
         else:
-            result = tf.zeros(10,tf.float32)
+            print("using normal pipeline")
+            tf.print("using normal pipeline")
+            # X0s = tf.convert_to_tensor(inputs)
+            result = self.funcTesting(inputs)
+
         return result
 
+    @tf.function
     def verifyMask(self):
         tf.print("starting mask verifying")
-        newRescaleFactor = tf.keras.backend.sum([l.get_rescaleOps() for l in self.layerList],axis=-1)
-        if(False in tf.equal(self.rescaleFactor,newRescaleFactor)):
+        newRescaleFactor = tf.stop_gradient(tf.keras.backend.sum([l.get_rescaleOps() for l in self.layerList],axis=-1))
+        if(not tf.equal(self.rescaleFactor,newRescaleFactor)):
             self.rescaleFactor.assign(newRescaleFactor)
             for l in self.layerList:
                 l.rescale(self.rescaleFactor)
         # We also need to update the information the model has: E0 and the masks might have change
         self.cpLayer.E0.assign(self.layerList[0].E0)
-        self.cpLayer.masks.assign(tf.stack([tf.RaggedTensor.from_tensor(tf.transpose(l.get_mask())) for l in self.layerList]))
+        self.cpLayer.assignMasksFromLayers(self.layerList)
         tf.print("ended mask update")
 
     def funcTesting(self,inputs):
@@ -177,14 +185,19 @@ class chemTemplateNNModel(tf.keras.Model):
             tf.map_fn creates a graph for each realisation, making us loose the initialization on the current graph...
             Thus we cannot use it here, while this has not been fixed in tensorflow!
         """
-        gatheredCps = self.cpLayer(inputs)
-        print("ended cp computing,starting output computation")
-        tf.print("ended cp computing,starting output computation")
-        for l in self.layerList:
-            l.update_cp(gatheredCps)
-        x = self.layerList[0](inputs)
+        print("input before cp layer is "+str(inputs))
+        tf.print("input before cp layer is "+str(inputs))
+        gatheredCps = tf.stop_gradient(self.cpLayer(inputs))
+        # for l in self.layerList:
+        #     l.update_cp(gatheredCps)
+        x = self.layerList[0](inputs,cps=gatheredCps)
+        print(x.shape)
         for l in self.layerList[1:]:
-            tf.print("next layer")
-            x = l(x)
-        tf.print("ended output computaton")
+            x = l(x,cps=gatheredCps)
+            print(x)
+            tf.print(x)
+            print("and for cps:")
+            print(gatheredCps)
+        print("returning x")
+        tf.print("returning x")
         return x

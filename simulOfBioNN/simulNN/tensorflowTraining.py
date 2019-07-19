@@ -134,24 +134,26 @@ def trainWithChemTemplateNN(savePath):
     use_bias = False
     useGPU = False
     epochs = 5
-    my_batchsize = 32
+    my_batchsize = 2
     #tf.enable_eager_execution()
     # sess=tf.Session()
     # with sess.as_default():
-    model = chemTemplateNNModel(None,useGPU=useGPU,nbUnits=nbUnits,sparsities=sparsities)
+    model = chemTemplateNNModel(None,useGPU=useGPU,nbUnits=nbUnits,sparsities=sparsities,reactionConstants= constantList, enzymeInitC=enzymeInit, activTempInitC=activInit,
+                                inhibTempInitC=inhibInit, randomConstantParameter=None)
+    print("model is running eagerly: "+str(model.run_eagerly))
+    model.run_eagerly=True
     model.compile(optimizer=tf.optimizers.Adam(),
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
-    model.build(input_shape=(my_batchsize,x_train.shape[-1]),reactionConstants= constantList, enzymeInitC=enzymeInit, activTempInitC=activInit,
-                inhibTempInitC=inhibInit, randomConstantParameter=None)
-    print("testing against 10 example:")
+    model.build(input_shape=(my_batchsize,x_train.shape[-1]))
+    print("testing against 2 example:")
     res = model.call(x_test[:2])
+    print("finished calls")
     print(res)
     print("starting to fit")
     model.fit(x_train, y_train,batch_size=my_batchsize,epochs=epochs,verbose=True)
 
     print("finished the call, trying to print")
-    print(res)
     print(model.summary())
     _,acc=model.evaluate(x_test, y_test)
     _,accNoise=model.evaluate(x_test_noise, y_test)

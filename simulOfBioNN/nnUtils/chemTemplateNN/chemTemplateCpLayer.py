@@ -13,7 +13,7 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
     """
     def __init__(self, deviceName, **kwargs):
         """
-
+            Creates the VariableRaggedTensor object which store variable corresponding to ragged tensors.
             :param deviceName: device to use for computation
             :param kwargs:
         """
@@ -43,8 +43,6 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
     def build(self, input_shape,layerList):
         # We just change the way bias is added and remove it from trainable variable!
         input_shape = tf.TensorShape(input_shape)
-        if not input_shape.is_fully_defined():
-            print("The input shape used for build is not fully defined, it should be for chemTemplateCpLayer")
 
         modelsConstantShape =[(layerList[0].units,input_shape[-1])]+[(layerList[idx+1].units,l.units) for idx,l in enumerate(layerList[:-1])]
         modelsOutputConstantShape = [l.units for l in layerList]
@@ -93,24 +91,32 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
 
     def assignMasksFromLayers(self,layerList):
         self.masks.assign(tf.stack([tf.RaggedTensor.from_tensor(tf.transpose(l.get_mask())) for l in layerList]))
-        tf.print("mask was assigned from layers")
-        tf.print("mask has now shape: "+str(self.masks.getRagged()[0].shape))
 
+    def lambdaComputeCpOnly(self,input):
+        return self.computeCPonly(self.k1,self.k1n,self.k2,self.k3,self.k3n,self.k4,self.k5,self.k5n,self.k6,self.kdI,
+                                 self.kdT,self.TA0,self.TI0,self.Cinhib0,self.E0,input,self.masks)
+
+    # @tf.function
     def __call__(self, inputs):
-        if self.built:
-            inputs = ops.convert_to_tensor(inputs)
-            rank = common_shapes.rank(inputs)
-            print("inside cp layer the mask0 shape is"+str(self.masks.getRagged()[0].shape))
-            cps = tf.TensorArray(dtype=tf.float32,size=inputs.shape[0])
-            for idx in tf.range(inputs.shape[0]):
-                cps.write(idx,self.computeCPonly(self.k1,self.k1n,self.k2,self.k3,self.k3n,self.k4,self.k5,self.k5n,self.k6,self.kdI,
-                                            self.kdT,self.TA0,self.TI0,self.Cinhib0,self.E0,inputs[idx],self.masks))
-            gatheredCps = cps.gather(indices=tf.range(cps.size()))
-        else:
-            gatheredCps = tf.zeros(inputs.shape[0],dtype=tf.float32)
+        #cps = tf.TensorArray(dtype=tf.float32,size=tf.shape(inputs)[0],dynamic_size=False,infer_shape=False)
+        # for idx in tf.range(tf.shape(inputs)[0]):
+        #     e = self.computeCPonly(self.k1,self.k1n,self.k2,self.k3,self.k3n,self.k4,self.k5,self.k5n,self.k6,self.kdI,
+        #                            self.kdT,self.TA0,self.TI0,self.Cinhib0,self.E0,inputs[idx],self.masks)
+        #     tf.print("compute cp is: "+str(e))
+        #     print("compute cp is "+str(e))
+        #     tf.print("compute cps is: "+str(cps))
+        #     print("compute cps is "+str(cps))
+        #     cps.write(idx,e)
+        # print("the input is "+str(inputs))
+        # print("the cps size is "+str(cps.size()))
+        # print("the input size is "+str(tf.shape(inputs)[0]))
+        # #gatheredCps = cps.gather(indices=tf.range(cps.size()))
+        # gatheredCps = cps.stack()
+        # print("gathered cps is "+str(gatheredCps))
+        gatheredCps = tf.map_fn(self.lambdaComputeCpOnly,inputs)
         return gatheredCps
 
-
+    @tf.function
     def obtainBornSup(self,k6,kdT,kdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks):
         """
             Given approximate only for the enzyme competition term (cp), we compute the next approximate using G.
@@ -122,14 +128,12 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
         :return:
         """
         max_cp = tf.zeros(1,dtype=tf.float32)+1
-        olderX = None
-
-        for layeridx in tf.range(masks.shape[0]):
+        olderX = tf.TensorArray(dtype=tf.float32,size=0,dynamic_size=True)
+        for layeridx in tf.range(tf.shape(masks.to_tensor())[0]):
             layer = masks[layeridx].to_tensor()
-            print("looping , layer has shape: "+str(layer.shape))
-            layerEq = tf.TensorArray(dtype=tf.float32,size=layer.shape[1])
+            layerEq = tf.TensorArray(dtype=tf.float32,size=tf.shape(layer)[1])
             if(tf.equal(layeridx,0)):
-                for inpIdx in tf.range(layer.shape[1]):
+                for inpIdx in tf.range(tf.shape(layer)[1]):
                     #compute of Kactivs,Kinhibs;
                     Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0) #This is also a matrix element wise multiplication
                     Kinhibs = tf.where(layer[:,inpIdx]<0,Kinhib0[layeridx].to_tensor()[:,inpIdx],0)
@@ -137,15 +141,19 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
                     w_inpIdx = tf.keras.backend.sum(Kactivs)+tf.keras.backend.sum(Kinhibs)
                     max_cp += w_inpIdx*X0[inpIdx]
                     # saving values
-                olderX = X0
+                olderX.scatter(indices=[0,tf.shape(X0)[0]],value=X0)
             else:
-                for inpIdx in tf.range(layer.shape[1]):
+                for inpIdx in tf.range(tf.shape(layer)[1]):
+                    stackOlderX = olderX.stack()
                     #compute of Cactivs,Cinhibs, the denominator marks the template's variation from equilibrium
                     #Terms for the previous layers
                     CactivsOld = tf.where(masks[layeridx-1,inpIdx,:]>0,Cactiv0[layeridx-1,inpIdx],0)
                     CinhibsOld = tf.where(masks[layeridx-1,inpIdx,:]<0,Cinhib0[layeridx-1,inpIdx],0)
                     #computing of new equilibrium
-                    x_eq = tf.keras.backend.sum(CactivsOld*olderX/kdT[layeridx-1,inpIdx])
+                    print("the shape are:")
+                    tf.print(stackOlderX.shape)
+                    tf.print(CactivsOld.shape)
+                    x_eq = tf.keras.backend.sum(CactivsOld*stackOlderX/kdT[layeridx-1,inpIdx])
                     layerEq.write(inpIdx,x_eq)
                     #compute of Kactivs,Kinhibs, for the current layer:
                     Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0) #This is also a matrix element wise multiplication
@@ -153,19 +161,29 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
                     #Adding, to the competition over enzyme, the complex formed in this layer by this input.
                     firstComplex = tf.keras.backend.sum(tf.where(layer[:,inpIdx]>0,Kactivs*x_eq,tf.where(layer[:,inpIdx]<0,Kinhibs*x_eq,0)))
                     #We must also add the effect of pseudoTempalte enzymatic complex in the previous layers which can't be computed previously because we missed x_eq
-                    Inhib2 = tf.keras.backend.sum(CinhibsOld*olderX/(kdT[layeridx-1,inpIdx]*k6[layeridx-1,inpIdx]))
-                    max_cp += firstComplex + tf.reshape(Inhib2/E0*x_eq,shape=()) #strange bug here
-                olderX= layerEq.stack()
+                    Inhib2 = tf.keras.backend.sum(CinhibsOld*stackOlderX/(kdT[layeridx-1,inpIdx]*k6[layeridx-1,inpIdx]))
+                    print("the shape are:")
+                    tf.print(stackOlderX.shape)
+                    tf.print(" cc0"+str(CactivsOld.shape))
+                    max_cp += firstComplex + tf.reshape(Inhib2/E0*x_eq,shape=())
+                    print("the shape are:")
+                    tf.print(stackOlderX.shape)
+                    tf.print(" cc1"+str(CactivsOld.shape))
+                layerEqStack = layerEq.stack()
+                olderX.scatter(indices=[0,tf.shape(layerEqStack)[0]],value=layerEqStack)
         #Finally we must add the effect of pseudoTemplate enzymatic complex in the last layers
-        for outputsIdx in tf.range(masks[-1].shape[0]):
+        for outputsIdx in tf.range(tf.shape(masks[-1].to_tensor())[0]):
+            stackOlderX = olderX.stack()
+            print("the shape is:")
+            tf.print(" cc" + str(stackOlderX.shape))
             Cinhibs = tf.where(masks[-1,outputsIdx,:]<0,Cinhib0[-1,outputsIdx],0)
             Cactivs = tf.where(masks[-1,outputsIdx,:]>0,Cactiv0[-1,outputsIdx],0)
-            x_eq = tf.keras.backend.sum(Cactivs*olderX/(kdI[-1,outputsIdx]))
-            Inhib2 = tf.keras.backend.sum(Cinhibs*olderX/(kdT[-1,outputsIdx]*k6[-1,outputsIdx]))
+            x_eq = tf.keras.backend.sum(Cactivs*stackOlderX/(kdI[-1,outputsIdx]))
+            Inhib2 = tf.keras.backend.sum(Cinhibs*stackOlderX/(kdT[-1,outputsIdx]*k6[-1,outputsIdx]))
             max_cp += tf.reshape(Inhib2/E0*x_eq,shape=())
         return max_cp
 
-
+    @tf.function
     def cpEquilibriumFunc(self,cp,args):
         """
             Given approximate only for the enzyme competition term (cp), we compute the next approximate using G.
@@ -181,25 +199,22 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
         """
             We would like to store at each loop turn the result of the previous layer so we can use it at the next iteration.
             BUT the loop is built using tf.range, executing much faster but providing an indicator that is a tensor.
-            We suggest two solutions in tensorflow:
-                1) Simply: use a python variable that changes at each loop turn.
-                2) Other possibility: 
-                    use a tensor of maximal size, and masks it at each loop turn using a mask.
-                    The mask should thus be provided as a variable.
+            
+            We then need to us the TensorArray with a dynamic size!
+
             Indeed tensor does not support item assignment in tensorflow (and ragged tensor) 
             for example: e = tf.zeros((10,10))
                          e[10,:] = 4
             will fail!! Normally one would use a variable to compensate for this.
             BUT variable are not available for ragged tensor.
         """
-        olderX = None
-        # olderX = tf.stack([tf.RaggedTensor.from_tensor(tf.zeros(m.shape[1])) for m in masks])
-        for layeridx in tf.range(masks.shape[0]):
+        olderX = tf.TensorArray(dtype=tf.float32,size=0,dynamic_size=True)
+        for layeridx in tf.range(tf.shape(masks.to_tensor())[0]):
             layer = masks[layeridx].to_tensor()
-            print("looping cpEqui , layer has shape: "+str(layer.shape))
-            layerEq = tf.TensorArray(dtype=tf.float32,size=layer.shape[1])
+            # print("looping cpEqui , layer has shape: "+str(layer.shape))
+            layerEq = tf.TensorArray(dtype=tf.float32,size=tf.shape(layer)[1])
             if(tf.equal(layeridx,0)):
-                for inpIdx in tf.range(layer.shape[1]):
+                for inpIdx in tf.range(tf.shape(layer)[1]):
                     #compute of Kactivs,Kinhibs;
                     # In ragged tensor as Kactiv0 is, we cannot use slice on inner dimension, thus we are here required to convert it to a tensor.
                     Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0) #This is also a matrix element wise multiplication
@@ -211,17 +226,18 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
                     new_cp+=w_inpIdx*x_eq
                     # saving values
                     layerEq.write(inpIdx,x_eq)
-                olderX = layerEq.stack()
+                layerEqStack = layerEq.stack()
+                olderX.scatter(indices=[0,tf.shape(layerEqStack)[0]],value=layerEqStack)
             else:
-                for inpIdx in tf.range(layer.shape[1]):
-
+                for inpIdx in tf.range(tf.shape(layer)[1]):
+                    stackOlderX = olderX.stack()
                     #compute of Cactivs,Cinhibs, the denominator marks the template's variation from equilibrium
                     #Terms for the previous layers
                     CactivsOld = tf.where(masks[layeridx-1,inpIdx,:]>0,Cactiv0[layeridx-1,inpIdx],0)
                     CinhibsOld = tf.where(masks[layeridx-1,inpIdx,:]<0,Cinhib0[layeridx-1,inpIdx],0)
-                    Inhib = tf.keras.backend.sum(CinhibsOld*olderX/kdT[layeridx-1,inpIdx])
+                    Inhib = tf.keras.backend.sum(CinhibsOld*stackOlderX/kdT[layeridx-1,inpIdx])
                     #computing of new equilibrium
-                    x_eq = tf.keras.backend.sum(CactivsOld*olderX/(kdI[layeridx-1,inpIdx]*cp+Inhib/cp))
+                    x_eq = tf.keras.backend.sum(CactivsOld*stackOlderX/(kdI[layeridx-1,inpIdx]*cp+Inhib/cp))
                     layerEq.write(inpIdx,x_eq)
                     #compute of Kactivs,Kinhibs, for the current layer:
                     Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0) #This is also a matrix element wise multiplication
@@ -229,21 +245,23 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
                     #Adding, to the competition over enzyme, the complex formed in this layer by this input.
                     firstComplex = tf.keras.backend.sum(tf.where(layer[:,inpIdx]>0,Kactivs*x_eq,tf.where(layer[:,inpIdx]<0,Kinhibs*x_eq,0)))
                     #We must also add the effect of pseudoTempalte enzymatic complex in the previous layers which can't be computed previously because we missed x_eq
-                    Inhib2 = tf.keras.backend.sum(CinhibsOld*olderX/(kdT[layeridx-1,inpIdx]*k6[layeridx-1,inpIdx]))
+                    Inhib2 = tf.keras.backend.sum(CinhibsOld*stackOlderX/(kdT[layeridx-1,inpIdx]*k6[layeridx-1,inpIdx]))
                     new_cp+=firstComplex + tf.reshape(Inhib2/(E0*cp)*x_eq,shape=())
-                olderX = layerEq.stack()
+                layerEqStack = layerEq.stack()
+                olderX.scatter(indices=[0,tf.shape(layerEqStack)[0]],value=layerEqStack)
         #Finally we must add the effect of pseudoTemplate enzymatic complex in the last layers
-        for outputsIdx in tf.range(masks[-1].shape[0]):
+        for outputsIdx in tf.range(tf.shape(masks[-1].to_tensor())[0]):
+            stackOlderX = olderX.stack()
             Cinhibs = tf.where(masks[-1,outputsIdx,:]<0,Cinhib0[-1,outputsIdx],0)
             Cactivs = tf.where(masks[-1,outputsIdx,:]>0,Cactiv0[-1,outputsIdx],0)
 
-            Inhib = tf.keras.backend.sum(Cinhibs*olderX/kdT[-1,outputsIdx])
-            x_eq = tf.keras.backend.sum(Cactivs*olderX/(kdI[-1,outputsIdx]*cp+Inhib/cp))
-            Inhib2 = tf.keras.backend.sum(Cinhibs*olderX/(kdT[-1,outputsIdx]*k6[-1,outputsIdx]))
+            Inhib = tf.keras.backend.sum(Cinhibs*stackOlderX/kdT[-1,outputsIdx])
+            x_eq = tf.keras.backend.sum(Cactivs*stackOlderX/(kdI[-1,outputsIdx]*cp+Inhib/cp))
+            Inhib2 = tf.keras.backend.sum(Cinhibs*stackOlderX/(kdT[-1,outputsIdx]*k6[-1,outputsIdx]))
             new_cp += tf.reshape(Inhib2/(E0*cp)*x_eq,shape=())
         return cp - new_cp
 
-
+    # @tf.function
     def computeCPonly(self,vk1,vk1n,vk2,vk3,vk3n,vk4,vk5,vk5n,vk6,vkdI,vkdT,vTA0,vTI0,vCInhib0,E0,X0,vmasks):
         """
              This function computes the competition's value by solving a fixed point equation.
@@ -284,13 +302,11 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
         newkdI = kdI
 
         cp0max=self.obtainBornSup(k6,newkdT,newkdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks)# we start from an upper bound
-        print("cp0max: "+str(cp0max))
-        tf.print("cp0max: "+str(cp0max))
-        computedCp = brentq(self.cpEquilibriumFunc,tf.constant(1.0),tf.constant(cp0max),args=(k6,newkdT,newkdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks))
-        print("computedCp: "+str(computedCp))
-        tf.print("computedCp: "+str(computedCp))
-        return computedCp
+        computedCp = brentq(self.cpEquilibriumFunc,tf.constant(1.0),tf.reshape(cp0max,shape=()),args=(k6,newkdT,newkdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks))
 
+        return tf.reshape(computedCp,shape=(1,))
+
+@tf.function #
 def brentq(f, xa, xb,xtol=10**(-12), rtol=4.4408920985006262*10**(-16),iter=1,args=()):
     xpre = xa
     xcur = xb
@@ -408,12 +424,7 @@ class VariableRaggedTensor():
     @tf.function
     def getRagged(self):
         if self.displayInfo:
-            tf.print(" when consumed the shape of row_splits is "+str(self.var_rowsplits.shape))
-            tf.print(" when consumed we have row_splits:"+str(self.var_rowsplits))
-            if self.multiDim:
-                tf.print(" when consumed we have values:"+str(self.var_values.getRagged()))
-            else:
-                tf.print(" when consumed we have values:"+str(self.var_values))
+            pass
         if self.multiDim:
             return tf.RaggedTensor.from_row_splits(row_splits=self.var_rowsplits.read_value(),values=self.var_values.getRagged())
         return tf.RaggedTensor.from_row_splits(row_splits=self.var_rowsplits.read_value(),values=self.var_values.read_value())

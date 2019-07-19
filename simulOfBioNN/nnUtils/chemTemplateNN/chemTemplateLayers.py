@@ -9,6 +9,7 @@ import numpy as np
 from tensorflow.python.ops import nn
 from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import weightFixedAndClippedConstraint,sparseInitializer,constant_initializer,layerconstantInitiliaizer
 
+
 def chemTemplateClippedTensorDot(deviceName, inputs, kernel, rank, cp,CinhibMat,CactivMat,kd):
     """
         Clipped tensorDot on which we apply on a sigmoid function of the form activator*kernelActivator/1+activator*kernelActivator+sumALLInhib*kernelInhibitor
@@ -37,6 +38,7 @@ def chemTemplateClippedTensorDot(deviceName, inputs, kernel, rank, cp,CinhibMat,
             outputs = tf.stop_gradient(tf.divide(activation,cp*kd+inhibition)-forBackProp)
             return tf.add(forBackProp,outputs,name=scope)
 
+
 def chemTemplateClippedMatMul(deviceName, inputs, kernel,cp,CinhibMat,CactivMat,kd):
     '''
         Clipped matmul on which we apply on a sigmoid function of the form activator*kernelActivator/1+activator*kernelActivator+sumALLInhib*kernelInhibitor
@@ -44,18 +46,16 @@ def chemTemplateClippedMatMul(deviceName, inputs, kernel,cp,CinhibMat,CactivMat,
     '''
     with tf.device(deviceName):
         with ops.name_scope(None,default_name="clippedMatMulOp", values = [inputs, kernel]) as scope:
-
             if len(inputs.shape.as_list())==1:
                 inputs = tf.stack([inputs])
-
             Tminus = tf.cast(tf.fill(kernel.shape,-1),dtype=tf.float32)
             Tplus = tf.cast(tf.fill(kernel.shape,1),dtype=tf.float32)
             Tzero = tf.cast(tf.fill(kernel.shape,0),dtype=tf.float32)
             #clipp the kernel at 0:
             clippedKernel=tf.stop_gradient(tf.where(tf.less(kernel,-0.2),Tminus,tf.where(tf.less(kernel,0.2),Tzero,Tplus)))
             kernelInhibitor=tf.stop_gradient(tf.where(tf.less(kernel,0),clippedKernel,Tzero)*(-1))
-            inhibFiltered = kernelInhibitor * CinhibMat/cp    # We multiply the filtered by Cinhib and divide it by cp
-            inhibition = tf.stop_gradient(tf.matmul(inputs,inhibFiltered))
+            inhibFiltered = kernelInhibitor * CinhibMat   # We multiply the filtered by Cinhib
+            inhibition = tf.stop_gradient(tf.matmul(tf.divide(inputs,cp),inhibFiltered)) # and divide the inputs by cp
             #kernel for activators:
             kernelActivator = tf.stop_gradient(tf.where(tf.less(kernel,0),Tzero,clippedKernel))
             activatorFiltered = kernelActivator * CactivMat
@@ -102,7 +102,6 @@ class chemTemplateLayer(Dense):
         if not input_shape.is_fully_defined():
             print("the input shape used for build is not fully defined")
 
-        self.input_spec = tf.keras.layers.InputSpec(shape = input_shape,dtype=tf.float32,min_ndim=2)
         self.kernel = self.add_weight(
             'kernel',
             shape=[input_shape[-1], self.units],
@@ -134,9 +133,6 @@ class chemTemplateLayer(Dense):
 
         self.E0 = tf.Variable(0,trainable=False,dtype=tf.float32)
         self.rescaleFactor = tf.Variable(1,dtype=tf.float32,trainable=False)
-
-        #The competition, used with batches in mind!
-        self.cps = tf.Variable(tf.zeros(input_shape[0],dtype=tf.float32), trainable=False)
 
         #other intermediates variable:
         self.k1M = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
@@ -189,8 +185,9 @@ class chemTemplateLayer(Dense):
         self.k3M.assign(self.k3/(self.k3n+self.k4))
         self.Cinhib.assign(tf.stack([self.k6*self.k5M/self.kdT]*(self.k4.shape[0]),axis=0)*self.k4*self.k3M*self.E0*self.E0*self.TI0)
 
-    def update_cp(self,cps):
-        self.cps.assign(cps)
+    # def update_cp(self,cps):
+    #     print("assigning new cps: "+str((cps).shape))
+    #     self.cps.assign(cps)
 
     def rescale(self,rescaleFactor):
         """
@@ -201,23 +198,25 @@ class chemTemplateLayer(Dense):
         self.E0.assign(self.E0.read_value()*(rescaleFactor**0.5)/(self.rescaleFactor.read_value()**0.5))
         self.rescaleFactor.assign(rescaleFactor)
 
-    def call(self, inputs):
+    def call(self, inputs, cps = None):
+        if cps is None:
+            cps = tf.ones(tf.shape(inputs))
         inputs = ops.convert_to_tensor(inputs)
-        rank = common_shapes.rank(inputs)
-        if rank > 2:
-            # Broadcasting is required for the inputs.
-            outputs=chemTemplateClippedTensorDot(self.deviceName, inputs, self.kernel, rank, self.cps, self.Cactiv, self.Cinhib, self.kdI)
-            # Reshape the output back to the original ndim of the input.
-            if not context.executing_eagerly():
-                shape = inputs.get_shape().as_list()
-                output_shape = shape[:-1] + [self.units]
-                outputs.set_shape(output_shape)
-        else:
-            outputs = chemTemplateClippedMatMul(self.deviceName, inputs, self.kernel, self.cps, self.Cactiv, self.Cinhib, self.kdI)
+        # rank = common_shapes.rank(inputs)
+        # if rank > 2:
+        #     # Broadcasting is required for the inputs.
+        #     outputs=chemTemplateClippedTensorDot(self.deviceName, inputs, self.kernel, rank, cps, self.Cactiv, self.Cinhib, self.kdI)
+        #     # Reshape the output back to the original ndim of the input.
+        #     if not context.executing_eagerly():
+        #         shape = inputs.get_shape().as_list()
+        #         output_shape = shape[:-1] + [self.units]
+        #         outputs.set_shape(output_shape)
+        # else:
+        outputs = chemTemplateClippedMatMul(self.deviceName, inputs, self.kernel, cps, self.Cactiv, self.Cinhib, self.kdI)
         return outputs
 
     def get_config(self):
-        config = {'cps for last batch': float(self.cps.read_value()), 'E0':float(self.E0.read_value())}
+        config = {'E0':float(self.E0.read_value())} #'cps for last batch': float(self.cps.read_value()),
         base_config = super(chemTemplateLayer, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
