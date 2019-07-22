@@ -131,7 +131,7 @@ class chemTemplateLayer(Dense):
         self.kdT = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float32),trainable=False)
 
 
-        self.E0 = tf.Variable(0,trainable=False,dtype=tf.float32)
+        self.E0 = tf.Variable(tf.constant(1,dtype=tf.float32),trainable=False,dtype=tf.float32)
         self.rescaleFactor = tf.Variable(1,dtype=tf.float32,trainable=False)
 
         #other intermediates variable:
@@ -175,7 +175,7 @@ class chemTemplateLayer(Dense):
         self.kdT.assign(tf.fill(self.kdT.shape,constantArray[10]))
         self.TA0.assign(tf.fill(self.TA0.shape,activInitC))
         self.TI0.assign(tf.fill(self.TI0.shape,inhibInitC))
-        self.E0.assign(enzymeInitTensor)
+        self.E0.assign(tf.constant(enzymeInitTensor,dtype=tf.float32))
 
         #now we compute other intermediate values:
 
@@ -201,7 +201,6 @@ class chemTemplateLayer(Dense):
     def call(self, inputs, cps = None):
         if cps is None:
             cps = tf.ones(tf.shape(inputs))
-        inputs = ops.convert_to_tensor(inputs)
         # rank = common_shapes.rank(inputs)
         # if rank > 2:
         #     # Broadcasting is required for the inputs.

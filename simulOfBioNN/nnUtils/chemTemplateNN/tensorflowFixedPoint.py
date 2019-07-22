@@ -136,17 +136,40 @@ class VariableRaggedTensor(tf.Module):
             return tf.RaggedTensor.from_row_splits(row_splits=self.var_rowsplits,values=self.var_values.getRagged())
         return tf.RaggedTensor.from_row_splits(row_splits=self.var_rowsplits,values=self.var_values)
 
+@tf.function
+def f(x):
+    tf.print(tf.shape(x)[0])
+    return tf.shape(x)
+
+@tf.function
+def g(x):
+    e =tf.TensorArray(dtype=tf.float32,size=1)
+    for idx in tf.range(2):
+        if tf.equal(idx,0):
+            e.write(0,tf.shape(x)[0])
+        else:
+            tf.print(e.read(0))
+    return x
+
+
 import time
 import numpy as np
 if __name__=="__main__":
-    t=time.time()
-    z =tf.TensorShape((100,None))
-    layerlist = np.zeros(100)
-    m=[(10,10)]*100
-    z = tf.stack([tf.RaggedTensor.from_tensor(tf.zeros(m[idx],dtype=tf.float32)) for idx in range(layerlist.shape[0])])
-    print(z[0].shape)
-    vz = VariableRaggedTensor(z)
-    print(vz.getRagged()[0].shape)
+    # t=time.time()
+    # z =tf.TensorShape((100,None))
+    # layerlist = np.zeros(100)
+    # m=[(10,10)]*100
+    # z = tf.stack([tf.RaggedTensor.from_tensor(tf.zeros(m[idx],dtype=tf.float32)) for idx in range(layerlist.shape[0])])
+    # print(z[0].shape)
+    # vz = VariableRaggedTensor(z)
+    # print(vz.getRagged()[0].shape)
+    # print(tf.constant(1.))
+    # print(g().shape)
+    #e =tf.TensorArray(dtype=tf.int32,size=1,clear_after_read=False)
+    #e =tf.Variable(initial_value=0)
+    e = tf.zeros(10)
+    g(tf.zeros(10),e)
+    #print(tf.map_fn(f,tf.zeros((5,10,1)),dtype=tf.int32))
 
     #print(brentq(f,tf.constant(-4.),tf.constant(4.),iter=z.shape[0]))
     # print(t-time.time())

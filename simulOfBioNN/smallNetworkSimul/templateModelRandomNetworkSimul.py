@@ -10,7 +10,7 @@
 import numpy as np
 import os
 from simulOfBioNN.parseUtils.parser import generateNeuralNetwork,generateTemplateNeuralNetwork,read_file
-from simulOfBioNN.simulNN.simulator import executeSimulation
+from simulOfBioNN.simulNN.simulator import executeODESimulation
 from simulOfBioNN.odeUtils.systemEquation import fPythonSparse
 from simulOfBioNN.odeUtils.utils import readAttribute,obtainTemplateArray,obtainOutputArray
 from simulOfBioNN.plotUtils.adaptivePlotUtils import colorDiagram,neuronPlot,plotEvolution,fitComparePlot
@@ -33,7 +33,7 @@ def chemf(k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd,TA,TI,E0,A,I,otherConcentrationsActiv
     return Cactiv*A/(cp + k2*Kactiv*E0*kd+ CInhib*I/cp),cp
 
 
-def func(cp, kd, E0, k6, Cactiv, CInhib, Kactiv, Kinhib, masks, X):
+def func(cp, kd, E0,k2,k4, k6, Cactiv, CInhib, Kactiv, Kinhib, masks, X):
     """
         Gives xn-g(x[n-1]) where cp verifies cp=g(cp), g is defined by the network architecture
             cp = g(cp,K,Cactiv,Cinhib,Kactiv,Kinhib,masks,X)
@@ -67,10 +67,10 @@ def func(cp, kd, E0, k6, Cactiv, CInhib, Kactiv, Kinhib, masks, X):
                 w_inputsIdx = k2*Kactiv*np.sum(layer[:,inputsIdx]>0)+k4*Kinhib*np.sum(layer[:,inputsIdx]<0)
                 w_template = Kactiv*np.sum(layer[:,inputsIdx]>0)+Kinhib*np.sum(layer[:,inputsIdx]<0)
 
-                x_eq = Activ/(cp+kd*w_inputsIdx*E0+Inhib/cp)
+                x_eq = Activ/(cp+Inhib/cp)
                 layerEq +=[x_eq]
 
-                g += w_template*Activ/(cp+kd*w_inputsIdx*E0+Inhib/cp) + Inhib/(E0*k6*cp)*x_eq
+                g += w_template*Activ/(cp+Inhib/cp) + Inhib/(E0*k6*cp)*x_eq
             olderX[layeridx] = np.array(layerEq)
     # Need to add participation of last pseudo-template complex
     for outputsIdx in range(masks[-1].shape[0]):
@@ -79,110 +79,7 @@ def func(cp, kd, E0, k6, Cactiv, CInhib, Kactiv, Kinhib, masks, X):
         Activ = Cactiv*ActivInter
         x_eq = Activ/(cp+Inhib/cp)
         g += Inhib/(E0*k6*cp)*x_eq
-    ##We need to add an exponential term
     return cp-g*kd
-
-
-
-
-def allEquilibriumFunc(cps,k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kdT,kdI,TA0,TI0,E0,X0,masks):
-    """
-        Given approximate for the different competitions term (in the vector cps), we compute the next approximate using G.
-        The real value for the competitions term verify cps = G(cps,initialConditions)
-    :param cps: 1+nbrTemplate array. In the first one we store the competition on the enzyme.
-                                     In the other the competition on the template species.
-    :param k1: list of arrays of size similar to masks, constant involve in the set of reaction
-    :param k1n: list of arrays of size similar to masks, constant involve in the set of reaction
-    :param k2: list of arrays of size similar to masks, constant involve in the set of reaction
-    :param k3: list of arrays of size similar to masks, constant involve in the set of reaction
-    :param k3n: list of arrays of size similar to masks, constant involve in the set of reaction
-    :param k4: list of arrays of size similar to masks, constant involve in the set of reaction
-    :param k5: list of arrays of size similar to masks, constant involve in the set of reaction
-    :param k5n: list of arrays of size similar to masks, constant involve in the set of reaction
-    :param k6: list of arrays of size similar to masks, constant involve in the set of reaction
-    :param kdI: list of arrays of size similar to masks, constant involve in the set of reaction (DEGRADATION OF NODES)
-    :param kdT: list of arrays of size similar to masks, constant involve in the set of reaction (DEGRADATION OF TEMPLATES)
-    :param TA0: list of arrays of size similar to masks, initial concentration value for the template, if no edge one should put 0 as initial value...
-    :param TI0: list of arrays of size similar to masks, initial concentration value for the template, if no edge one should put 0 as initial value...
-    :param E0: float, initial concentration in the enzyme
-    :param X0: nbrInputs array, contains initial value for the inputs
-    :param masks: masks giving the network topology.
-    :return:
-    """
-    # Computation of the different constants that are required.
-    k1M = [k1[l]/(k1n[l]+k2[l]) for l in range(len(k1))] #(matrix operations)
-    k3M = [k3[l]/(k3n[l]+k4[l]) for l in range(len(k3))]
-    k5M = [k5[l]/(k5n[l]+k6[l]) for l in range(len(k5))]
-
-    Kactiv0 = [k1M[l]*TA0[l] for l in range(len(k1M))] # element to element product
-    Kinhib0 = [k3M[l]*TI0[l] for l in range(len(k3M))]
-    Cactiv0 = [k2[l]*k1M[l]*TA0[l]*E0 for l in range(len(k1M))]
-    Cinhib0 =[k6[l]*k5M[l]*k4[l]*k3M[l]*TI0[l]*E0*E0 for l in range(len(k3M))]
-
-    # We move from an array to a list of 2d-array for the competition over each template:
-    cp=cps[0]
-    cpt = [np.reshape(cps[(l+1):(l+1+m.shape[0]*m.shape[1])],(m.shape[0],m.shape[1])) for l,m in enumerate(masks)]
-    new_cpt = [np.zeros(cpt[l].shape)+1 for l in cpt]
-    new_cp = 1
-
-    olderX = [np.zeros(m.shape[1]) for m in masks]
-    olderTA = [np.zeros(m.shape) for m in masks]
-    olderTI = [np.zeros(m.shape) for m in masks]
-    for layeridx,layer in enumerate(masks):
-        layerEq = np.zeros(layer.shape[1])
-        if(layeridx==0):
-            for inpIdx in range(layer.shape[1]):
-                #compute of Kactivs,Kinhibs;
-                Kactivs = np.where(layer[:,inpIdx]>0,Kactiv0[layeridx]/cpt[layeridx],0) #This is also a matrix element wise multiplication
-                Kinhibs = np.where(layer[:,inpIdx]<0,Kinhib0[layeridx]/cpt[layeridx],0)
-                #compute of "weights": sum of kactivs and kinhibs
-                w_inpIdx = np.sum(Kactivs)+np.sum(Kinhibs)
-                x_eq = X0[inpIdx]/(1+E0*w_inpIdx/cp)
-                # update for fixed point:
-                new_cp += w_inpIdx*x_eq
-                # saving values
-                layerEq[inpIdx] = x_eq
-            new_cpt[layeridx] = np.where(layer>0,(1+k1M[layeridx]*E0*layerEq/cp),np.where(layer<0,(1+k3M[layeridx]*E0*layerEq/cp),0))+1
-            olderTA[layeridx] = np.where(layer>0,TA0[layeridx]/new_cpt[layeridx],0)
-            olderTI[layeridx] = np.where(layer<0,TI0[layeridx]/new_cpt[layeridx],0)
-            olderX[layeridx] = layerEq
-        else:
-            for inpIdx in range(layer.shape[1]):
-
-                #compute of Cactivs,Cinhibs, the denominator computes the template's variation from equilibrium
-                Cactivs = np.where(layer[inpIdx,:]>0,Cactiv0[layeridx-1]/cpt[layeridx-1],0)
-                Cinhibs = np.where(layer[inpIdx,:]<0,Cinhib0[layeridx-1]/cpt[layeridx-1],0)
-                Kactivs = np.where(layer[inpIdx,:]>0,Kactiv0[layeridx-1]/cpt[layeridx-1],0)
-                Kinhibs = np.where(layer[inpIdx,:]<0,Kinhib0[layeridx-1]/cpt[layeridx-1],0)
-
-                #compute of Kactivs,Kinhibs:
-                KactivsNext = np.where(layer[:,inpIdx]>0,Kactiv0[layeridx]/cpt[layeridx],0) #This is also a matrix element wise multiplication
-                KinhibsNext = np.where(layer[:,inpIdx]<0,Kinhib0[layeridx]/cpt[layeridx],0)
-
-                w_nextLayer = E0*(np.sum(KactivsNext*k2[layeridx])+np.sum(KinhibsNext*k4[layeridx]))
-
-                Activ = np.sum(Cactivs*olderX[layeridx-1])
-                Inhib = np.sum(Cinhibs*olderX[layeridx-1]/kdT[layeridx])
-                Inhib2 = np.sum(Cinhibs*olderX[layeridx-1]/(kdT[layeridx]*k6[layeridx]))
-                #computing of new equilibrium
-                x_eq = Activ/(kdI[layeridx][inpIdx]*cps[0]+w_nextLayer+Inhib/cps[0])
-                layerEq[inpIdx] = x_eq
-                #Adding to the competition over enzyme the complex used to make the equilibrium.
-                firstComplex = np.sum(layer[inpIdx,:]>0,Kactivs*x_eq,np.sum(layer[inpIdx,:]<0,Kinhibs*x_eq,0))
-                new_cp += firstComplex + Inhib2/(E0*cps[0])*x_eq
-
-            new_cpt[layeridx] = np.where(layer>0,(1+k1M[layeridx]*E0*layerEq/cp),np.where(layer<0,(1+k3M[layeridx]*E0*layerEq/cp),0))
-            olderTA[layeridx] = np.where(layer>0,TA0[layeridx]/new_cpt[layeridx],0)
-            olderTI[layeridx] = np.where(layer<0,TI0[layeridx]/new_cpt[layeridx],0)
-            olderX[layeridx] = layerEq
-
-    diff_cps = np.zeros(cps.shape)
-    diff_cps[0] = cp - new_cp
-    for l,m in enumerate(masks):
-        diff_cps[(l+1):(l+1+m.shape[0]*m.shape[1])] = diff_cps[(l+1):(l+1+m.shape[0]*m.shape[1])] - np.reshape(new_cpt[l],(m.shape[0]*m.shape[1]))
-
-    return diff_cps
-
 
 def computeCP(k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd,TA,TI,E0,X,masks,fittedValue=None):
     """
@@ -207,9 +104,9 @@ def computeCP(k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd,TA,TI,E0,X,masks,fittedValue=None
     t0=time.time()
 
     if fittedValue is not None:
-        computedCp = brentq(func,kd,fittedValue,args=(kd,E0,k6,Cactiv,CInhib,Kactiv,Kinhib,masks,X))
+        computedCp = brentq(func,kd,fittedValue,args=(kd,E0,k2,k4,k6,Cactiv,CInhib,Kactiv,Kinhib,masks,X))
     else:
-        computedCp = brentq(func,kd,10**6,args=(kd,E0,k6,Cactiv,CInhib,Kactiv,Kinhib,masks,X))
+        computedCp = brentq(func,kd,10**6,args=(kd,E0,k2,k4,k6,Cactiv,CInhib,Kactiv,Kinhib,masks,X))
     print("ended brentq methods in "+str(time.time()-t0))
     return computedCp
 
@@ -242,7 +139,7 @@ def computeEquilibriumValue(cp,X,masks,k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd,TA,TI,E0
                 ActivInter = np.sum(np.where(masks[layeridx-1][inputsIdx,:]>0,equilibriumValues[layeridx-1],np.zeros(equilibriumValues[layeridx-1].shape[0])))
                 Inhib = CInhib*np.sum(np.where(masks[layeridx-1][inputsIdx,:]<0,equilibriumValues[layeridx-1],np.zeros(equilibriumValues[layeridx-1].shape[0])))
                 w_inputsIdx = k2*Kactiv*np.sum(layer[:,inputsIdx]>0)+k4*Kinhib*np.sum(layer[:,inputsIdx]<0)
-                layerEq +=[Cactiv*ActivInter/(cp+kd*w_inputsIdx*E0+Inhib/cp)]
+                layerEq +=[Cactiv*ActivInter/(cp+Inhib/cp)]
             equilibriumValues[layeridx] = np.array(layerEq)
     if observed is not None:
         try:
@@ -455,13 +352,13 @@ if __name__ == '__main__':
 
 
     if useDerivativeLeak:
-        results = executeSimulation(fPythonSparse, name, x_test, initialization_dic, outputList= outputList,
-                                    leak = leak, endTime=endTime,sparse=True, modes=modes,
-                                    timeStep=timeStep, initValue= initValue,rescaleFactor=computedRescaleFactor)
+        results = executeODESimulation(fPythonSparse, name, x_test, initialization_dic, outputList= outputList,
+                                       leak = leak, endTime=endTime, sparse=True, modes=modes,
+                                       timeStep=timeStep, initValue= initValue, rescaleFactor=computedRescaleFactor)
     else:
-        results = executeSimulation(fPythonSparse, name, x_test, initialization_dic, outputList= outputList,
-                                    leak = 0, endTime=endTime,sparse=True, modes=modes,
-                                    timeStep=timeStep, initValue= initValue,rescaleFactor=computedRescaleFactor)
+        results = executeODESimulation(fPythonSparse, name, x_test, initialization_dic, outputList= outputList,
+                                       leak = 0, endTime=endTime, sparse=True, modes=modes,
+                                       timeStep=timeStep, initValue= initValue, rescaleFactor=computedRescaleFactor)
 
     if("outputPlot" in modes):
         shapeP = len(X1)*len(X2)
@@ -492,12 +389,12 @@ if __name__ == '__main__':
         otherInhibInitialC = otherInhibInitialC/(C0*rescaleFactor)
 
         # colorDiagram(X1,X2,output,"Initial concentration of X1","Initial concentration of X2","Equilibrium concentration of the output",figname=os.path.join(experiment_path, "neuralDiagramm.png"),equiPotential=False)
-        # neuronPlot(X1,X2,output,figname=os.path.join(experiment_path, "activationLogX1.png"),figname2=os.path.join(experiment_path, "activationLogX2.png"),useLogX = True, doShow= False)
-        # neuronPlot(X1,X2,output,figname=os.path.join(experiment_path, "activationX1.png"),figname2=os.path.join(experiment_path, "activationX2.png"),useLogX = False, doShow= False)
-        # df = pandas.DataFrame(X1)
-        # df.to_csv(os.path.join(experiment_path,"inputX1.csv"))
-        # df2 = pandas.DataFrame(X2)
-        # df2.to_csv(os.path.join(experiment_path,"inputX2.csv"))
+        neuronPlot(X1,X2,output,figname=os.path.join(experiment_path, "activationLogX1.png"),figname2=os.path.join(experiment_path, "activationLogX2.png"),useLogX = True, doShow= False)
+        neuronPlot(X1,X2,output,figname=os.path.join(experiment_path, "activationX1.png"),figname2=os.path.join(experiment_path, "activationX2.png"),useLogX = False, doShow= False)
+        df = pandas.DataFrame(X1)
+        df.to_csv(os.path.join(experiment_path,"inputX1.csv"))
+        df2 = pandas.DataFrame(X2)
+        df2.to_csv(os.path.join(experiment_path,"inputX2.csv"))
 
         #we try to fit:
         nbrConstant = int(readAttribute(experiment_path,["Numbers_of_Constants"])["Numbers_of_Constants"])
@@ -540,7 +437,7 @@ if __name__ == '__main__':
                 competitions[idx1,idx2] = computeCP(k1, k1n, k2, k3, k3n, k4, k5, k5n, k6, kd, TA, TI, E0,myX_test[idx1,idx2],masks)
                 fitOutput[idx1, idx2] = computeEquilibriumValue(competitions[idx1, idx2], myX_test[idx1, idx2], masks, k1, k1n, k2, k3, k3n, k4, k5, k5n, k6, kd, TA, TI, E0, observed=(1, nodeObserved))
                 if idx2 in courbs and idx1==idx2:
-                    styleFit[idx1,idx2] = [func(x,kd,E0,k6,Cactiv,CInhib,Kactiv,Kinhib,masks,myX_test[idx1,idx2]) for x in testOfCp]
+                    styleFit[idx1,idx2] = [func(x,kd,E0,k2,k4,k6,Cactiv,CInhib,Kactiv,Kinhib,masks,myX_test[idx1,idx2]) for x in testOfCp]
 
         # comparisons of plot
         fitComparePlot(X1, X2, output, fitOutput, courbs,

@@ -20,7 +20,7 @@
 import numpy as np
 import os
 from simulOfBioNN.parseUtils.parser import generateNeuralNetwork,generateTemplateNeuralNetwork,read_file
-from simulOfBioNN.simulNN.simulator import executeSimulation
+from simulOfBioNN.simulNN.simulator import executeODESimulation
 from simulOfBioNN.odeUtils.systemEquation import f
 from simulOfBioNN.odeUtils.utils import readAttribute,obtainTemplateArray,obtainOutputArray
 from simulOfBioNN.plotUtils.adaptivePlotUtils import colorDiagram,neuronPlot,plotEvolution,fitComparePlot
@@ -110,13 +110,13 @@ def simulModelIndicator(name,nameFig,enzymeInit = 10**(-6),activInit =  10**(-8)
 
 
     if useDerivativeLeak:
-        results = executeSimulation(f, name, x_test, initialization_dic, outputList= outputList,
-                                    leak = leak, endTime=endTime,sparse=False, modes=modes,
-                                    timeStep=timeStep, initValue= initValue)
+        results = executeODESimulation(f, name, x_test, initialization_dic, outputList= outputList,
+                                       leak = leak, endTime=endTime, sparse=False, modes=modes,
+                                       timeStep=timeStep, initValue= initValue)
     else:
-        results = executeSimulation(f, name, x_test, initialization_dic, outputList= outputList,
-                                    leak = 0, endTime=endTime,sparse=False, modes=modes,
-                                    timeStep=timeStep, initValue= initValue)
+        results = executeODESimulation(f, name, x_test, initialization_dic, outputList= outputList,
+                                       leak = 0, endTime=endTime, sparse=False, modes=modes,
+                                       timeStep=timeStep, initValue= initValue)
 
     if("outputEqui" in modes):
         experiment_path = name

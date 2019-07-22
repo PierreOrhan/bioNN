@@ -7,7 +7,7 @@
 import numpy as np
 import os
 from simulOfBioNN.parseUtils.parser import generateNeuralNetwork,generateTemplateNeuralNetwork,read_file
-from simulOfBioNN.simulNN.simulator import executeSimulation
+from simulOfBioNN.simulNN.simulator import executeODESimulation
 from simulOfBioNN.odeUtils.systemEquation import fPythonSparse
 from simulOfBioNN.odeUtils.utils import readAttribute,obtainTemplateArray,obtainOutputArray
 from simulOfBioNN.plotUtils.adaptivePlotUtils import colorDiagram,neuronPlot,plotEvolution,fitComparePlot
@@ -118,13 +118,13 @@ if __name__ == '__main__':
 
 
     if useDerivativeLeak:
-        results = executeSimulation(fPythonSparse, name, x_test, initialization_dic, outputList= outputList,
-                                    leak = leak, endTime=endTime,sparse=True, modes=modes,
-                                    timeStep=timeStep, initValue= initValue)
+        results = executeODESimulation(fPythonSparse, name, x_test, initialization_dic, outputList= outputList,
+                                       leak = leak, endTime=endTime, sparse=True, modes=modes,
+                                       timeStep=timeStep, initValue= initValue)
     else:
-        results = executeSimulation(fPythonSparse, name, x_test, initialization_dic, outputList= outputList,
-                                    leak = 0, endTime=endTime,sparse=True, modes=modes,
-                                    timeStep=timeStep, initValue= initValue)
+        results = executeODESimulation(fPythonSparse, name, x_test, initialization_dic, outputList= outputList,
+                                       leak = 0, endTime=endTime, sparse=True, modes=modes,
+                                       timeStep=timeStep, initValue= initValue)
 
     if("outputPlot" in modes):
         shapeP = len(X1)*len(X2)

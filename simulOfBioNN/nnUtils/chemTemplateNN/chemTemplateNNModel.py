@@ -63,8 +63,9 @@ class chemTemplateNNModel(tf.keras.Model):
             assert type(self.randomConstantParameter) == tuple
             #TODO: implement randomized constants
 
-
+        self.writer = tf.summary.create_file_writer("")
         self.built = False
+        self.gathered = None
 
     def build(self,input_shape):
         """
@@ -114,19 +115,14 @@ class chemTemplateNNModel(tf.keras.Model):
         for l in self.layerList:
             l.set_constants(self.reactionConstants,self.enzymeInitC,self.activTempInitC,self.inhibTempInitC,self.rescaleFactor)
 
-        # mask = tf.stack([tf.RaggedTensor.from_tensor(tf.transpose(l.get_mask())) for l in self.layerList])
-        # print("mask for all layer is computed as "+str([[k.shape for k in e] for e in mask]))
-
         self.cpLayer.assignConstantFromLayers(self.layerList)
         self.cpLayer.assignMasksFromLayers(self.layerList)
         self.cpLayer.E0.assign(self.layerList[0].E0)
         self.built = True
-        # print("At end of build")
-        # print("mask0 for cp layer is computed as "+str(self.cpLayer.masks.getRagged()[0].shape))
+
         super(chemTemplateNNModel,self).build(input_shape)
         print("model successfully built")
 
-    # @tf.function
     def call(self, inputs, training=None, mask=None):
         """
             Call function for out chemical model.
@@ -137,38 +133,25 @@ class chemTemplateNNModel(tf.keras.Model):
         :param mask: we don't use it here...
         :return:
         """
-        # if len(inputs.shape)==1:
-        #     inputs=tf.stack(inputs)
-        # if(self.built):
-        #     tf.print("model has well been built and a call is tried")
-        #     mask = tf.stack([tf.RaggedTensor.from_tensor(tf.transpose(l.get_mask())) for l in self.layerList])
-        #     tf.print("mask for all layer is computed as "+str(mask[0].shape))
-        #     tf.print("mask0 for cp layer is computed as "+str(self.cpLayer.masks.getRagged()[0].shape))
-        #     self.cpLayer.assignMasksFromLayers(self.layerList)
-        #     tf.print("mask0 for cpLayer after assign is computed as "+str(self.cpLayer.masks.getRagged()[0].shape))
         """
             We would like to proceed with a batching point of view.
             The problem here, is that tf.map_fn creates a graph for each realisation, making us loose the initialization on the current graph...
             Thus we cannot use it here, while this has not been fixed in tensorflow!
         """
         inputs = tf.convert_to_tensor(inputs)
-
-        if len(inputs.shape)>1:
-            # X0s = tf.convert_to_tensor(inputs)
-            if training:
-                self.verifyMask()
-            result = self.funcTesting(inputs)
-        else:
-            print("using normal pipeline")
-            tf.print("using normal pipeline")
-            # X0s = tf.convert_to_tensor(inputs)
-            result = self.funcTesting(inputs)
-
+        if training:
+            self.verifyMask()
+        #tf.summary.trace_on(graph=True, profiler=True)
+        result = self.funcTesting(inputs)
+        # with self.writer.as_default():
+        #     tf.summary.trace_export(
+        #         name="my_func_trace",
+        #         step=0,
+        #         profiler_outdir="")
         return result
 
     @tf.function
     def verifyMask(self):
-        tf.print("starting mask verifying")
         newRescaleFactor = tf.stop_gradient(tf.keras.backend.sum([l.get_rescaleOps() for l in self.layerList],axis=-1))
         if(not tf.equal(self.rescaleFactor,newRescaleFactor)):
             self.rescaleFactor.assign(newRescaleFactor)
@@ -177,27 +160,13 @@ class chemTemplateNNModel(tf.keras.Model):
         # We also need to update the information the model has: E0 and the masks might have change
         self.cpLayer.E0.assign(self.layerList[0].E0)
         self.cpLayer.assignMasksFromLayers(self.layerList)
-        tf.print("ended mask update")
 
+    @tf.function
     def funcTesting(self,inputs):
         inputs = inputs/self.rescaleFactor
-        """ 
-            tf.map_fn creates a graph for each realisation, making us loose the initialization on the current graph...
-            Thus we cannot use it here, while this has not been fixed in tensorflow!
-        """
-        print("input before cp layer is "+str(inputs))
-        tf.print("input before cp layer is "+str(inputs))
+
         gatheredCps = tf.stop_gradient(self.cpLayer(inputs))
-        # for l in self.layerList:
-        #     l.update_cp(gatheredCps)
         x = self.layerList[0](inputs,cps=gatheredCps)
-        print(x.shape)
         for l in self.layerList[1:]:
             x = l(x,cps=gatheredCps)
-            print(x)
-            tf.print(x)
-            print("and for cps:")
-            print(gatheredCps)
-        print("returning x")
-        tf.print("returning x")
         return x

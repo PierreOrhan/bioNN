@@ -7,7 +7,7 @@
 import numpy as np
 import os
 from simulOfBioNN.parseUtils.parser import generateNeuralNetwork
-from simulOfBioNN.simulNN.simulator import executeSimulation
+from simulOfBioNN.simulNN.simulator import executeODESimulation
 from simulOfBioNN.odeUtils.systemEquation import f
 from simulOfBioNN.odeUtils.utils import readAttribute
 from simulOfBioNN.plotUtils.adaptivePlotUtils import colorDiagram,neuronPlot
@@ -45,7 +45,7 @@ for layer in range(1,len(masks)): ## the first layer need not to be initiliazed
 initialization_dic["E"] = enzymeInit
 initialization_dic["E2"] = enzymeInit
 
-results = executeSimulation(f, name, x_test, initialization_dic,["X_1_0"], leak, endTime=endTime,sparse=False, modes=modes)
+results = executeODESimulation(f, name, x_test, initialization_dic, ["X_1_0"], leak, endTime=endTime, sparse=False, modes=modes)
 
 if("outputPlot" in modes):
     import matplotlib.pyplot as plt
