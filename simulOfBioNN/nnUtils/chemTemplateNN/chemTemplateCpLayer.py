@@ -122,7 +122,7 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
         return gatheredCps
 
     @tf.function
-    def obtainBornSup(self,k6,kdT,kdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks):
+    def Old_obtainBornSup(self,k6,kdT,kdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks):
         """
             Given approximate only for the enzyme competition term (cp), we compute the next approximate using G.
             The real value for the competitions term verify cp = G(cp,initialConditions)
@@ -132,54 +132,46 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
         :param masks: masks giving the network topology. list of float32 tensor, we defined it with the shape [outputsNodes,inputsNodes]
         :return:
         """
+        """
+            Note: there is a clear bug on TensorArray behavior in current tensorflow beta 2.0
+                Behavior is already reported in github issues.
+            Thus this old version is slower and bugged...
+        """
+
         max_cp = tf.fill([1],1.)
         olderX = tf.TensorArray(dtype=tf.float32,size=0,dynamic_size=True)
         for layeridx in tf.range(tf.shape(masks.to_tensor())[0]):
             layer = masks[layeridx].to_tensor()
             layerEq = tf.TensorArray(dtype=tf.float32,size=tf.shape(layer)[1])
             if(tf.equal(layeridx,0)):
-                # for inpIdx in tf.range(tf.shape(layer)[1]):
-                #     #compute of Kactivs,Kinhibs;
-                #     Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0) #This is also a matrix element wise multiplication
-                #     Kinhibs = tf.where(layer[:,inpIdx]<0,Kinhib0[layeridx].to_tensor()[:,inpIdx],0)
-                #     #compute of "weights": sum of kactivs and kinhibs
-                #     w_inpIdx = tf.keras.backend.sum(Kactivs)+tf.keras.backend.sum(Kinhibs)
-                #     max_cp += w_inpIdx*X0[inpIdx]
-                #     # saving values
-                Kactivs = tf.where(layer>0,Kactiv0[layeridx].to_tensor(),0) #This is also a matrix element wise multiplication
-                Kinhibs = tf.where(layer<0,Kinhib0[layeridx].to_tensor(),0)
-                w_inpIdx = tf.keras.backend.sum(Kactivs,axis=0)+tf.keras.backend.sum(Kinhibs,axis=0)
-                max_cp += tf.tensordot(w_inpIdx,X0,axes=[[0],[0]])
+                for inpIdx in tf.range(tf.shape(layer)[1]):
+                    #compute of Kactivs,Kinhibs;
+                    Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0) #This is also a matrix element wise multiplication
+                    Kinhibs = tf.where(layer[:,inpIdx]<0,Kinhib0[layeridx].to_tensor()[:,inpIdx],0)
+                    #compute of "weights": sum of kactivs and kinhibs
+                    w_inpIdx = tf.keras.backend.sum(Kactivs)+tf.keras.backend.sum(Kinhibs)
+                    max_cp += w_inpIdx*X0[inpIdx]
+                    # saving values
                 olderX = olderX.scatter(indices=tf.range(tf.shape(X0)[0]),value=X0)
                 self.maxIndexToLookAt.assign(tf.shape(X0)[0])
             else:
                 stackOlderX = olderX.gather(tf.range(self.maxIndexToLookAt))
-                # for inpIdx in tf.range(tf.shape(layer)[1]):
-                #     #compute of Cactivs,Cinhibs, the denominator marks the template's variation from equilibrium
-                #     #Terms for the previous layers
-                #     CactivsOld = tf.where(masks[layeridx-1,inpIdx,:]>0,Cactiv0[layeridx-1,inpIdx],0)
-                #     CinhibsOld = tf.where(masks[layeridx-1,inpIdx,:]<0,Cinhib0[layeridx-1,inpIdx],0)
-                #     #computing of new equilibrium
-                #     x_eq = tf.fill([1],tf.tensordot(stackOlderX,CactivsOld,axes=[[0],[0]])/kdT[layeridx-1,inpIdx])
-                #     layerEq.write(inpIdx,x_eq)
-                #     #compute of Kactivs,Kinhibs, for the current layer:
-                #     Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0)
-                #     Kinhibs = tf.where(layer[:,inpIdx]<0,Kinhib0[layeridx].to_tensor()[:,inpIdx],0)
-                #     #Adding, to the competition over enzyme, the complex formed in this layer by this input.
-                #     firstComplex = tf.fill([1],tf.keras.backend.sum(tf.where(layer[:,inpIdx]>0,Kactivs*x_eq,tf.where(layer[:,inpIdx]<0,Kinhibs*x_eq,0))))
-                #     #We must also add the effect of pseudoTempalte enzymatic complex in the previous layers which can't be computed previously because we missed x_eq
-                #     Inhib2 = tf.fill([1],tf.tensordot(CinhibsOld,stackOlderX,axes=[[0],[0]])/(kdT[layeridx-1,inpIdx]*k6[layeridx-1,inpIdx]))
-                #     max_cp +=  Inhib2/E0*x_eq + firstComplex
-                CactivsOld = tf.where(masks[layeridx-1].to_tensor()>0,Cactiv0[layeridx-1],0)
-                CinhibsOld = tf.where(masks[layeridx-1].to_tensor()<0,Cinhib0[layeridx-1],0)
-                x_eq = tf.matmul(stackOlderX/kdT[layeridx-1],CactivsOld)
-                Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0)
-                Kinhibs = tf.where(layer[:,inpIdx]<0,Kinhib0[layeridx].to_tensor()[:,inpIdx],0)
-                firstComplex = tf.fill([1],tf.keras.backend.sum(tf.where(layer[:,inpIdx]>0,Kactivs*x_eq,tf.where(layer[:,inpIdx]<0,Kinhibs*x_eq,0))))
-                Inhib2 = tf.fill([1],tf.tensordot(CinhibsOld,stackOlderX,axes=[[0],[0]])/(kdT[layeridx-1,inpIdx]*k6[layeridx-1,inpIdx]))
-                max_cp +=  Inhib2/E0*x_eq + firstComplex
-                
-
+                for inpIdx in tf.range(tf.shape(layer)[1]):
+                    #compute of Cactivs,Cinhibs, the denominator marks the template's variation from equilibrium
+                    #Terms for the previous layers
+                    CactivsOld = tf.where(masks[layeridx-1,inpIdx,:]>0,Cactiv0[layeridx-1,inpIdx],0)
+                    CinhibsOld = tf.where(masks[layeridx-1,inpIdx,:]<0,Cinhib0[layeridx-1,inpIdx],0)
+                    #computing of new equilibrium
+                    x_eq = tf.fill([1],tf.tensordot(stackOlderX,CactivsOld,axes=[[0],[0]])/kdT[layeridx-1,inpIdx])
+                    layerEq.write(inpIdx,x_eq)
+                    #compute of Kactivs,Kinhibs, for the current layer:
+                    Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0)
+                    Kinhibs = tf.where(layer[:,inpIdx]<0,Kinhib0[layeridx].to_tensor()[:,inpIdx],0)
+                    #Adding, to the competition over enzyme, the complex formed in this layer by this input.
+                    firstComplex = tf.fill([1],tf.keras.backend.sum(tf.where(layer[:,inpIdx]>0,Kactivs*x_eq,tf.where(layer[:,inpIdx]<0,Kinhibs*x_eq,0))))
+                    #We must also add the effect of pseudoTempalte enzymatic complex in the previous layers which can't be computed previously because we missed x_eq
+                    Inhib2 = tf.fill([1],tf.tensordot(CinhibsOld,stackOlderX,axes=[[0],[0]])/(kdT[layeridx-1,inpIdx]*k6[layeridx-1,inpIdx]))
+                    max_cp +=  Inhib2*x_eq/E0 + firstComplex
                 verticalStack = layerEq.stack()
                 layerEqStack = tf.transpose(verticalStack)[0]
                 olderX = olderX.scatter(indices=tf.range(tf.shape(layerEqStack)[0]),value=layerEqStack)
@@ -191,7 +183,62 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
             Cactivs = tf.where(masks[-1,outputsIdx,:]>0,Cactiv0[-1,outputsIdx],0)
             x_eq = tf.fill([1],tf.tensordot(Cactivs,stackOlderX,axes=[[0],[0]])/(kdI[-1,outputsIdx]))
             Inhib2 = tf.fill([1],tf.tensordot(Cinhibs,stackOlderX,axes=[[0],[0]])/(kdT[-1,outputsIdx]*k6[-1,outputsIdx]))
-            max_cp += Inhib2/E0*x_eq
+            max_cp += Inhib2*x_eq/E0
+
+        return max_cp
+
+    @tf.function
+    def obtainBornSup(self,k6,kdT,kdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks):
+        """
+            Given approximate only for the enzyme competition term (cp), we compute the next approximate using G.
+            The real value for the competitions term verify cp = G(cp,initialConditions)
+        :param cp: float, competition over template.
+        :param E0: float, initial concentration in the enzyme
+        :param X0: nbrInputs array, contains initial value for the inputs
+        :param masks: masks giving the network topology. list of float32 tensor, we defined it with the shape [outputsNodes,inputsNodes]
+        :return:
+        """
+        """
+            Note: there is a clear bug on TensorArray behavior in current tensorflow beta 2.0
+                Behavior is already reported in github issues.
+        """
+
+        max_cp = tf.fill([1],1.)
+        olderX = tf.TensorArray(dtype=tf.float32,size=0,dynamic_size=True)
+        for layeridx in tf.range(tf.shape(masks.to_tensor())[0]):
+            layer = masks[layeridx].to_tensor()
+            layerEq = tf.TensorArray(dtype=tf.float32,size=tf.shape(layer)[1])
+            if(tf.equal(layeridx,0)):
+                Kactivs = tf.where(layer>0,Kactiv0[layeridx].to_tensor(),0)
+                Kinhibs = tf.where(layer<0,Kinhib0[layeridx].to_tensor(),0)
+                w_inpIdx = tf.keras.backend.sum(Kactivs,axis=0)+tf.keras.backend.sum(Kinhibs,axis=0)
+                max_cp += tf.tensordot(w_inpIdx,X0,axes=[[0],[0]])
+                olderX = olderX.scatter(indices=tf.range(tf.shape(X0)[0]),value=X0)
+                self.maxIndexToLookAt.assign(tf.shape(X0)[0])
+            else:
+                stackOlderX = tf.reshape(olderX.gather(tf.range(self.maxIndexToLookAt)),shape=(1,self.maxIndexToLookAt))
+
+                CactivsOld = tf.where(masks[layeridx-1].to_tensor()>0,Cactiv0[layeridx-1].to_tensor(),0)
+                CinhibsOld = tf.where(masks[layeridx-1].to_tensor()<0,Cinhib0[layeridx-1].to_tensor(),0)
+                x_eq = tf.matmul(stackOlderX,tf.transpose(CactivsOld))/kdT[layeridx-1]
+                Kactivs = tf.where(layer>0,Kactiv0[layeridx].to_tensor(),0)
+                Kinhibs = tf.where(layer<0,Kinhib0[layeridx].to_tensor(),0)
+                firstComplex = tf.keras.backend.sum(tf.where(layer>0,Kactivs*x_eq,tf.where(layer<0,Kinhibs*x_eq,0)),axis=0)
+                Inhib2 = tf.matmul(stackOlderX,tf.transpose(CinhibsOld))/(kdT[layeridx-1]*k6[layeridx-1])
+                max_cp +=  tf.keras.backend.sum(Inhib2*x_eq/E0) + tf.keras.backend.sum(firstComplex)
+
+                layerEqStack = tf.squeeze(x_eq,axis=0)
+                olderX = olderX.scatter(indices=tf.range(tf.shape(layerEqStack)[0]),value=layerEqStack)
+                tf.assert_equal(olderX.gather(tf.range(tf.shape(layerEqStack)[0])),layerEqStack)
+                self.maxIndexToLookAt.assign(tf.shape(layerEqStack)[0])
+        #Finally we must add the effect of pseudoTemplate enzymatic complex in the last layers
+        stackOlderX = tf.reshape(olderX.gather(tf.range(self.maxIndexToLookAt)),shape=(1,self.maxIndexToLookAt))
+        layer = masks[-1].to_tensor()
+        Cinhibs = tf.where(layer<0,Cinhib0[-1].to_tensor(),0)
+        Cactivs = tf.where(layer>0,Cactiv0[-1].to_tensor(),0)
+        x_eq = tf.matmul(stackOlderX,tf.transpose(Cactivs))/kdI[-1]
+        Inhib2 = tf.matmul(stackOlderX,tf.transpose(Cinhibs))/(kdT[-1]*k6[-1])
+        max_cp += tf.keras.backend.sum(Inhib2/E0*x_eq)
         return max_cp
 
     @tf.function
@@ -223,57 +270,88 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
         for layeridx in tf.range(tf.shape(masks.to_tensor())[0]):
             layer = masks[layeridx].to_tensor()
             # print("looping cpEqui , layer has shape: "+str(layer.shape))
-            layerEq = tf.TensorArray(dtype=tf.float32,size=tf.shape(layer)[1])
+            #layerEq = tf.TensorArray(dtype=tf.float32,size=tf.shape(layer)[1])
             if(tf.equal(layeridx,0)):
-                for inpIdx in tf.range(tf.shape(layer)[1]):
-                    #compute of Kactivs,Kinhibs;
-                    # In ragged tensor as Kactiv0 is, we cannot use slice on inner dimension, thus we are here required to convert it to a tensor.
-                    Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0)
-                    Kinhibs = tf.where(layer[:,inpIdx]<0,Kinhib0[layeridx].to_tensor()[:,inpIdx],0)
-                    #compute of "weights": sum of kactivs and kinhibs
-                    w_inpIdx = tf.keras.backend.sum(Kactivs)+tf.keras.backend.sum(Kinhibs)
-                    x_eq = X0[inpIdx]/(1+E0*w_inpIdx/cp)
-                    # update for fixed point:
-                    new_cp += w_inpIdx*x_eq
-                    # saving values
-                    layerEq.write(inpIdx,x_eq)
-                verticalStack = layerEq.stack()
-                layerEqStack = tf.transpose(verticalStack)[0]
+                # for inpIdx in tf.range(tf.shape(layer)[1]):
+                #     #compute of Kactivs,Kinhibs;
+                #     # In ragged tensor as Kactiv0 is, we cannot use slice on inner dimension, thus we are here required to convert it to a tensor.
+                #     Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0)
+                #     Kinhibs = tf.where(layer[:,inpIdx]<0,Kinhib0[layeridx].to_tensor()[:,inpIdx],0)
+                #     #compute of "weights": sum of kactivs and kinhibs
+                #     w_inpIdx = tf.keras.backend.sum(Kactivs)+tf.keras.backend.sum(Kinhibs)
+                #     x_eq = X0[inpIdx]/(1+E0*w_inpIdx/cp)
+                #     # update for fixed point:
+                #     new_cp += w_inpIdx*x_eq
+                #     # saving values
+                #     layerEq.write(inpIdx,x_eq)
+                Kactivs = tf.where(layer>0,Kactiv0[layeridx].to_tensor(),0)
+                Kinhibs = tf.where(layer<0,Kinhib0[layeridx].to_tensor(),0)
+                w_inpIdx = tf.keras.backend.sum(Kactivs,axis=0)+tf.keras.backend.sum(Kinhibs,axis=0)
+                x_eq = X0/(1+E0*w_inpIdx/cp)
+                new_cp += tf.tensordot(w_inpIdx,x_eq,axes=[[0],[0]])
+
+                layerEqStack = x_eq
                 olderX = olderX.scatter(indices=tf.range(tf.shape(layerEqStack)[0]),value=layerEqStack)
                 self.maxIndexToLookAt.assign(tf.shape(layerEqStack)[0])
             else:
-                stackOlderX = olderX.gather(tf.range(self.maxIndexToLookAt))
-                for inpIdx in tf.range(tf.shape(layer)[1]):
-                    #compute of Cactivs,Cinhibs, the denominator marks the template's variation from equilibrium
-                    #Terms for the previous layers
-                    CactivsOld = tf.where(masks[layeridx-1,inpIdx,:]>0,Cactiv0[layeridx-1,inpIdx],0)
-                    CinhibsOld = tf.where(masks[layeridx-1,inpIdx,:]<0,Cinhib0[layeridx-1,inpIdx],0)
-                    Inhib = tf.tensordot(CinhibsOld,stackOlderX,axes=[[0],[0]])/kdT[layeridx-1,inpIdx]
-                    #computing of new equilibrium
-                    x_eq = tf.tensordot(CactivsOld,stackOlderX,axes=[[0],[0]])/(kdI[layeridx-1,inpIdx]*cp+Inhib/cp)
-                    layerEq.write(inpIdx,x_eq)
-                    #compute of Kactivs,Kinhibs, for the current layer:
-                    Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0)
-                    Kinhibs = tf.where(layer[:,inpIdx]<0,Kinhib0[layeridx].to_tensor()[:,inpIdx],0)
-                    #Adding, to the competition over enzyme, the complex formed in this layer by this input.
-                    firstComplex = tf.fill([1],tf.keras.backend.sum(tf.where(layer[:,inpIdx]>0,Kactivs*x_eq,tf.where(layer[:,inpIdx]<0,Kinhibs*x_eq,0))))
-                    #We must also add the effect of pseudoTempalte enzymatic complex in the previous layers which can't be computed previously because we missed x_eq
-                    Inhib2 = tf.tensordot(CinhibsOld,stackOlderX,axes=[[0],[0]])/(kdT[layeridx-1,inpIdx]*k6[layeridx-1,inpIdx])
-                    new_cp += firstComplex+ Inhib2/(E0*cp)*x_eq
-                verticalStack = layerEq.stack()
-                layerEqStack = tf.transpose(verticalStack)[0]
-                olderX = olderX.scatter(indices=tf.range(tf.shape(layerEqStack)[0]),value=layerEqStack)
-                self.maxIndexToLookAt.assign(tf.shape(layerEqStack)[0])
-        #Finally we must add the effect of pseudoTemplate enzymatic complex in the last layers
-        stackOlderX = olderX.gather(tf.range(self.maxIndexToLookAt))
-        for outputsIdx in tf.range(tf.shape(masks[-1].to_tensor())[0]):
-            Cinhibs = tf.where(masks[-1,outputsIdx,:]<0,Cinhib0[-1,outputsIdx],0)
-            Cactivs = tf.where(masks[-1,outputsIdx,:]>0,Cactiv0[-1,outputsIdx],0)
+                # stackOlderX = olderX.gather(tf.range(self.maxIndexToLookAt))
+                # for inpIdx in tf.range(tf.shape(layer)[1]):
+                #     #compute of Cactivs,Cinhibs, the denominator marks the template's variation from equilibrium
+                #     #Terms for the previous layers
+                #     CactivsOld = tf.where(masks[layeridx-1,inpIdx,:]>0,Cactiv0[layeridx-1,inpIdx],0)
+                #     CinhibsOld = tf.where(masks[layeridx-1,inpIdx,:]<0,Cinhib0[layeridx-1,inpIdx],0)
+                #     Inhib = tf.tensordot(CinhibsOld,stackOlderX,axes=[[0],[0]])/kdT[layeridx-1,inpIdx]
+                #     #computing of new equilibrium
+                #     x_eq = tf.tensordot(CactivsOld,stackOlderX,axes=[[0],[0]])/(kdI[layeridx-1,inpIdx]*cp+Inhib/cp)
+                #     layerEq.write(inpIdx,x_eq)
+                #     #compute of Kactivs,Kinhibs, for the current layer:
+                #     Kactivs = tf.where(layer[:,inpIdx]>0,Kactiv0[layeridx].to_tensor()[:,inpIdx],0)
+                #     Kinhibs = tf.where(layer[:,inpIdx]<0,Kinhib0[layeridx].to_tensor()[:,inpIdx],0)
+                #     #Adding, to the competition over enzyme, the complex formed in this layer by this input.
+                #     firstComplex = tf.fill([1],tf.keras.backend.sum(tf.where(layer[:,inpIdx]>0,Kactivs*x_eq,tf.where(layer[:,inpIdx]<0,Kinhibs*x_eq,0))))
+                #     #We must also add the effect of pseudoTempalte enzymatic complex in the previous layers which can't be computed previously because we missed x_eq
+                #     Inhib2 = tf.tensordot(CinhibsOld,stackOlderX,axes=[[0],[0]])/(kdT[layeridx-1,inpIdx]*k6[layeridx-1,inpIdx])
+                #     new_cp += firstComplex+ Inhib2/(E0*cp)*x_eq
+                # verticalStack = layerEq.stack()
+                # layerEqStack = tf.transpose(verticalStack)[0]
+                # olderX = olderX.scatter(indices=tf.range(tf.shape(layerEqStack)[0]),value=layerEqStack)
+                # self.maxIndexToLookAt.assign(tf.shape(layerEqStack)[0])
+                stackOlderX = tf.reshape(olderX.gather(tf.range(self.maxIndexToLookAt)),shape=(1,self.maxIndexToLookAt))
 
-            Inhib = tf.tensordot(Cinhibs,stackOlderX,axes=[[0],[0]])/kdT[-1,outputsIdx]
-            x_eq = tf.tensordot(Cactivs,stackOlderX,axes=[[0],[0]])/(kdI[-1,outputsIdx]*cp+Inhib/cp)
-            Inhib2 = tf.tensordot(Cinhibs,stackOlderX,axes=[[0],[0]])/(kdT[-1,outputsIdx]*k6[-1,outputsIdx])
-            new_cp += Inhib2/(E0*cp)*x_eq
+                CactivsOld = tf.where(masks[layeridx-1].to_tensor()>0,Cactiv0[layeridx-1].to_tensor(),0)
+                CinhibsOld = tf.where(masks[layeridx-1].to_tensor()<0,Cinhib0[layeridx-1].to_tensor(),0)
+                Inhib = tf.matmul(stackOlderX,tf.transpose(CinhibsOld))/kdT[layeridx-1]
+                x_eq = tf.matmul(stackOlderX,tf.transpose(CactivsOld))/(kdI[layeridx-1]*cp+Inhib/cp)
+                Kactivs = tf.where(layer>0,Kactiv0[layeridx].to_tensor(),0)
+                Kinhibs = tf.where(layer<0,Kinhib0[layeridx].to_tensor(),0)
+                firstComplex = tf.keras.backend.sum(tf.where(layer>0,Kactivs*x_eq,tf.where(layer<0,Kinhibs*x_eq,0)),axis=0)
+                Inhib2 = tf.matmul(stackOlderX,tf.transpose(CinhibsOld))/(kdT[layeridx-1]*k6[layeridx-1])
+                new_cp +=  tf.keras.backend.sum(Inhib2*x_eq/E0) + tf.keras.backend.sum(firstComplex)
+
+                layerEqStack = tf.squeeze(x_eq,axis=0)
+                olderX = olderX.scatter(indices=tf.range(tf.shape(layerEqStack)[0]),value=layerEqStack)
+                tf.assert_equal(olderX.gather(tf.range(tf.shape(layerEqStack)[0])),layerEqStack)
+                self.maxIndexToLookAt.assign(tf.shape(layerEqStack)[0])
+
+        #Finally we must add the effect of pseudoTemplate enzymatic complex in the last layers
+        # stackOlderX = olderX.gather(tf.range(self.maxIndexToLookAt))
+        # for outputsIdx in tf.range(tf.shape(masks[-1].to_tensor())[0]):
+        #     Cinhibs = tf.where(masks[-1,outputsIdx,:]<0,Cinhib0[-1,outputsIdx],0)
+        #     Cactivs = tf.where(masks[-1,outputsIdx,:]>0,Cactiv0[-1,outputsIdx],0)
+        #
+        #     Inhib = tf.tensordot(Cinhibs,stackOlderX,axes=[[0],[0]])/kdT[-1,outputsIdx]
+        #     x_eq = tf.tensordot(Cactivs,stackOlderX,axes=[[0],[0]])/(kdI[-1,outputsIdx]*cp+Inhib/cp)
+        #     Inhib2 = tf.tensordot(Cinhibs,stackOlderX,axes=[[0],[0]])/(kdT[-1,outputsIdx]*k6[-1,outputsIdx])
+        #     new_cp += Inhib2/(E0*cp)*x_eq
+        stackOlderX = tf.reshape(olderX.gather(tf.range(self.maxIndexToLookAt)),shape=(1,self.maxIndexToLookAt))
+        layer = masks[-1].to_tensor()
+        Cinhibs = tf.where(layer<0,Cinhib0[-1].to_tensor(),0)
+        Cactivs = tf.where(layer>0,Cactiv0[-1].to_tensor(),0)
+        Inhib = tf.matmul(stackOlderX,tf.transpose(Cinhibs))/kdT[-1]
+        x_eq = tf.matmul(stackOlderX,tf.transpose(Cactivs))/(kdI[-1]*cp+Inhib/cp)
+        Inhib2 = tf.matmul(stackOlderX,tf.transpose(Cinhibs))/(kdT[-1]*k6[-1])
+        new_cp += tf.keras.backend.sum(Inhib2/E0*x_eq)
+
         new_cp = new_cp - cp
         return new_cp*(-1)
 
@@ -317,9 +395,9 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
         newkdT = kdT
         newkdI = kdI
 
-        cp0max=self.obtainBornSup(k6,newkdT,newkdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks)# we start from an upper bound
-        #computedCp = self.brentq(self.cpEquilibriumFunc,tf.fill([1],1.),cp0max,args=(k6,newkdT,newkdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks))
-        return cp0max
+        cp0max=self.obtainBornSup(k6,newkdT,newkdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks)
+        computedCp = self.brentq(self.cpEquilibriumFunc,tf.fill([1],1.),cp0max,args=(k6,newkdT,newkdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks))
+        return computedCp
 
     @tf.function
     def brentq(self, f, xa, xb,args=(),xtol=tf.constant(10**(-12)), rtol=tf.constant(4.4408920985006262*10**(-16)),iter=tf.constant(100)):
@@ -331,12 +409,14 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
         scur = tf.fill([1],0.)
         fpre = f(xpre, args)
         fcur = f(xcur, args)
-        if tf.math.greater((fpre*fcur)[0],0.):
-            return tf.fill([1],0.)
+        tf.assert_less((fpre*fcur)[0],0.)
+
         if tf.equal(fpre[0],0):
             return xpre
         if tf.equal(fcur[0],0):
             return xcur
+        else:
+            tf.assert_greater(fcur,0.)
 
         for i in tf.range(iter):
             if tf.less((fpre*fcur)[0],0):
@@ -436,7 +516,6 @@ class VariableRaggedTensor():
             self.var_values.assign(raggedTensor.values) #assign of the Variable object
         # self.shape0.assign(raggedTensor.shape[0])
 
-    @tf.function
     def getRagged(self):
         if self.displayInfo:
             pass

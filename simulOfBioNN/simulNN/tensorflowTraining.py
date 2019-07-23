@@ -134,7 +134,7 @@ def trainWithChemTemplateNN(savePath):
     sparsities = [0.9,0.9,0.9,0.9]
     use_bias = False
     useGPU = False
-    epochs = 5
+    epochs = 1
     my_batchsize = 32
     #tf.enable_eager_execution()
     # sess=tf.Session()
@@ -151,20 +151,20 @@ def trainWithChemTemplateNN(savePath):
     model.build(input_shape=(None,x_train.shape[-1]))
     print("testing against example:")
 
-    writer = tf.summary.create_file_writer("tfOUT")
-    tf.summary.trace_on(graph=True, profiler=True)
-    res = model.call(x_test[:my_batchsize])
-    print(res)
-    with writer.as_default():
-        tf.summary.trace_export(
-            name="my_func_trace",
-            step=0,
-            profiler_outdir="tfOUT")
+    # writer = tf.summary.create_file_writer("tfOUT")
+    # tf.summary.trace_on(graph=True, profiler=True)
+    # res = model.call(x_test[:my_batchsize])
+    # print(res)
+    # with writer.as_default():
+    #     tf.summary.trace_export(
+    #         name="my_func_trace",
+    #         step=0,
+    #         profiler_outdir="tfOUT")
 
     # print("training:")
 
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="tfOUT",profile_batch = 2)
-    model.fit(x_train[:], y_train[:],batch_size=my_batchsize,epochs=epochs,verbose=True,callbacks=[tensorboard_callback])
+    model.fit(x_train[:100], y_train[:100],batch_size=my_batchsize,epochs=epochs,verbose=True,callbacks=[tensorboard_callback])
     #
     # print("finished the call, trying to print")
     # print(model.summary())

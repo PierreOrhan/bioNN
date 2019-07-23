@@ -64,7 +64,8 @@ class chemTemplateNNModel(tf.keras.Model):
             assert type(self.randomConstantParameter) == tuple
             #TODO: implement randomized constants
 
-        self.writer = tf.summary.create_file_writer("")
+        self.writer = tf.summary.create_file_writer("tfOUT")
+        self.writer.set_as_default()
         self.built = False
         self.gathered = None
 
@@ -142,9 +143,7 @@ class chemTemplateNNModel(tf.keras.Model):
         """
         inputs = tf.convert_to_tensor(inputs)
         if training:
-            tf.print("starting mask verifying")
             self.verifyMask()
-            tf.print("ended mask verifying")
         result = self.funcTesting(inputs)
         return result
 
@@ -163,10 +162,9 @@ class chemTemplateNNModel(tf.keras.Model):
     def funcTesting(self,inputs):
         inputs = inputs/self.rescaleFactor
         gatheredCps = tf.stop_gradient(self.cpLayer(inputs))
-        tf.print(str(gatheredCps)+" starting layer computation")
+        tf.summary.scalar("mean_cp",data=tf.reduce_mean(gatheredCps),step=tf.summary.experimental.get_step())
         x = self.layerList[0](inputs,cps=gatheredCps)
         for l in self.layerList[1:]:
             x = l(x,cps=gatheredCps)
-        tf.print("ended layer computation "+str(x))
-        x = tf.keras.activations.softmax(x)
+        #x = tf.keras.activations.softmax(x)
         return x
