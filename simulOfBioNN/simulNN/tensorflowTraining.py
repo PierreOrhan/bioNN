@@ -113,6 +113,7 @@ def _findConstant(savePath):
 
 def trainWithChemTemplateNN(savePath):
 
+
     x_train,x_test,y_train,y_test,x_test_noise=loadMnist(rescaleFactor=2,fashion=False,size=None,mean=0,var=0.01,path="../../Data/mnist")
     if(np.max(x_test)<=1):
         x_test = np.array(x_test*255,dtype=np.int)
@@ -138,6 +139,8 @@ def trainWithChemTemplateNN(savePath):
     #tf.enable_eager_execution()
     # sess=tf.Session()
     # with sess.as_default():
+    #tf.python.eager.profiler.start_profiler_server(6009)
+
     model = chemTemplateNNModel(None,useGPU=useGPU,nbUnits=nbUnits,sparsities=sparsities,reactionConstants= constantList, enzymeInitC=enzymeInit, activTempInitC=activInit,
                                 inhibTempInitC=inhibInit, randomConstantParameter=None)
     print("model is running eagerly: "+str(model.run_eagerly))
@@ -146,42 +149,50 @@ def trainWithChemTemplateNN(savePath):
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
     model.build(input_shape=(None,x_train.shape[-1]))
-    print("testing against 2 example:")
-    print(x_test.shape)
-    res = model.call(x_test[:32])
-    print("finished calls")
+    print("testing against example:")
+
+    writer = tf.summary.create_file_writer("tfOUT")
+    tf.summary.trace_on(graph=True, profiler=True)
+    res = model.call(x_test[:my_batchsize])
     print(res)
-    print("starting to fit")
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="")
-    model.fit(x_train, y_train,batch_size=my_batchsize,epochs=epochs,verbose=True,callbacks=[tensorboard_callback])
+    with writer.as_default():
+        tf.summary.trace_export(
+            name="my_func_trace",
+            step=0,
+            profiler_outdir="tfOUT")
 
-    print("finished the call, trying to print")
-    print(model.summary())
-    _,acc=model.evaluate(x_test, y_test)
-    _,accNoise=model.evaluate(x_test_noise, y_test)
+    # print("training:")
 
-    nnAnswer = model.predict(x_test)
-
-
-    # activs=[tf.placeholder(dtype=tf.float32) for _ in layerList]
-    # inputs = tf.placeholder(dtype=tf.float32,shape=(None,x_train.shape[1],x_train.shape[2]))
-    # activs[0]=layerList[0](inputs)
-    # for idx,l in enumerate(layerList[1:]):
-    #     activs[idx+1] = l(activs[idx])
-    # activation=sess.run(activs,feed_dict={inputs:x_train})
-    # names = ["activation of layer"+str(idx) for idx in range(len(layerList))]
-    # for idx,a in enumerate(activation):
-    #     displayEmbeddingHeat(a,0.1,name=names[idx])
-
-    savePath = os.path.join(savePath,"weightDir")
-    plotWeight(model,use_bias)
-    saveModelWeight(model,use_bias,savePath)
-
-    print("Ended Training")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="tfOUT",profile_batch = 2)
+    model.fit(x_train[:], y_train[:],batch_size=my_batchsize,epochs=epochs,verbose=True,callbacks=[tensorboard_callback])
+    #
+    # print("finished the call, trying to print")
+    # print(model.summary())
+    # _,acc=model.evaluate(x_test, y_test)
+    # _,accNoise=model.evaluate(x_test_noise, y_test)
+    #
+    # nnAnswer = model.predict(x_test)
+    #
+    #
+    # # activs=[tf.placeholder(dtype=tf.float32) for _ in layerList]
+    # # inputs = tf.placeholder(dtype=tf.float32,shape=(None,x_train.shape[1],x_train.shape[2]))
+    # # activs[0]=layerList[0](inputs)
+    # # for idx,l in enumerate(layerList[1:]):
+    # #     activs[idx+1] = l(activs[idx])
+    # # activation=sess.run(activs,feed_dict={inputs:x_train})
+    # # names = ["activation of layer"+str(idx) for idx in range(len(layerList))]
+    # # for idx,a in enumerate(activation):
+    # #     displayEmbeddingHeat(a,0.1,name=names[idx])
+    #
+    # savePath = os.path.join(savePath,"weightDir")
+    # plotWeight(model,use_bias)
+    # saveModelWeight(model,use_bias,savePath)
+    #
+    # print("Ended Training")
     # sess.close()
     del model
     # del sess
-    return savePath,acc,x_test,y_test,nnAnswer
+    return savePath #,acc,x_test,y_test,nnAnswer
 
 if __name__ == '__main__':
     import sys

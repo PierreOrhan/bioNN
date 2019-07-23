@@ -37,6 +37,7 @@ class chemTemplateNNModel(tf.keras.Model):
         nbLayers = len(nbUnits)
 
         if tf.test.is_gpu_available():
+            print("computing on GPU")
             Deviceidx = "/gpu:0"
         else:
             Deviceidx = "/cpu:0"
@@ -123,6 +124,7 @@ class chemTemplateNNModel(tf.keras.Model):
         super(chemTemplateNNModel,self).build(input_shape)
         print("model successfully built")
 
+    @tf.function
     def call(self, inputs, training=None, mask=None):
         """
             Call function for out chemical model.
@@ -140,14 +142,10 @@ class chemTemplateNNModel(tf.keras.Model):
         """
         inputs = tf.convert_to_tensor(inputs)
         if training:
+            tf.print("starting mask verifying")
             self.verifyMask()
-        #tf.summary.trace_on(graph=True, profiler=True)
+            tf.print("ended mask verifying")
         result = self.funcTesting(inputs)
-        # with self.writer.as_default():
-        #     tf.summary.trace_export(
-        #         name="my_func_trace",
-        #         step=0,
-        #         profiler_outdir="")
         return result
 
     @tf.function
@@ -164,9 +162,11 @@ class chemTemplateNNModel(tf.keras.Model):
     @tf.function
     def funcTesting(self,inputs):
         inputs = inputs/self.rescaleFactor
-
         gatheredCps = tf.stop_gradient(self.cpLayer(inputs))
+        tf.print(str(gatheredCps)+" starting layer computation")
         x = self.layerList[0](inputs,cps=gatheredCps)
         for l in self.layerList[1:]:
             x = l(x,cps=gatheredCps)
+        tf.print("ended layer computation "+str(x))
+        x = tf.keras.activations.softmax(x)
         return x
