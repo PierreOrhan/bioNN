@@ -136,10 +136,11 @@ def trainWithChemTemplateNN(savePath):
     useGPU = False
     epochs = 1
     my_batchsize = 32
-    #tf.enable_eager_execution()
-    # sess=tf.Session()
-    # with sess.as_default():
-    #tf.python.eager.profiler.start_profiler_server(6009)
+
+    device_name = tf.test.gpu_device_name()
+    if not tf.test.is_gpu_available():
+        raise SystemError('GPU device not found')
+    print('Found GPU at: {}'.format(device_name))
 
     model = chemTemplateNNModel(None,useGPU=useGPU,nbUnits=nbUnits,sparsities=sparsities,reactionConstants= constantList, enzymeInitC=enzymeInit, activTempInitC=activInit,
                                 inhibTempInitC=inhibInit, randomConstantParameter=None)
@@ -163,8 +164,10 @@ def trainWithChemTemplateNN(savePath):
 
     # print("training:")
 
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="tfOUT",profile_batch = 2)
-    model.fit(x_train[:100], y_train[:100],batch_size=my_batchsize,epochs=epochs,verbose=True,callbacks=[tensorboard_callback])
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="tfOUT", histogram_freq=1 ,profile_batch = 2)
+    cp_callback = tf.keras.callbacks.LambdaCallback(on_batch_end=model.logCp)
+
+    model.fit(x_train[:100], y_train[:100],batch_size=my_batchsize,epochs=epochs,verbose=True,callbacks=[tensorboard_callback,cp_callback])
     #
     # print("finished the call, trying to print")
     # print(model.summary())
@@ -190,7 +193,7 @@ def trainWithChemTemplateNN(savePath):
     #
     # print("Ended Training")
     # sess.close()
-    del model
+    #del model
     # del sess
     return savePath #,acc,x_test,y_test,nnAnswer
 

@@ -359,14 +359,14 @@ def _createMask(nbrOutputNodes):
         mask+=[zero]
     return np.array([mask])
 
-def sample_bimodal_distrib(nbrInputs,peak1=-4,peak2=-8,sigma1=1,sigma2=1,mixture = 0.5):
+def sample_bimodal_distrib(nbrInputs,peak1=-4,peak2=-8,sigma1=1.,sigma2=1.,mixture = 0.5):
     """
         Sample from a bimodal distribution around peak 1 and peak 2 based on gaussian law.
     :param nbrInputs: int, indicate the number of inputs
     :param peak1: int, indicate the power of 10 around which the first peak should be centered
     :param peak2: int, indicate the power of 10 around which the second peak should be centered
-    :param sigma1: int, indicate the width in power of 10 around the peak1.
-    :param sigma2: int, indicate the width in power of 10 around the peak2.
+    :param sigma1: float, indicate the width in power of 10 around the peak1.
+    :param sigma2: float, indicate the width in power of 10 around the peak2.
     :param mixture: proba for the mixture of the two.
     :return:
     """
@@ -374,7 +374,7 @@ def sample_bimodal_distrib(nbrInputs,peak1=-4,peak2=-8,sigma1=1,sigma2=1,mixture
     gaussian1 = np.random.normal(peak1,sigma1,nbrInputs)
     gaussian2 = np.random.normal(peak2,sigma2,nbrInputs)
 
-    powers = np.where(mixChoice>0.5,gaussian1,gaussian2)
+    powers = np.where(mixChoice>mixture,gaussian1,gaussian2)
     inputs = [10**p for p in powers]
     return inputs,powers
 

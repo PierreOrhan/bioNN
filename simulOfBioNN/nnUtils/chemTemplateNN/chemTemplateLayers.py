@@ -146,14 +146,21 @@ class chemTemplateLayer(Dense):
         print("Layer successfully built")
 
 
-    def get_rescaleOps(self):
+    def get_rescaleFactor(self):
         Tone = tf.cast(tf.fill(self.kernel.shape,1),dtype=tf.float32)
         Tzero = tf.cast(tf.zeros(self.kernel.shape),dtype=tf.float32)
         rescaleFactor = tf.keras.backend.sum(tf.where(tf.less(self.kernel,0),Tone,Tzero)) + tf.keras.backend.sum(tf.where(tf.less(self.kernel,0),Tone,Tzero))
         return rescaleFactor
 
     def get_mask(self):
-        return self.kernel
+        Tminus = tf.cast(tf.fill(self.kernel.shape,-1),dtype=tf.float32)
+        Tplus = tf.cast(tf.fill(self.kernel.shape,1),dtype=tf.float32)
+        Tzero = tf.cast(tf.fill(self.kernel.shape,0),dtype=tf.float32)
+        clippedKernel=tf.where(tf.less(self.kernel,-0.2),Tminus,tf.where(tf.less(self.kernel,0.2),Tzero,Tplus))
+        return clippedKernel
+
+    def set_mask(self,mask):
+        self.kernel.assign(tf.where(mask*self.kernel>0,self.kernel,tf.where(mask*self.kernel<0,(-1)*self.kernel,0)))
 
     def set_constants(self,constantArray,activInitC,inhibInitC,enzymeInit,computedRescaleFactor):
         """

@@ -207,7 +207,7 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
         olderX = tf.TensorArray(dtype=tf.float32,size=0,dynamic_size=True)
         for layeridx in tf.range(tf.shape(masks.to_tensor())[0]):
             layer = masks[layeridx].to_tensor()
-            layerEq = tf.TensorArray(dtype=tf.float32,size=tf.shape(layer)[1])
+            #layerEq = tf.TensorArray(dtype=tf.float32,size=tf.shape(layer)[1])
             if(tf.equal(layeridx,0)):
                 Kactivs = tf.where(layer>0,Kactiv0[layeridx].to_tensor(),0)
                 Kinhibs = tf.where(layer<0,Kinhib0[layeridx].to_tensor(),0)

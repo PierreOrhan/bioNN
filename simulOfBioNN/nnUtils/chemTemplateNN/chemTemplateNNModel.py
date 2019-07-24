@@ -66,6 +66,8 @@ class chemTemplateNNModel(tf.keras.Model):
 
         self.writer = tf.summary.create_file_writer("tfOUT")
         self.writer.set_as_default()
+
+
         self.built = False
         self.gathered = None
 
@@ -113,13 +115,14 @@ class chemTemplateNNModel(tf.keras.Model):
 
         self.cpLayer.build(input_shape,self.layerList)
 
-        self.rescaleFactor.assign(tf.keras.backend.sum([l.get_rescaleOps() for l in self.layerList],axis=-1))
+        self.rescaleFactor.assign(tf.keras.backend.sum([l.get_rescaleFactor() for l in self.layerList], axis=-1))
         for l in self.layerList:
             l.set_constants(self.reactionConstants,self.enzymeInitC,self.activTempInitC,self.inhibTempInitC,self.rescaleFactor)
 
         self.cpLayer.assignConstantFromLayers(self.layerList)
         self.cpLayer.assignMasksFromLayers(self.layerList)
         self.cpLayer.E0.assign(self.layerList[0].E0)
+        self.meanGatheredCps = tf.Variable(0,dtype=tf.float32,trainable=False)
         self.built = True
 
         super(chemTemplateNNModel,self).build(input_shape)
@@ -144,12 +147,18 @@ class chemTemplateNNModel(tf.keras.Model):
         inputs = tf.convert_to_tensor(inputs)
         if training:
             self.verifyMask()
-        result = self.funcTesting(inputs)
-        return result
+        inputs = inputs/self.rescaleFactor
+        gatheredCps = tf.stop_gradient(self.cpLayer(inputs))
+        self.meanGatheredCps.assign(tf.reduce_mean(gatheredCps))
+        #tf.summary.scalar("mean_cp",data=tf.reduce_mean(gatheredCps),step=tf.summary.experimental.get_step())
+        x = self.layerList[0](inputs,cps=gatheredCps)
+        for l in self.layerList[1:]:
+            x = l(x,cps=gatheredCps)
+        return x
 
     @tf.function
     def verifyMask(self):
-        newRescaleFactor = tf.stop_gradient(tf.keras.backend.sum([l.get_rescaleOps() for l in self.layerList],axis=-1))
+        newRescaleFactor = tf.stop_gradient(tf.keras.backend.sum([l.get_rescaleFactor() for l in self.layerList], axis=-1))
         if(not tf.equal(self.rescaleFactor,newRescaleFactor)):
             self.rescaleFactor.assign(newRescaleFactor)
             for l in self.layerList:
@@ -158,13 +167,23 @@ class chemTemplateNNModel(tf.keras.Model):
         self.cpLayer.E0.assign(self.layerList[0].E0)
         self.cpLayer.assignMasksFromLayers(self.layerList)
 
-    @tf.function
-    def funcTesting(self,inputs):
-        inputs = inputs/self.rescaleFactor
-        gatheredCps = tf.stop_gradient(self.cpLayer(inputs))
-        tf.summary.scalar("mean_cp",data=tf.reduce_mean(gatheredCps),step=tf.summary.experimental.get_step())
-        x = self.layerList[0](inputs,cps=gatheredCps)
-        for l in self.layerList[1:]:
-            x = l(x,cps=gatheredCps)
-        #x = tf.keras.activations.softmax(x)
-        return x
+    def updateArchitecture(self,masks,reactionsConstants,enzymeInitC,activTempInitc,inhibTempInitC):
+        for idx,m in enumerate(masks):
+            self.layerList[m].set_mask(m)
+
+        self.reactionConstants = reactionsConstants
+        self.enzymeInitC = enzymeInitC
+        self.activTempInitC = activTempInitc
+        self.inhibTempInitC = inhibTempInitC
+
+        self.rescaleFactor.assign(tf.keras.backend.sum([l.get_rescaleFactor() for l in self.layerList], axis=-1))
+        for l in self.layerList:
+            l.set_constants(self.reactionConstants,self.enzymeInitC,self.activTempInitC,self.inhibTempInitC,self.rescaleFactor)
+
+        self.cpLayer.assignConstantFromLayers(self.layerList)
+        self.cpLayer.assignMasksFromLayers(self.layerList)
+
+    def logCp(self,epoch,logs=None):
+        cp = self.meanGatheredCps
+        tf.summary.scalar('mean cps', data= cp, step=epoch)
+        return cp
