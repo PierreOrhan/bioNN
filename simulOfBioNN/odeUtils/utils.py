@@ -225,7 +225,7 @@ def _removeLastLayerFromDic(outputArray, nameDic):
             nameDic2[k]=nameDic[k]
     return nameDic2
 
-def rescaleInputConcentration(speciesArray,networkMask=None,nameDic=None,rescaleFactor=None):
+def rescaleInputConcentration(speciesArray=None,networkMask=None,nameDic=None,rescaleFactor=None):
     """
         This function enable to rescale concentrations when using more input species, or multi layers.
         Such rescale is crucial to obtain output of similar values despite having more species as inputs.
@@ -238,7 +238,8 @@ def rescaleInputConcentration(speciesArray,networkMask=None,nameDic=None,rescale
             A better heuristic should be derived.
             For now we simply divide by the total number of nodes in the network.
     :param speciesArray: t*n-array, the concentration of every species. t: number of test, n: number of species
-    :param networkMask: optional, 2d-array with value in {0,1,-1}: mask of the network. (Same as considered by generateNeuralNetworkfunction)
+                         if None we only give the rescale factor.
+    :param networkMask: optional, 2d-array or list of 2d-array with value in {0,1,-1}: mask of the network. (Same as considered by generateNeuralNetworkfunction)
                         using this is much faster.
     :param nameDic: optional, dictionary with name of species of the layers.
     :param rescaleFactor: optional,float, if not None then this value replace the value found by the default heuristic (that is the number of nodes)
@@ -248,7 +249,10 @@ def rescaleInputConcentration(speciesArray,networkMask=None,nameDic=None,rescale
     if networkMask is None and nameDic is None:
         raise Exception("please provide at least one mask")
     elif networkMask is not None:
-        nbrNodes = networkMask.shape[0]*networkMask.shape[1]
+        if not type(networkMask)==list:
+            nbrNodes = networkMask.shape[0]*networkMask.shape[1] # IN FACT NBR OF TEMPLATE HERE....
+        else:
+            nbrNodes = np.sum([np.sum(np.where(m<0,1,0) + np.where(m>0,1,0)) for m in networkMask]) # IN FACT NBR OF TEMPLATE HERE....
     elif nameDic is not None:
         outputArray = obtainOutputArray(nameDic)
         lastLayerIndex = int(outputArray[0].split("_")[1])
@@ -261,12 +265,12 @@ def rescaleInputConcentration(speciesArray,networkMask=None,nameDic=None,rescale
         firstLayer = outputArray
     if rescaleFactor is None:
         rescaleFactor=nbrNodes
-    for k in firstLayer:
-        speciesArray[:,nameDic[k]] = speciesArray[:,nameDic[k]]/rescaleFactor
-
-    print("Rescaled input species concentration by "+str(rescaleFactor)+" for "+str(firstLayer))
-
-    return speciesArray,rescaleFactor
+    if not (speciesArray is None):
+        for k in firstLayer:
+            speciesArray[:,nameDic[k]] = speciesArray[:,nameDic[k]]/rescaleFactor
+        print("Rescaled input species concentration by "+str(rescaleFactor)+" for "+str(firstLayer))
+        return speciesArray,rescaleFactor
+    return None,rescaleFactor
 
 def obtainTemplateArray(nameDic = None,layer = None,masks = None,activ = None):
     """

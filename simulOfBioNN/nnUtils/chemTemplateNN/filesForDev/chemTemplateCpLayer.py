@@ -242,7 +242,7 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
         return max_cp
 
     @tf.function
-    def cpEquilibriumFunc(self,cp,args):
+    def _cpEquilibriumFunc(self, cp, args):
         """
             Given approximate only for the enzyme competition term (cp), we compute the next approximate using G.
             The real value for the competitions term verify cp = G(cp,initialConditions)
@@ -326,7 +326,7 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
                 Kinhibs = tf.where(layer<0,Kinhib0[layeridx].to_tensor(),0)
                 firstComplex = tf.keras.backend.sum(tf.where(layer>0,Kactivs*x_eq,tf.where(layer<0,Kinhibs*x_eq,0)),axis=0)
                 Inhib2 = tf.matmul(stackOlderX,tf.transpose(CinhibsOld))/(kdT[layeridx-1]*k6[layeridx-1])
-                new_cp +=  tf.keras.backend.sum(Inhib2*x_eq/E0) + tf.keras.backend.sum(firstComplex)
+                new_cp +=  tf.keras.backend.sum(Inhib2*x_eq/(E0*cp)) + tf.keras.backend.sum(firstComplex)
 
                 layerEqStack = tf.squeeze(x_eq,axis=0)
                 olderX = olderX.scatter(indices=tf.range(tf.shape(layerEqStack)[0]),value=layerEqStack)
@@ -350,7 +350,7 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
         Inhib = tf.matmul(stackOlderX,tf.transpose(Cinhibs))/kdT[-1]
         x_eq = tf.matmul(stackOlderX,tf.transpose(Cactivs))/(kdI[-1]*cp+Inhib/cp)
         Inhib2 = tf.matmul(stackOlderX,tf.transpose(Cinhibs))/(kdT[-1]*k6[-1])
-        new_cp += tf.keras.backend.sum(Inhib2/E0*x_eq)
+        new_cp += tf.keras.backend.sum(Inhib2/(E0*cp)*x_eq)
 
         new_cp = new_cp - cp
         return new_cp*(-1)
@@ -396,8 +396,49 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
         newkdI = kdI
 
         cp0max=self.obtainBornSup(k6,newkdT,newkdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks)
-        computedCp = self.brentq(self.cpEquilibriumFunc,tf.fill([1],1.),cp0max,args=(k6,newkdT,newkdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks))
+        computedCp = self.brentq(self._cpEquilibriumFunc, tf.fill([1], 1.), cp0max, args=(k6, newkdT, newkdI, Kactiv0, Kinhib0, Cactiv0, Cinhib0, E0, X0, masks))
         return computedCp
+
+    def lamda_cpEquilibriumFunc(self,X0):
+        k1 = self.k1.getRagged()
+        k1n = self.k1n.getRagged()
+        k2 = self.k2.getRagged()
+        k3 = self.k3.getRagged()
+        k3n = self.k3n.getRagged()
+        k4 = self.k4.getRagged()
+        k6 = self.k6.getRagged()
+        kdI = self.kdI.getRagged()
+        kdT = self.kdT.getRagged()
+        TA0 = self.TA0.getRagged()
+        TI0 = self.TI0.getRagged()
+        masks = self.masks.getRagged()
+        Cinhib0 = self.Cinhib0.getRagged()
+
+        # Computation of the different constants that are required.
+        k1M = k1/(k1n+k2)
+        k3M = k3/(k3n+k4)
+        # k5M = k5/(k5n+k6)
+        Kactiv0 = k1M*TA0 # element to element product
+        Kinhib0 = k3M*TI0
+        Cactiv0 = k2*k1M*TA0*self.E0
+        # the shape 0 is defined in our ragged tensors whereas the shape 1 and 2 aren't
+        args = (k6,kdT,kdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,self.E0,X0,masks)
+        return lambda cp: self._cpEquilibriumFunc(cp,args)
+
+
+    @tf.function
+    def getFunctionStyle(self,cpArray,X0):
+        """
+            Given an input, compute the value of f(cp) for all cp in cpArray (where f is the function we would like to find the roots with brentq)
+        :param cpArray:
+        :param X0:
+        :return:
+        """
+        cpArray=tf.cast(tf.convert_to_tensor(cpArray),dtype=tf.float32)
+        X0 = tf.cast(tf.convert_to_tensor(X0),dtype=tf.float32)
+        func = self.lamda_cpEquilibriumFunc(X0)
+        gatheredCps = tf.map_fn(func,cpArray,parallel_iterations=32,back_prop=False)
+        return gatheredCps
 
     @tf.function
     def brentq(self, f, xa, xb,args=(),xtol=tf.constant(10**(-12)), rtol=tf.constant(4.4408920985006262*10**(-16)),iter=tf.constant(100)):
@@ -436,7 +477,7 @@ class chemTemplateCpLayer(tf.keras.layers.Layer):
             delta = (xtol + rtol*tf.abs(xcur))/2
             sbis = (xblk - xcur)/2
             if tf.equal(fcur[0],0) or tf.less(tf.abs(sbis)[0],delta[0]):
-                i = iter #BREAK FAILS HERE!!! ==> strange behavior?
+                break #BREAK FAILS HERE!!! ==> strange behavior?
             else:
                 if tf.greater(tf.abs(spre)[0],delta[0]) and tf.less(tf.abs(fcur)[0],tf.abs(fpre)[0]):
                     if tf.equal(xpre[0],xblk[0]):

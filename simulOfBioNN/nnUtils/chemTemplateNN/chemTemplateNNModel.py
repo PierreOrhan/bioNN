@@ -8,7 +8,7 @@ import tensorflow as tf
 import numpy as np
 from simulOfBioNN.nnUtils.chemTemplateNN.tensorflowFixedPointSearch import computeCPonly
 from simulOfBioNN.nnUtils.chemTemplateNN.chemTemplateLayers import chemTemplateLayer
-from simulOfBioNN.nnUtils.chemTemplateNN.chemTemplateCpLayer import chemTemplateCpLayer
+# from simulOfBioNN.nnUtils.chemTemplateNN.chemTemplateCpLayer import chemTemplateCpLayer
 from tensorflow import initializers
 
 class chemTemplateNNModel(tf.keras.Model):
@@ -22,14 +22,12 @@ class chemTemplateNNModel(tf.keras.Model):
         We provide support for the simple model:
             exonuclease reactions model at order 1, polymerase and nickase are grouped under the same enzyme.
     """
-    def __init__(self, sess, useGPU, nbUnits, sparsities, reactionConstants,enzymeInitC,activTempInitC, inhibTempInitC, randomConstantParameter=None):
+    def __init__(self, nbUnits, sparsities, reactionConstants,enzymeInitC,activTempInitC, inhibTempInitC, randomConstantParameter=None):
         """
             Initialization of the model:
                     Here we simply add layers, they remain to be built once the input shape is known.
                     Next steps are made at the build level, when the input shape becomes usable.
             Be careful: we here consider the system to have been rescaled by using T0 and C0 constants.
-        :param sess: tensorflow session: we use to to obtain GPU or CPU name where we dispatch some of our operations.
-        :param useGPU: boolean, if True: we use GPU, else CPU.
         :param nbUnits: list, for each layer its number of units
         :param sparsities: the value of sparsity in each layer
                 """
@@ -48,8 +46,6 @@ class chemTemplateNNModel(tf.keras.Model):
         for e in range(nbLayers):
             self.layerList += [chemTemplateLayer(Deviceidx,units=nbUnits[e],sparsity=sparsities[e],dynamic=False)]
 
-        self.cpLayer = chemTemplateCpLayer(Deviceidx)
-
         self.reactionConstants = reactionConstants
         self.enzymeInitC = enzymeInitC
         self.activTempInitC = activTempInitC
@@ -66,7 +62,6 @@ class chemTemplateNNModel(tf.keras.Model):
 
         self.writer = tf.summary.create_file_writer("tfOUT")
         self.writer.set_as_default()
-
 
         self.built = False
         self.gathered = None
@@ -98,11 +93,6 @@ class chemTemplateNNModel(tf.keras.Model):
         """
         self.rescaleFactor = tf.Variable(0,trainable=False,dtype=tf.float32)
 
-        # CONCERNING THE SHAPE WE DO NOT USE TRADITIONNAL (INPUT,OUTPUT) format in the way we compute cp.
-        #   Therefore we define the following heuristic here:
-        #       ==> at the model level we store the reaction constants with this shape format (output,input) so that they are used for cp computation
-        #       ==> at the layer model we store the reaction constants with the (input,ouput) shape format
-
         # We need to Initiate variable for the call to the herited build which will compile the call and thus need it.
         # BUT at the time of this function the model is still in eager mode, and the graph activated in the non-eager mode doesn't get all informations
         # THUS this instantation shall be made in non-eager mode, and the only moment to catch it is within the call function (see call).
@@ -113,15 +103,10 @@ class chemTemplateNNModel(tf.keras.Model):
         for idx,l in enumerate(self.layerList):
             l.build(input_shapes[idx])
 
-        self.cpLayer.build(input_shape,self.layerList)
-
         self.rescaleFactor.assign(tf.keras.backend.sum([l.get_rescaleFactor() for l in self.layerList], axis=-1))
         for l in self.layerList:
             l.set_constants(self.reactionConstants,self.enzymeInitC,self.activTempInitC,self.inhibTempInitC,self.rescaleFactor)
 
-        self.cpLayer.assignConstantFromLayers(self.layerList)
-        self.cpLayer.assignMasksFromLayers(self.layerList)
-        self.cpLayer.E0.assign(self.layerList[0].E0)
         self.meanGatheredCps = tf.Variable(0,dtype=tf.float32,trainable=False)
         self.built = True
 
@@ -148,13 +133,63 @@ class chemTemplateNNModel(tf.keras.Model):
         if training:
             self.verifyMask()
         inputs = inputs/self.rescaleFactor
-        gatheredCps = tf.stop_gradient(self.cpLayer(inputs))
-        self.meanGatheredCps.assign(tf.reduce_mean(gatheredCps))
+        gatheredCps = tf.stop_gradient(self.obtainCp(inputs))
+        #self.meanGatheredCps.assign(tf.reduce_mean(gatheredCps))
         #tf.summary.scalar("mean_cp",data=tf.reduce_mean(gatheredCps),step=tf.summary.experimental.get_step())
         x = self.layerList[0](inputs,cps=gatheredCps)
         for l in self.layerList[1:]:
             x = l(x,cps=gatheredCps)
         return x
+
+    @tf.function
+    def obtainCp(self,inputs):
+        gatheredCps = tf.map_fn(self._obtainCp,inputs,parallel_iterations=32,back_prop=False)
+        return gatheredCps
+
+    @tf.function
+    def _obtainCp(self,input):
+        #first we obtain the born sup:
+        if(input.shape.rank<2):
+            input = tf.reshape(input,(1,tf.shape(input)[0]))
+        bornsupcp,x = self.layerList[0].layer_cp_born_sup(input)
+        layercp = tf.fill([1],1.)
+        for l in self.layerList[1:]:
+            layercp,x = l.layer_cp_born_sup(x)
+            bornsupcp += layercp
+        #then we solve the fixed point:
+        cpmin = tf.fill([1],1.)
+        cp = self.brentq(self._computeCPdiff,cpmin,bornsupcp,input)
+        return cp
+
+    @tf.function
+    def _computeCPdiff(self,cp,input):
+        new_cp = tf.fill([1],1.)
+        layercp,x = self.layerList[0].layer_cp_equilibrium(cp,input,isFirstLayer=True)
+        new_cp += layercp
+        for l in self.layerList[1:]:
+            layercp,x = l.layer_cp_equilibrium(cp,x)
+            new_cp += layercp
+        new_cp = new_cp-cp
+        return (-1)*new_cp
+
+    def lamda_computeCPdiff(self,input):
+        if(input.shape.rank<2):
+            input = tf.reshape(input,(1,tf.shape(input)[0]))
+        return lambda cp: self._computeCPdiff(cp,input)
+
+    @tf.function
+    def getFunctionStyle(self,cpArray,X0):
+        """
+            Given an input, compute the value of f(cp) for all cp in cpArray (where f is the function we would like to find the roots with brentq)
+        :param cpArray:
+        :param X0:
+        :return:
+        """
+        cpArray=tf.cast(tf.convert_to_tensor(cpArray),dtype=tf.float32)
+        X0 = tf.cast(tf.convert_to_tensor(X0),dtype=tf.float32)
+        func = self.lamda_computeCPdiff(X0)
+        gatheredCps = tf.map_fn(func,cpArray,parallel_iterations=32,back_prop=False)
+        return gatheredCps
 
     @tf.function
     def verifyMask(self):
@@ -163,27 +198,89 @@ class chemTemplateNNModel(tf.keras.Model):
             self.rescaleFactor.assign(newRescaleFactor)
             for l in self.layerList:
                 l.rescale(self.rescaleFactor)
-        # We also need to update the information the model has: E0 and the masks might have change
-        self.cpLayer.E0.assign(self.layerList[0].E0)
-        self.cpLayer.assignMasksFromLayers(self.layerList)
 
-    def updateArchitecture(self,masks,reactionsConstants,enzymeInitC,activTempInitc,inhibTempInitC):
+    def updateArchitecture(self,masks,reactionsConstants,enzymeInitC,activTempInitC,inhibTempInitC):
         for idx,m in enumerate(masks):
-            self.layerList[m].set_mask(m)
+            self.layerList[idx].set_mask(tf.convert_to_tensor(m,dtype=tf.float32))
 
         self.reactionConstants = reactionsConstants
         self.enzymeInitC = enzymeInitC
-        self.activTempInitC = activTempInitc
+        self.activTempInitC = activTempInitC
         self.inhibTempInitC = inhibTempInitC
 
         self.rescaleFactor.assign(tf.keras.backend.sum([l.get_rescaleFactor() for l in self.layerList], axis=-1))
         for l in self.layerList:
             l.set_constants(self.reactionConstants,self.enzymeInitC,self.activTempInitC,self.inhibTempInitC,self.rescaleFactor)
 
-        self.cpLayer.assignConstantFromLayers(self.layerList)
-        self.cpLayer.assignMasksFromLayers(self.layerList)
-
     def logCp(self,epoch,logs=None):
         cp = self.meanGatheredCps
         tf.summary.scalar('mean cps', data= cp, step=epoch)
         return cp
+
+    @tf.function
+    def brentq(self, f, xa, xb,args=(),xtol=tf.constant(10**(-12)), rtol=tf.constant(4.4408920985006262*10**(-16)),iter=tf.constant(100)):
+        xpre = tf.fill([1],0.) + xa
+        xcur = tf.fill([1],0.) + xb
+        xblk = tf.fill([1],0.)
+        fblk = tf.fill([1],0.)
+        spre = tf.fill([1],0.)
+        scur = tf.fill([1],0.)
+        fpre = f(xpre, args)
+        fcur = f(xcur, args)
+        tf.assert_less((fpre*fcur)[0],0.)
+
+        if tf.equal(fpre[0],0):
+            return xpre
+        if tf.equal(fcur[0],0):
+            return xcur
+        else:
+            tf.assert_greater(fcur,0.)
+
+        for i in tf.range(iter):
+            if tf.less((fpre*fcur)[0],0):
+                xblk = xpre
+                fblk = fpre
+                spre = xcur - xpre
+                scur = xcur - xpre
+            if tf.less(tf.abs(fblk)[0],tf.abs(fcur)[0]):
+                xpre = xcur
+                xcur = xblk
+                xblk = xpre
+
+                fpre = fcur
+                fcur = fblk
+                fblk = fpre
+
+            delta = (xtol + rtol*tf.abs(xcur))/2
+            sbis = (xblk - xcur)/2
+            if tf.equal(fcur[0],0) or tf.less(tf.abs(sbis)[0],delta[0]):
+                break #BREAK FAILS HERE!!! ==> strange behavior?
+            else:
+                if tf.greater(tf.abs(spre)[0],delta[0]) and tf.less(tf.abs(fcur)[0],tf.abs(fpre)[0]):
+                    if tf.equal(xpre[0],xblk[0]):
+                        # /* interpolate */
+                        stry = -fcur*(xcur - xpre)/(fcur - fpre)
+                    else :
+                        # /* extrapolate */
+                        dpre = (fpre - fcur)/(xpre - xcur)
+                        dblk = (fblk - fcur)/(xblk - xcur)
+                        stry = -fcur*(fblk*dblk - fpre*dpre)/(dblk*dpre*(fblk - fpre))
+
+                    mymin = tf.minimum(tf.abs(spre), 3*tf.abs(sbis) - delta) #Here would not understand...
+                    spre=tf.where(tf.less(2*tf.abs(stry)-mymin,0),scur,sbis)
+                    scur=tf.where(tf.less(2*tf.abs(stry)-mymin,0),stry,sbis)
+                else:
+                    # /* bisect */
+                    spre = sbis
+                    scur = sbis
+                xpre = xcur
+                fpre = fcur
+                if tf.greater(tf.abs(scur)[0],delta[0]):
+                    xcur += scur
+                else:
+                    if tf.greater(sbis[0],0):
+                        xcur += delta
+                    else:
+                        xcur += -delta
+            fcur = f(xcur, args)
+        return xcur

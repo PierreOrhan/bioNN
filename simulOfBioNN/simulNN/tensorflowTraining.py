@@ -133,7 +133,6 @@ def trainWithChemTemplateNN(savePath):
     nbUnits = [50,50,10,10]
     sparsities = [0.9,0.9,0.9,0.9]
     use_bias = False
-    useGPU = False
     epochs = 1
     my_batchsize = 32
 
@@ -142,7 +141,7 @@ def trainWithChemTemplateNN(savePath):
         raise SystemError('GPU device not found')
     print('Found GPU at: {}'.format(device_name))
 
-    model = chemTemplateNNModel(None,useGPU=useGPU,nbUnits=nbUnits,sparsities=sparsities,reactionConstants= constantList, enzymeInitC=enzymeInit, activTempInitC=activInit,
+    model = chemTemplateNNModel(nbUnits=nbUnits,sparsities=sparsities,reactionConstants= constantList, enzymeInitC=enzymeInit, activTempInitC=activInit,
                                 inhibTempInitC=inhibInit, randomConstantParameter=None)
     print("model is running eagerly: "+str(model.run_eagerly))
     # model.run_eagerly=True
@@ -152,23 +151,28 @@ def trainWithChemTemplateNN(savePath):
     model.build(input_shape=(None,x_train.shape[-1]))
     print("testing against example:")
 
+
+
     # writer = tf.summary.create_file_writer("tfOUT")
-    # tf.summary.trace_on(graph=True, profiler=True)
-    # res = model.call(x_test[:my_batchsize])
-    # print(res)
     # with writer.as_default():
+    #     tf.summary.trace_on(graph=True, profiler=True)
+    #     res = model.call(x_test[:my_batchsize])
+    #     print(res)
     #     tf.summary.trace_export(
     #         name="my_func_trace",
     #         step=0,
     #         profiler_outdir="tfOUT")
+    #     tf.summary.trace_off()
 
     # print("training:")
 
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="tfOUT", histogram_freq=1 ,profile_batch = 2)
-    cp_callback = tf.keras.callbacks.LambdaCallback(on_batch_end=model.logCp)
-
-    model.fit(x_train[:100], y_train[:100],batch_size=my_batchsize,epochs=epochs,verbose=True,callbacks=[tensorboard_callback,cp_callback])
-    #
+    #tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="tfOUT", histogram_freq=1 ,profile_batch = 2)
+    model.fit(x_train[:], y_train[:],batch_size=my_batchsize,epochs=epochs,verbose=True)#,callbacks=[tensorboard_callback])
+    import time
+    t0= time.time()
+    res = model.call(x_test[:1000])
+    print("computed res in "+str(time.time()-t0))
+    # #
     # print("finished the call, trying to print")
     # print(model.summary())
     # _,acc=model.evaluate(x_test, y_test)
@@ -198,6 +202,7 @@ def trainWithChemTemplateNN(savePath):
     return savePath #,acc,x_test,y_test,nnAnswer
 
 if __name__ == '__main__':
+    #tf.debugging.set_log_device_placement(True)
     import sys
     p1 = os.path.join(sys.path[0],"..")
     p3 = os.path.join(p1,"trainingWithChemicalNN")

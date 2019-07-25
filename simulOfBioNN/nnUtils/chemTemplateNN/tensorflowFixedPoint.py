@@ -151,6 +151,28 @@ def g(x):
             tf.print(e.read(0))
     return x
 
+@tf.function
+def tryBreak():
+    for idx in tf.range(100):
+        tf.print(idx)
+        if(tf.equal(idx,10)):
+            break
+
+@tf.function
+def raggedStress(raggedTensor):
+    zero = tf.zeros((10,10),dtype=tf.float32)
+    v = tf.fill([1],1.)
+    for idx in tf.range(10):
+        v += tf.keras.backend.sum(raggedTensor[idx].to_tensor()*zero)
+    return v
+
+def normalStress(list):
+    zero = np.zeros((10,10))
+    v = 1
+    for idx in range(10):
+        v += np.sum(list[idx]*zero)
+    return v
+
 
 import time
 import numpy as np
@@ -167,8 +189,20 @@ if __name__=="__main__":
     # print(g().shape)
     #e =tf.TensorArray(dtype=tf.int32,size=1,clear_after_read=False)
     #e =tf.Variable(initial_value=0)
-    e = tf.zeros(10)
-    g(tf.zeros(10),e)
+    # e = tf.zeros(10)
+    # g(tf.zeros(10),e)
+    for _ in range(10):
+        myRaggedTensor = tf.stack([tf.RaggedTensor.from_tensor(tf.ones((10,10))) for _ in tf.range(10)])
+        myTensor = np.stack([np.ones((10,10))] for _ in range(10))
+        t0 = time.time()
+        a = raggedStress(myRaggedTensor)
+        print("computed tf raggged in "+str(time.time()-t0))
+        t0 = time.time()
+        b = normalStress(myTensor)
+        print("computed numpy raggged in "+str(time.time()-t0))
+
+
+    #tryBreak()
     #print(tf.map_fn(f,tf.zeros((5,10,1)),dtype=tf.int32))
 
     #print(brentq(f,tf.constant(-4.),tf.constant(4.),iter=z.shape[0]))
