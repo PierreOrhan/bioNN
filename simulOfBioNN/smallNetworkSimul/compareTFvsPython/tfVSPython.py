@@ -214,7 +214,7 @@ if __name__ == '__main__':
         constantList = [0.9999999999999998,0.1764705882352941,1.0,0.9999999999999998,
                         0.1764705882352941,1.0,0.9999999999999998,0.1764705882352941,1.0,0.018823529411764708]
         constantList+=[constantList[-1]]
-        model = chemTemplateNNModel.chemTemplateNNModel(None,useGPU=True,nbUnits=nbUnits,sparsities=sparsities,reactionConstants= constantList,
+        model = chemTemplateNNModel.chemTemplateNNModel(nbUnits=nbUnits,sparsities=sparsities,reactionConstants= constantList,
                                                         enzymeInitC=E0, activTempInitC=TA, inhibTempInitC=TI, randomConstantParameter=None)
         model.compile(optimizer=tf.optimizers.Adam(),
                       loss='sparse_categorical_crossentropy',

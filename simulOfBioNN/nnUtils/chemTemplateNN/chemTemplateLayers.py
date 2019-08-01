@@ -10,66 +10,6 @@ from tensorflow.python.ops import nn
 from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import weightFixedAndClippedConstraint,sparseInitializer,constant_initializer,layerconstantInitiliaizer
 
 
-def chemTemplateClippedTensorDot(deviceName, inputs, kernel, rank, cp,CinhibMat,CactivMat,kd):
-    """
-        Clipped tensorDot on which we apply on a sigmoid function of the form activator*kernelActivator/1+activator*kernelActivator+sumALLInhib*kernelInhibitor
-        Clipping follow the rule: weights<0.2 take value -1, weighs>0.2 take value 1 and other take value 0.
-    """
-    with tf.device(deviceName):
-        with ops.name_scope(None,default_name="clippedTensorDotOp",values=[inputs, kernel]) as scope:
-            Tminus = tf.cast(tf.fill(kernel.shape,-1),dtype=tf.float32)
-            Tplus = tf.cast(tf.fill(kernel.shape,1),dtype=tf.float32)
-            Tzero = tf.cast(tf.fill(kernel.shape,0),dtype=tf.float32)
-            clippedKernel=tf.where(tf.less(kernel,-0.2),Tminus,tf.where(tf.less(kernel,0.2),Tzero,Tplus))
-            kernelInhibitor=tf.stop_gradient(tf.where(tf.less(kernel,0),clippedKernel,Tzero)*(-1))
-            inhibFiltered = kernelInhibitor * CinhibMat/cp    # We multiply the filtered by Cinhib and divide it by cp
-            kernelActivator = tf.stop_gradient(tf.where(tf.less(kernel,0),Tzero,clippedKernel))
-            activatorFiltered = kernelActivator * CactivMat
-            inhibition = tf.stop_gradient(tf.tensordot(inputs,inhibFiltered, [[rank - 1], [0]]))
-            activation = tf.stop_gradient(tf.tensordot(inputs, activatorFiltered, [[rank - 1], [0]]))
-
-            ## same operation but unclipped:
-            Inhib = tf.where(tf.less(kernel,0),kernel,Tzero)*(-1)*CinhibMat/cp
-            Activ = tf.where(tf.less(kernel,0),Tzero,kernel)*CactivMat
-            activation2 = tf.tensordot(inputs, Activ, [[rank - 1], [0]])
-            inhibition2 = tf.tensordot(inputs, Inhib, [[rank - 1], [0]])
-            forBackProp = tf.divide(activation2,cp*kd+inhibition2)
-
-            outputs = tf.stop_gradient(tf.divide(activation,cp*kd+inhibition)-forBackProp)
-            return tf.add(forBackProp,outputs,name=scope)
-
-
-def chemTemplateClippedMatMul(deviceName, inputs, kernel,cp,CinhibMat,CactivMat,kd):
-    '''
-        Clipped matmul on which we apply on a sigmoid function of the form activator*kernelActivator/1+activator*kernelActivator+sumALLInhib*kernelInhibitor
-        Clipping follow the rule: weights<0.2 take value -1, weighs>0.2 take value 1 and other take value 0.
-    '''
-    with tf.device(deviceName):
-        with ops.name_scope(None,default_name="clippedMatMulOp", values = [inputs, kernel]) as scope:
-            if len(inputs.shape.as_list())==1:
-                inputs = tf.stack([inputs])
-            Tminus = tf.cast(tf.fill(kernel.shape,-1),dtype=tf.float32)
-            Tplus = tf.cast(tf.fill(kernel.shape,1),dtype=tf.float32)
-            Tzero = tf.cast(tf.fill(kernel.shape,0),dtype=tf.float32)
-            #clipp the kernel at 0:
-            clippedKernel=tf.stop_gradient(tf.where(tf.less(kernel,-0.2),Tminus,tf.where(tf.less(0.2,kernel),Tplus,Tzero)))
-            kernelInhibitor=tf.stop_gradient(tf.where(tf.less(kernel,0),clippedKernel,Tzero)*(-1))
-            inhibFiltered = kernelInhibitor * CinhibMat   # We multiply the filtered by Cinhib
-            inhibition = tf.stop_gradient(tf.matmul(tf.divide(inputs,cp),inhibFiltered)) # and divide the inputs by cp
-            #kernel for activators:
-            kernelActivator = tf.stop_gradient(tf.where(tf.less(kernel,0),Tzero,clippedKernel))
-            activatorFiltered = kernelActivator * CactivMat
-            activation = tf.stop_gradient(tf.matmul(inputs, activatorFiltered))
-
-            ## same operation but unclipped:
-            Inhib = tf.where(tf.less(kernel,0),kernel,Tzero)*(-1)*CinhibMat
-            Activ = tf.where(tf.less(kernel,0),Tzero,kernel)*CactivMat
-            activation2 = tf.matmul(inputs, Activ)
-            inhibition2 = tf.matmul(inputs, Inhib)
-            forBackProp = tf.divide(activation2,cp*kd+inhibition2)
-
-            outputs = tf.stop_gradient(tf.divide(activation,cp*kd+inhibition)-forBackProp)
-            return tf.add(forBackProp,outputs,name=scope)
 
 
 class chemTemplateLayer(Dense):
@@ -78,7 +18,7 @@ class chemTemplateLayer(Dense):
         Adds a constant bias to the input
         :param theta: bias to be added after each multipication
     """
-    def __init__(self, deviceName, sparsity=0.9, min=-1, max=1, **kwargs):
+    def __init__(self, deviceName, sparsity=0.9, min=-1, max=1, usingLog=True, **kwargs):
         """
 
             :param deviceName: device to use for computation
@@ -92,6 +32,9 @@ class chemTemplateLayer(Dense):
         self.supports_masking = False
         self.sparseInitializer = sparseInitializer(sparsity, minval=min, maxval=max)
         self.deviceName=deviceName #the device on which the main operations will be conducted (forward and backward propagations)
+
+        self.usingLog = usingLog
+            # when using log, the layer sill takes value in the normal scale ( so the model should apply some exponential) but gives the log of the equilibrium value
 
     def build(self, input_shape):
         # We just change the way bias is added and remove it from trainable variable!
@@ -194,7 +137,7 @@ class chemTemplateLayer(Dense):
         self.kernel.assign(newKernel)
         self.mask.assign(tf.where(tf.less(self.kernel,-0.2),-1.,tf.where(tf.less(0.2,self.kernel),1.,0.)))
 
-    def set_constants(self,constantArray,activInitC,inhibInitC,enzymeInit,computedRescaleFactor):
+    def set_constants(self,constantArray,enzymeInit,activInitC,inhibInitC,computedRescaleFactor):
         """
             Define the ops assigning the values for the network constants.
         :return:
@@ -228,10 +171,6 @@ class chemTemplateLayer(Dense):
 
         self.mask.assign(tf.where(tf.less(self.kernel,-0.2),-1.,tf.where(tf.less(0.2,self.kernel),1.,0.)))
 
-    # def update_cp(self,cps):
-    #     print("assigning new cps: "+str((cps).shape))
-    #     self.cps.assign(cps)
-
     def rescale(self,rescaleFactor):
         """
             Rescale the enzyme value
@@ -241,20 +180,45 @@ class chemTemplateLayer(Dense):
         self.E0.assign(self.E0.read_value()*(rescaleFactor**0.5)/(self.rescaleFactor.read_value()**0.5))
         self.rescaleFactor.assign(rescaleFactor)
 
-    def call(self, inputs, cps = None):
+    def call(self, inputs, cps = None, isFirstLayer=False):
         if cps is None:
-            cps = tf.ones(tf.shape(inputs))
-        # rank = common_shapes.rank(inputs)
-        # if rank > 2:
-        #     # Broadcasting is required for the inputs.
-        #     outputs=chemTemplateClippedTensorDot(self.deviceName, inputs, self.kernel, rank, cps, self.Cactiv, self.Cinhib, self.kdI)
-        #     # Reshape the output back to the original ndim of the input.
-        #     if not context.executing_eagerly():
-        #         shape = inputs.get_shape().as_list()
-        #         output_shape = shape[:-1] + [self.units]
-        #         outputs.set_shape(output_shape)
-        # else:
-        outputs = chemTemplateClippedMatMul(self.deviceName, inputs, self.kernel, cps, self.Cactiv, self.Cinhib, self.kdI)
+            cps = tf.ones((tf.shape(inputs)[0],1))*(2.*10**6)
+
+        if isFirstLayer:
+            Kactivs = tf.where(self.mask>0,self.Kactiv,0)
+            Kinhibs = tf.where(self.mask<0,self.Kinhib,0)
+            w_inpIdx = tf.keras.backend.sum(Kactivs,axis=1)+tf.keras.backend.sum(Kinhibs,axis=1)
+            olderInput = tf.divide(inputs,(1+self.E0*w_inpIdx/cps)) #need to rescale the initial inputs too
+
+            Kactivs_unclipped = tf.where(self.kernel>0,self.Kactiv,0)
+            Kinhibs_unclipped = tf.where(self.kernel<0,self.Kinhib,0)
+            w_inpIdx_unclipped = tf.keras.backend.sum(Kactivs_unclipped,axis=1)+tf.keras.backend.sum(Kinhibs_unclipped,axis=1)
+            olderInput_unclipped = tf.divide(inputs,(1+self.E0*w_inpIdx_unclipped/cps))
+        else:
+            olderInput = inputs
+            olderInput_unclipped = inputs
+
+        #clipped version
+        Cactivs= tf.where(self.mask>0,self.Cactiv,0)
+        Cinhibs = tf.where(self.mask<0,self.Cinhib,0)
+        Inhib = tf.divide(tf.matmul(olderInput,Cinhibs),self.kdT)
+        if self.usingLog:
+            x_eq_clipped = tf.math.log(tf.matmul(olderInput,Cactivs))-tf.math.log(self.kdI*cps+Inhib/cps)
+        else:
+            x_eq_clipped = tf.matmul(olderInput,Cactivs)/(self.kdI*cps+Inhib/cps)
+
+        #unclipped version:
+        Cactivs_unclipped= tf.where(self.kernel>0,self.Cactiv*self.kernel,0)
+        Cinhibs_unclipped = tf.where(self.kernel<0,(-1)*self.Cinhib*self.kernel,0)
+        Inhib_unclipped = tf.matmul(olderInput,Cinhibs_unclipped)/self.kdT
+        if self.usingLog:
+            x_eq_unclipped = tf.math.log(tf.matmul(olderInput,Cactivs_unclipped))-tf.math.log(self.kdI*cps+Inhib_unclipped/cps)
+        else:
+            x_eq_unclipped = tf.matmul(olderInput_unclipped,Cactivs_unclipped)/(self.kdI*cps+Inhib_unclipped/cps)
+
+        outputs =  tf.stop_gradient(x_eq_clipped - x_eq_unclipped) + x_eq_unclipped
+
+        #outputs = chemTemplateClippedMatMul(self.deviceName, inputs, self.kernel, cps, self.Cactiv, self.Cinhib, self.kdI,self.kdT)
         return outputs
 
     def get_config(self):
@@ -309,3 +273,21 @@ class chemTemplateLayer(Dense):
             layer_cp = tf.keras.backend.sum(Inhib2*x_eq/(self.E0*cp)) + tf.keras.backend.sum(firstComplex)
 
             return layer_cp,x_eq
+
+    @tf.function
+    def get_inhib_and_output(self,cps,inputs,isFirstLayer=False):
+        if isFirstLayer:
+            Kactivs = tf.where(self.mask>0,self.Kactiv,0)
+            Kinhibs = tf.where(self.mask<0,self.Kinhib,0)
+            w_inpIdx = tf.keras.backend.sum(Kactivs,axis=1)+tf.keras.backend.sum(Kinhibs,axis=1)
+            olderInput = tf.divide(inputs,(1+self.E0*w_inpIdx/cps)) #need to rescale the initial inputs too
+        else:
+            olderInput = inputs
+
+        #clipped version
+        Cactivs= tf.where(self.mask>0,self.Cactiv,0)
+        Cinhibs = tf.where(self.mask<0,self.Cinhib,0)
+        Inhib = tf.divide(tf.matmul(olderInput,Cinhibs),self.kdT)
+        x_eq_clipped = tf.matmul(olderInput,Cactivs)/(self.kdI*cps+Inhib/cps)
+
+        return x_eq_clipped,Inhib,cps*cps*self.kdI

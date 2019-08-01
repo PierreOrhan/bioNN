@@ -146,7 +146,7 @@ def g(x):
     e =tf.TensorArray(dtype=tf.float32,size=1)
     for idx in tf.range(2):
         if tf.equal(idx,0):
-            e.write(0,tf.shape(x)[0])
+            e=e.write(0,tf.shape(x)[0])
         else:
             tf.print(e.read(0))
     return x
@@ -190,16 +190,17 @@ if __name__=="__main__":
     #e =tf.TensorArray(dtype=tf.int32,size=1,clear_after_read=False)
     #e =tf.Variable(initial_value=0)
     # e = tf.zeros(10)
-    # g(tf.zeros(10),e)
-    for _ in range(10):
-        myRaggedTensor = tf.stack([tf.RaggedTensor.from_tensor(tf.ones((10,10))) for _ in tf.range(10)])
-        myTensor = np.stack([np.ones((10,10))] for _ in range(10))
-        t0 = time.time()
-        a = raggedStress(myRaggedTensor)
-        print("computed tf raggged in "+str(time.time()-t0))
-        t0 = time.time()
-        b = normalStress(myTensor)
-        print("computed numpy raggged in "+str(time.time()-t0))
+    g(tf.zeros(10))
+
+    # for _ in range(10):
+    #     myRaggedTensor = tf.stack([tf.RaggedTensor.from_tensor(tf.ones((10,10))) for _ in tf.range(10)])
+    #     myTensor = np.stack([np.ones((10,10))] for _ in range(10))
+    #     t0 = time.time()
+    #     a = raggedStress(myRaggedTensor)
+    #     print("computed tf raggged in "+str(time.time()-t0))
+    #     t0 = time.time()
+    #     b = normalStress(myTensor)
+    #     print("computed numpy raggged in "+str(time.time()-t0))
 
 
     #tryBreak()

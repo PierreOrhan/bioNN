@@ -6,12 +6,11 @@
 
 import tensorflow as tf
 import numpy as np
-from simulOfBioNN.nnUtils.chemTemplateNN.tensorflowFixedPointSearch import computeCPonly
-from simulOfBioNN.nnUtils.chemTemplateNN.chemTemplateLayers import chemTemplateLayer
-# from simulOfBioNN.nnUtils.chemTemplateNN.chemTemplateCpLayer import chemTemplateCpLayer
-from tensorflow import initializers
+from simulOfBioNN.nnUtils.chemCascadeNet.chemCascadeLayers import chemCascadeLayer
+from simulOfBioNN.nnUtils.chemCascadeNet.chemNonLinearLayer import chemNonLinearLayer
 
-class chemTemplateNNModel(tf.keras.Model):
+
+class chemCascadeNNModel(tf.keras.Model):
     """
         Implement the model we derived from our mathematical analysis at equilibrium of a CRN implemented with the template model.
         We make two assumption:
@@ -22,7 +21,10 @@ class chemTemplateNNModel(tf.keras.Model):
         We provide support for the simple model:
             exonuclease reactions model at order 1, polymerase and nickase are grouped under the same enzyme.
     """
-    def __init__(self, nbUnits, sparsities, reactionConstants,enzymeInitC,activTempInitC, inhibTempInitC, randomConstantParameter=None, usingLog = True, usingSoftmax = True ):
+    def __init__(self, nbUnits, sparsities, reactionConstantsCascade,reactionConstantsNL,
+                 enzymeInitC,activTempInitC, inhibTempInitC,
+                 activTempInitCNL,sizeInput,XglobalinitC,
+                 randomConstantParameter=None, usingLog = True, usingSoftmax = True ):
         """
             Initialization of the model:
                     Here we simply add layers, they remain to be built once the input shape is known.
@@ -31,7 +33,7 @@ class chemTemplateNNModel(tf.keras.Model):
         :param nbUnits: list, for each layer its number of units
         :param sparsities: the value of sparsity in each layer
                 """
-        super(chemTemplateNNModel,self).__init__(name="")
+        super(chemCascadeNNModel, self).__init__(name="")
         nbLayers = len(nbUnits)
 
         if tf.test.is_gpu_available():
@@ -42,17 +44,27 @@ class chemTemplateNNModel(tf.keras.Model):
         # Test of the inputs
         assert len(sparsities)==len(nbUnits)
 
+        self.nlLayerList = [chemNonLinearLayer(Deviceidx,units=sizeInput,usingLog=usingLog)]
+        self.CascadeLayerList = []
         self.layerList = []
         for e in range(nbLayers):
-            self.layerList += [chemTemplateLayer(Deviceidx,units=nbUnits[e],sparsity=sparsities[e],dynamic=False,usingLog=usingLog)]
+            self.layerList += [(chemCascadeLayer(Deviceidx, units=nbUnits[e], sparsity=sparsities[e], dynamic=False, usingLog=usingLog),chemNonLinearLayer(Deviceidx, units=nbUnits[e], usingLog=usingLog))]
+            self.CascadeLayerList += [self.layerList[-1][0]]
+            self.nlLayerList += [self.layerList[-1][1]]
 
-        self.reactionConstants = reactionConstants
+
+        self.reactionConstantsCascade = reactionConstantsCascade
+        self.reactionConstantsNL = reactionConstantsNL
         self.enzymeInitC = enzymeInitC
+        self.XglobalinitC = XglobalinitC
         self.activTempInitC = activTempInitC
         self.inhibTempInitC = inhibTempInitC
+        self.activTempInitCNL = activTempInitCNL
         self.randomConstantParameter =randomConstantParameter
 
-        assert len(self.reactionConstants) == 11
+
+        assert len(self.reactionConstantsCascade) == 17
+        assert len(self.reactionConstantsNL) == 4
         assert type(self.enzymeInitC) == float
         assert type(self.activTempInitC) == float
         assert type(self.inhibTempInitC) == float
@@ -104,19 +116,23 @@ class chemTemplateNNModel(tf.keras.Model):
         # THUS this instantation shall be made in non-eager mode, and the only moment to catch it is within the call function (see call).
         #self.non_eager_building(input_shape)
 
-        modelsConstantShape =[(input_shape[-1],self.layerList[0].units)]+[(l.units,self.layerList[idx+1].units) for idx,l in enumerate(self.layerList[:-1])]
-        input_shapes = [input_shape]+[(input_shape[0],l.units) for l in self.layerList[:-1]]
-        for idx,l in enumerate(self.layerList):
+        modelsConstantShape = [(input_shape[-1],self.CascadeLayerList[0].units)] + [(l.units, self.CascadeLayerList[idx + 1].units) for idx, l in enumerate(self.CascadeLayerList[:-1])]
+        input_shapes = [input_shape]+[(input_shape[0],l.units) for l in self.CascadeLayerList[:-1]]
+        for idx,l in enumerate(self.CascadeLayerList):
             l.build(input_shapes[idx])
+        for idx,l in enumerate(self.nlLayerList):
+            l.build()
 
-        self.rescaleFactor.assign(tf.keras.backend.sum([l.get_rescaleFactor() for l in self.layerList], axis=-1))
-        for l in self.layerList:
-            l.set_constants(self.reactionConstants,self.enzymeInitC,self.activTempInitC,self.inhibTempInitC,self.rescaleFactor)
+        self.rescaleFactor.assign(tf.keras.backend.sum([l.get_rescaleFactor() for l in self.CascadeLayerList], axis=-1))
+        self.nlLayerList[0].set_constants(self.reactionConstantsNL,self.enzymeInitC,self.activTempInitCNL,self.rescaleFactor)
+        for idx,l in enumerate(self.CascadeLayerList):
+            l.set_constants(self.reactionConstantsCascade, self.enzymeInitC, self.activTempInitC, self.inhibTempInitC, self.rescaleFactor,self.XglobalinitC)
+            self.nlLayerList[idx].set_constants(self.reactionConstantsNL,self.enzymeInitC,self.activTempInitCNL,self.rescaleFactor)
 
         self.meanGatheredCps = tf.Variable(0,dtype=tf.float32,trainable=False)
         self.built = True
         self.mycps = tf.Variable(tf.zeros(1),dtype=tf.float32,trainable=False)
-        super(chemTemplateNNModel,self).build(input_shape)
+        super(chemCascadeNNModel, self).build(input_shape)
 
         print("model successfully built")
 
@@ -128,8 +144,12 @@ class chemTemplateNNModel(tf.keras.Model):
         """
         if not self.built:
             raise Exception("model should be built before calling this function")
-        for l in self.layerList:
+
+        for l in self.CascadeLayerList:
             l.rescale(rescaleFactor)
+        for l in self.nlLayerList:
+            l.rescale(rescaleFactor)
+
         self.rescaleFactor.assign(rescaleFactor)
 
     def greedy_set_cps(self,inputs):
@@ -146,6 +166,7 @@ class chemTemplateNNModel(tf.keras.Model):
                 At training time we verify whether the model has changed total number of template due to backpropagation.
                     In this case we compute new values for the rescale factor, and update in all template the real weights.
         :param inputs: tensor for the inputs, if of rank >= 2, we need to split it.
+                       if self.usinglog is true, the inputs should be in logarithmic scale...
         :param training: if we are in training or inference mode (we save time of checking model change)
         :param mask: we don't use it here...
         :return:
@@ -159,10 +180,8 @@ class chemTemplateNNModel(tf.keras.Model):
 
         if training:
             self.verifyMask()
-        inputs = inputs/self.rescaleFactor
 
-        if self.usingLog:
-            inputs = tf.exp(inputs)
+        inputs = inputs
 
         gatheredCps = tf.stop_gradient(tf.fill([tf.shape(inputs)[0]],tf.reshape(self._obtainCp(inputs[0]),())))
         gatheredCps = tf.reshape(gatheredCps,((tf.shape(inputs)[0],1)))
@@ -175,12 +194,12 @@ class chemTemplateNNModel(tf.keras.Model):
         #self.meanGatheredCps.assign(tf.reduce_mean(gatheredCps))
         #tf.summary.scalar("mean_cp",data=tf.reduce_mean(gatheredCps),step=tf.summary.experimental.get_step())
 
-        x = self.layerList[0](inputs,cps=gatheredCps,isFirstLayer=True)
-        for l in self.layerList[1:]:
-            if self.usingLog:
-                x = l(tf.exp(x),cps=gatheredCps)
-            else:
-                x = l(x,cps=gatheredCps)
+
+        x = self.layerList[0][1](inputs, cps=gatheredCps, isFirstLayer=True)
+        for idx,l in enumerate(self.layerList):
+            x = l[0](x,cps=gatheredCps)
+            x = l[1](x,cps=gatheredCps)
+
         if self.usingSoftmax:
             if self.usingLog:
                 s = tf.keras.activations.softmax(tf.exp(x))
@@ -197,9 +216,10 @@ class chemTemplateNNModel(tf.keras.Model):
         gatheredCps = tf.stop_gradient(self.obtainCp(inputs))
         #self.meanGatheredCps.assign(tf.reduce_mean(gatheredCps))
         #tf.summary.scalar("mean_cp",data=tf.reduce_mean(gatheredCps),step=tf.summary.experimental.get_step())
-        x = self.layerList[0](inputs,cps=gatheredCps,isFirstLayer=True)
-        for l in self.layerList[1:]:
-            x = l(x,cps=gatheredCps)
+        x = self.nlLayerList[0](inputs, cps=gatheredCps, isFirstLayer=True)
+        for l in self.layerList:
+            x = l[0](x,cps=gatheredCps)
+            x = l[1](x,cps=gatheredCps)
         return x
 
 
@@ -214,10 +234,12 @@ class chemTemplateNNModel(tf.keras.Model):
         #first we obtain the born sup:
         if(input.shape.rank<2):
             input = tf.reshape(input,(1,tf.shape(input)[0]))
-        bornsupcp,x = self.layerList[0].layer_cp_born_sup(input)
+        bornsupcp,x = self.nlLayerList[0].layer_cp_born_sup(input)
         layercp = tf.fill([1],1.)
-        for l in self.layerList[1:]:
-            layercp,x = l.layer_cp_born_sup(x)
+        for l in self.layerList:
+            layercp,x = l[0].layer_cp_born_sup(x)
+            bornsupcp += layercp
+            layercp,x = l[1].layer_cp_born_sup(x)
             bornsupcp += layercp
         #then we solve the fixed point:
 
@@ -230,29 +252,31 @@ class chemTemplateNNModel(tf.keras.Model):
     @tf.function
     def _computeCPdiff(self,cp,input):
         new_cp = tf.fill([1],1.)
-        layercp,x = self.layerList[0].layer_cp_equilibrium(cp,input,isFirstLayer=True)
+        layercp,x = self.nlLayerList[0].layer_cp_equilibrium(cp, input, isFirstLayer=True)
         new_cp += layercp
-        for l in self.layerList[1:]:
-            layercp,x = l.layer_cp_equilibrium(cp,x)
+        for l in self.layerList:
+            layercp,x = l[0].layer_cp_equilibrium(cp,x)
+            new_cp += layercp
+            layercp,x = l[1].layer_cp_equilibrium(cp,x)
             new_cp += layercp
         new_cp = new_cp-cp
         return (-1)*new_cp
 
-    def measureModelRelevancy(self,input):
-        inputs = tf.stack([input])
-        if(input.shape.rank<2):
-            input = tf.reshape(input,(1,tf.shape(input)[0]))
-        cp = self.obtainCp(inputs)
-        Inhib = []
-        cp2kd = []
-        x,b,c=self.layerList[0].get_inhib_and_output(cp,input,isFirstLayer=True)
-        Inhib += [b]
-        cp2kd += [c]
-        for l in self.layerList[1:]:
-            x,b,c=self.layerList[0].get_inhib_and_output(cp,x,isFirstLayer=True)
-            Inhib += [b]
-            cp2kd += [c]
-        return Inhib,cp2kd
+    # def measureModelRelevancy(self,input):
+    #     inputs = tf.stack([input])
+    #     if(input.shape.rank<2):
+    #         input = tf.reshape(input,(1,tf.shape(input)[0]))
+    #     cp = self.obtainCp(inputs)
+    #     Inhib = []
+    #     cp2kd = []
+    #     x,b,c=self.CascadeLayerList[0].get_inhib_and_output(cp, input, isFirstLayer=True)
+    #     Inhib += [b]
+    #     cp2kd += [c]
+    #     for l in self.CascadeLayerList[1:]:
+    #         x,b,c=self.CascadeLayerList[0].get_inhib_and_output(cp, x, isFirstLayer=True)
+    #         Inhib += [b]
+    #         cp2kd += [c]
+    #     return Inhib,cp2kd
 
     def lamda_computeCPdiff(self,input):
         if(input.shape.rank<2):
@@ -275,24 +299,32 @@ class chemTemplateNNModel(tf.keras.Model):
 
     @tf.function
     def verifyMask(self):
-        newRescaleFactor = tf.stop_gradient(tf.keras.backend.sum([l.get_rescaleFactor() for l in self.layerList], axis=-1))
+        newRescaleFactor = tf.stop_gradient(tf.keras.backend.sum([l[0].get_rescaleFactor()+l[1].get_rescaleFactor() for l in self.layerList], axis=-1)+self.nlLayerList[0].get_rescaleFactor())
         if(not tf.equal(self.rescaleFactor,newRescaleFactor)):
             self.rescaleFactor.assign(newRescaleFactor)
+            self.nlLayerList[0].rescale(self.rescaleFactor)
             for l in self.layerList:
-                l.rescale(self.rescaleFactor)
+                l[0].rescale(self.rescaleFactor)
+                l[1].rescale(self.rescaleFactor)
 
-    def updateArchitecture(self,masks,reactionsConstants,enzymeInitC,activTempInitC,inhibTempInitC):
+    def updateArchitecture(self,masks,reactionsConstants,reactionConstantsNL,
+                           enzymeInitC,activTempInitC,inhibTempInitC,
+                           activTempInitCNL):
         for idx,m in enumerate(masks):
-            self.layerList[idx].set_mask(tf.convert_to_tensor(m,dtype=tf.float32))
+            self.CascadeLayerList[idx].set_mask(tf.convert_to_tensor(m, dtype=tf.float32))
 
-        self.reactionConstants = reactionsConstants
+        self.reactionConstantsCascade = reactionsConstants
+        self.reactionConstantsNL = reactionConstantsNL
+        self.activTempInitCNL = activTempInitCNL
         self.enzymeInitC = enzymeInitC
         self.activTempInitC = activTempInitC
         self.inhibTempInitC = inhibTempInitC
 
-        self.rescaleFactor.assign(tf.keras.backend.sum([l.get_rescaleFactor() for l in self.layerList], axis=-1))
+        self.rescaleFactor.assign(tf.keras.backend.sum([l[0].get_rescaleFactor()+l[1].get_rescaleFactor() for l in self.layerList], axis=-1)+self.nlLayerList[0].get_rescaleFactor())
+        self.nlLayerList[0].set_constants(self.reactionConstantsCascade, self.enzymeInitC, self.activTempInitC, self.inhibTempInitC)
         for l in self.layerList:
-            l.set_constants(self.reactionConstants,self.enzymeInitC,self.activTempInitC,self.inhibTempInitC,self.rescaleFactor)
+            l[0].set_constants(self.reactionConstantsCascade, self.enzymeInitC, self.activTempInitC, self.inhibTempInitC, self.rescaleFactor,self.XglobalinitC)
+            l[1].set_constants(self.reactionConstantsNL,self.enzymeInitC,self.activTempInitCNL,self.rescaleFactor)
 
     def logCp(self,epoch,logs=None):
         cp = self.meanGatheredCps

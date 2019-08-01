@@ -4,14 +4,16 @@
 
 from simulOfBioNN.nnUtils.plotUtils import *
 from simulOfBioNN.nnUtils.dataUtils import loadMnist
+from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import clippedSparseBioDenseLayer
+from simulOfBioNN.nnUtils.geneAutoRegulNet.autoRegulLayer import autoRegulLayer
 import multiprocessing
 import os
 import pandas
 from paretoPlot.paretoConfigUtils import _getConfig
 
-def _trainAndTest(sess,GPUidx, x_train, y_train, x_test, x_test_noise, y_test, resultPath, nbUnits=[], use_bias=True, flatten=True, epochs=5, biasValue=[], fractionZero=[], verbose=False):
+def _trainAndTest(layer,sess,GPUidx, x_train, y_train, x_test, x_test_noise, y_test, resultPath, nbUnits=[], use_bias=True, flatten=True, epochs=5, biasValue=[], fractionZero=[], verbose=False):
     import tensorflow as tf
-    from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import clippedSparseBioDenseLayer
+
     assert len(fractionZero)==len(nbUnits)
     nbLayers = len(fractionZero)
     if(GPUidx):
@@ -25,9 +27,9 @@ def _trainAndTest(sess,GPUidx, x_train, y_train, x_test, x_test_noise, y_test, r
     if(flatten):
         layerList+=[tf.keras.layers.Flatten(input_shape=(x_train.shape[1], x_train.shape[2]))]
     for e in range(nbLayers-1):
-        layerList+=[clippedSparseBioDenseLayer(GPUname, biasValue=biasValue[e], fractionZero=fractionZero[e], units=nbUnits[e], activation=tf.nn.relu, use_bias=use_bias)]
+        layerList+=[layer(gpuName = GPUname, biasValue=np.zeros(nbUnits[e])+biasValue[e], fractionZero=fractionZero[e], units=nbUnits[e], activation=tf.nn.relu, use_bias=use_bias)]
         #layerList+=[tf.keras.layers.BatchNormalization(beta_initializer=biasInit[e])]
-    layerList+=[clippedSparseBioDenseLayer(GPUname, biasValue=biasValue[-1], fractionZero=fractionZero[nbLayers - 1], units=10, activation=tf.nn.softmax, use_bias=use_bias)]
+    layerList+=[layer(gpuName = GPUname, biasValue=np.zeros(10)+biasValue[-1], fractionZero=fractionZero[nbLayers - 1], units=10, activation=tf.nn.softmax, use_bias=use_bias)]
     #model = tf.keras.models.Sequential([tf.keras.layers.Flatten(input_shape=(100,))] +
     model = tf.keras.models.Sequential(layerList)
     model.compile(optimizer='adam',
@@ -79,7 +81,7 @@ def trainMultiProcess(X):
              Arrays with the results of the training.
     """
     import tensorflow as tf
-    resultPath,gpuName,x_train,y_train,x_test,x_test_noise,y_test,nbU,use_bias,flatten,epochs,biasValues,zeroFrac,idx,repeat = X
+    layer,resultPath,gpuName,x_train,y_train,x_test,x_test_noise,y_test,nbU,use_bias,flatten,epochs,biasValues,zeroFrac,idx,repeat = X
 
     if not os.path.exists(resultPath):
         os.makedirs(resultPath)
@@ -96,7 +98,7 @@ def trainMultiProcess(X):
     with sess:
         for r in range(repeat):
             print(str(idx)+" started "+str(r+1)+" on "+str(repeat))
-            acc,accNoise,weightsNZ,weightsZ=_trainAndTest(sess,gpuName,x_train,y_train,x_test,x_test_noise,y_test,resultPath+"_"+str(idx)+"_"+str(r),nbUnits=nbU,
+            acc,accNoise,weightsNZ,weightsZ=_trainAndTest(layer,sess,gpuName,x_train,y_train,x_test,x_test_noise,y_test,resultPath+"_"+str(idx)+"_"+str(r),nbUnits=nbU,
                                                                  use_bias=use_bias,flatten=flatten,epochs=epochs,biasValue=biasValues[:len(zeroFrac)+1],
                                                                  fractionZero=zeroFrac,verbose=False)
             print(str(idx)+" finished "+str(r+1)+" on "+str(repeat))
@@ -108,6 +110,7 @@ def trainMultiProcess(X):
     #tf.keras.backend.clear_session()
 
     print(str(idx)+" giving result ")
+    print("colledctedACC:",collectedAcc)
 
     return collectedAcc,collectedAccNoise,collectedWeightsNoneZeros,collectedWeightsZeros
 
@@ -136,7 +139,7 @@ def _saveTrainingResults(myOutputs,resultPath):
     df=pandas.DataFrame(resultWeightZ)
     df.to_csv(resultPath+"_nbrZeroWeights.csv")
 
-def train(listOfRescale,Batches,Sparsity,NbUnits,Initial_Result_Path,epochs,repeat,use_bias,fashion=False):
+def train(layer,listOfRescale,Batches,Sparsity,NbUnits,Initial_Result_Path,epochs,repeat,use_bias,fashion=False):
     """
         Train a variety of neural network on Batches architecture, a list of string name for architecture.
         Sparsity and NbUnits should be dictionary which keys are the architecture names.
@@ -144,6 +147,7 @@ def train(listOfRescale,Batches,Sparsity,NbUnits,Initial_Result_Path,epochs,repe
         They should define 3d_list with respectively the sparsity and number of units desired for each layer.
         The training program save all result in the Initial_Result_Path folder.
         Results for different rescale and different batches are saved in separate sub-directory.
+    :param layer: the layer object to use
     :param listOfRescale: list with the rescale size, often [1,2,4], that is the scale to divide each size of the image.
     :param Batches: see above
     :param Sparsity: see above
@@ -171,7 +175,7 @@ def train(listOfRescale,Batches,Sparsity,NbUnits,Initial_Result_Path,epochs,repe
                 units=nbUnitMat[i]
                 for idx,u in enumerate(units):
                     biasValues=[np.random.rand(1) for _ in range(len(sparsity[idx]))]
-                    argsList += [[RESULT_PATH, gpuIdx, x_train, y_train, x_test, x_test_noise, y_test, u, use_bias, flatten, epochs, biasValues, sparsity[idx], str(i)+"_"+str(idx),repeat]]
+                    argsList += [[layer,RESULT_PATH, gpuIdx, x_train, y_train, x_test, x_test_noise, y_test, u, use_bias, flatten, epochs, biasValues, sparsity[idx], str(i)+"_"+str(idx),repeat]]
             with multiprocessing.Pool(processes= len(argsList)) as pool:
                 batchOutputs = pool.map(trainMultiProcess,argsList)
             pool.close()

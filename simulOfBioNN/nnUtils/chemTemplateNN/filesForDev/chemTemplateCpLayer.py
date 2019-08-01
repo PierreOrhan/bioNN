@@ -563,3 +563,68 @@ class VariableRaggedTensor():
         if self.multiDim:
             return tf.RaggedTensor.from_row_splits(row_splits=self.var_rowsplits.read_value(),values=self.var_values.getRagged())
         return tf.RaggedTensor.from_row_splits(row_splits=self.var_rowsplits.read_value(),values=self.var_values.read_value())
+
+
+
+
+def chemTemplateClippedTensorDot(deviceName, inputs, kernel, rank, cp,CinhibMat,CactivMat,kd):
+    """
+        Clipped tensorDot on which we apply on a sigmoid function of the form activator*kernelActivator/1+activator*kernelActivator+sumALLInhib*kernelInhibitor
+        Clipping follow the rule: weights<0.2 take value -1, weighs>0.2 take value 1 and other take value 0.
+    """
+    with tf.device(deviceName):
+        with ops.name_scope(None,default_name="clippedTensorDotOp",values=[inputs, kernel]) as scope:
+            Tminus = tf.cast(tf.fill(kernel.shape,-1),dtype=tf.float32)
+            Tplus = tf.cast(tf.fill(kernel.shape,1),dtype=tf.float32)
+            Tzero = tf.cast(tf.fill(kernel.shape,0),dtype=tf.float32)
+            clippedKernel=tf.where(tf.less(kernel,-0.2),Tminus,tf.where(tf.less(kernel,0.2),Tzero,Tplus))
+            kernelInhibitor=tf.stop_gradient(tf.where(tf.less(kernel,0),clippedKernel,Tzero)*(-1))
+            inhibFiltered = kernelInhibitor * CinhibMat/cp    # We multiply the filtered by Cinhib and divide it by cp
+            kernelActivator = tf.stop_gradient(tf.where(tf.less(kernel,0),Tzero,clippedKernel))
+            activatorFiltered = kernelActivator * CactivMat
+            inhibition = tf.stop_gradient(tf.tensordot(inputs,inhibFiltered, [[rank - 1], [0]]))
+            activation = tf.stop_gradient(tf.tensordot(inputs, activatorFiltered, [[rank - 1], [0]]))
+
+            ## same operation but unclipped:
+            Inhib = tf.where(tf.less(kernel,0),kernel,Tzero)*(-1)*CinhibMat/cp
+            Activ = tf.where(tf.less(kernel,0),Tzero,kernel)*CactivMat
+            activation2 = tf.tensordot(inputs, Activ, [[rank - 1], [0]])
+            inhibition2 = tf.tensordot(inputs, Inhib, [[rank - 1], [0]])
+            forBackProp = tf.divide(activation2,cp*kd+inhibition2)
+
+            outputs = tf.stop_gradient(tf.divide(activation,cp*kd+inhibition)-forBackProp)
+            return tf.add(forBackProp,outputs,name=scope)
+
+
+def chemTemplateClippedMatMul(deviceName, inputs, kernel,cp,CinhibMat,CactivMat,kdI,kdT):
+    '''
+        Clipped matmul on which we apply on a sigmoid function of the form activator*kernelActivator/1+activator*kernelActivator+sumALLInhib*kernelInhibitor
+        Clipping follow the rule: weights<0.2 take value -1, weighs>0.2 take value 1 and other take value 0.
+    '''
+    with tf.device(deviceName):
+        with ops.name_scope(None,default_name="clippedMatMulOp", values = [inputs, kernel]) as scope:
+            if len(inputs.shape.as_list())==1:
+                inputs = tf.stack([inputs])
+            # Tminus = tf.cast(tf.fill(kernel.shape,-1),dtype=tf.float32)
+            # Tplus = tf.cast(tf.fill(kernel.shape,1),dtype=tf.float32)
+            # Tzero = tf.cast(tf.fill(kernel.shape,0),dtype=tf.float32)
+            #clipp the kernel at 0:
+
+            clippedKernel=tf.stop_gradient(tf.where(tf.less(kernel,-0.2),-1.,tf.where(tf.less(0.2,kernel),1.,0.)))
+            kernelInhibitor=tf.stop_gradient(tf.where(tf.less(kernel,0),clippedKernel,0.)*(-1))
+            inhibFiltered = kernelInhibitor * CinhibMat   # We multiply the filtered by Cinhib
+            inhibition = tf.stop_gradient(tf.matmul(tf.divide(inputs,cp),inhibFiltered)/kdT) # and divide the inputs by cp
+            #kernel for activators:
+            kernelActivator = tf.stop_gradient(tf.where(tf.less(kernel,0),0.,clippedKernel))
+            activatorFiltered = kernelActivator * CactivMat
+            activation = tf.stop_gradient(tf.matmul(inputs, activatorFiltered))
+
+            ## same operation but unclipped:
+            Inhib = tf.where(tf.less(kernel,0),kernel,0.)*(-1)*CinhibMat
+            Activ = tf.where(tf.less(kernel,0),0.,kernel)*CactivMat
+            activation2 = tf.matmul(inputs, Activ)
+            inhibition2 = tf.matmul(inputs, Inhib)/kdT
+            forBackProp = tf.divide(activation2,cp*kdI+inhibition2)
+
+            outputs = tf.stop_gradient(tf.divide(activation,cp*kdI+inhibition)-forBackProp)
+            return tf.add(forBackProp,outputs,name=scope)
