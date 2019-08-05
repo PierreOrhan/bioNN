@@ -33,7 +33,7 @@ def _findConstant(savePath):
     constantList = [0.9999999999999998,0.1764705882352941,1.0,0.9999999999999998,
                     0.1764705882352941,1.0,0.9999999999999998,0.1764705882352941,1.0,0.018823529411764708]
     constantList+=[constantList[-1]]
-    enzymeInit = 5*10**(-7)/C0
+    enzymeInit = 10**(-4)/C0
     activInit =  10**(-4)/C0
     inhibInit =  10**(-4)/C0
     return constantList,enzymeInit,activInit,inhibInit,C0
@@ -58,9 +58,9 @@ def trainWithChemTemplateNN(savePath):
 
     #in a first time we consider the activInitNL as similar:
     activInitNL = activInit
-    XglobalInit = 8
+    XglobalInit = 8.
     reactionConstantsNL = constantList[:3]+[constantList[10]]
-    constantList = constantList + constantList[:6]
+    constantList = constantList + [constantList[-1],constantList[-1]] + constantList[:6]
 
     nbUnits = [10,10,5,3]
     sparsities = [0.1,0.1,0.1,0.]
@@ -93,7 +93,7 @@ def trainWithChemTemplateNN(savePath):
         x_train = np.log(x_train)
         x_test = np.log(x_test)
 
-
+    print("REACTIONS CONSTANT FOR NL LAYER",reactionConstantsNL)
     model = chemCascadeNNModel(nbUnits=nbUnits, sparsities=sparsities, reactionConstantsCascade= constantList,
                                reactionConstantsNL= reactionConstantsNL,
                                enzymeInitC=enzymeInit, activTempInitC=activInit, inhibTempInitC=inhibInit,
@@ -108,9 +108,17 @@ def trainWithChemTemplateNN(savePath):
                   #metrics=[tf.keras.metrics.MeanSquaredError()])
     model.build(input_shape=(None,x_train.shape[-1]))
     print("testing against example:")
+
+    cpInv = np.arange(0,1,0.01)
+    res = model.getFunctionStyle(cpInvArray=cpInv, X0=x_train[0])
+
+    plt.plot(cpInv,res)
+    plt.show()
+
     #model.greedy_set_cps(x_train[:my_batchsize])
     #tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="tfOUT", histogram_freq=1 ,profile_batch = 2)
-    model.fit(x_train[:], y_train[:],epochs=10,verbose=True,validation_data=(x_test,y_test))#,callbacks=[tensorboard_callback])
+
+    #model.fit(x_train[:], y_train[:],epochs=10,verbose=True,validation_data=(x_test,y_test))#,callbacks=[tensorboard_callback])
 
 
 

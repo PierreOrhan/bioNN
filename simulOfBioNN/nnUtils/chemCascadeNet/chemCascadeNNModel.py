@@ -44,13 +44,10 @@ class chemCascadeNNModel(tf.keras.Model):
         # Test of the inputs
         assert len(sparsities)==len(nbUnits)
 
-        self.nlLayerList = [chemNonLinearLayer(Deviceidx,units=sizeInput,usingLog=usingLog)]
-        self.CascadeLayerList = []
+        self.firstNlLayer = chemNonLinearLayer(Deviceidx,units=sizeInput,usingLog=usingLog)
         self.layerList = []
         for e in range(nbLayers):
             self.layerList += [(chemCascadeLayer(Deviceidx, units=nbUnits[e], sparsity=sparsities[e], dynamic=False, usingLog=usingLog),chemNonLinearLayer(Deviceidx, units=nbUnits[e], usingLog=usingLog))]
-            self.CascadeLayerList += [self.layerList[-1][0]]
-            self.nlLayerList += [self.layerList[-1][1]]
 
 
         self.reactionConstantsCascade = reactionConstantsCascade
@@ -63,7 +60,7 @@ class chemCascadeNNModel(tf.keras.Model):
         self.randomConstantParameter =randomConstantParameter
 
 
-        assert len(self.reactionConstantsCascade) == 17
+        assert len(self.reactionConstantsCascade) == 19
         assert len(self.reactionConstantsNL) == 4
         assert type(self.enzymeInitC) == float
         assert type(self.activTempInitC) == float
@@ -116,18 +113,17 @@ class chemCascadeNNModel(tf.keras.Model):
         # THUS this instantation shall be made in non-eager mode, and the only moment to catch it is within the call function (see call).
         #self.non_eager_building(input_shape)
 
-        modelsConstantShape = [(input_shape[-1],self.CascadeLayerList[0].units)] + [(l.units, self.CascadeLayerList[idx + 1].units) for idx, l in enumerate(self.CascadeLayerList[:-1])]
-        input_shapes = [input_shape]+[(input_shape[0],l.units) for l in self.CascadeLayerList[:-1]]
-        for idx,l in enumerate(self.CascadeLayerList):
-            l.build(input_shapes[idx])
-        for idx,l in enumerate(self.nlLayerList):
-            l.build()
-
-        self.rescaleFactor.assign(tf.keras.backend.sum([l.get_rescaleFactor() for l in self.CascadeLayerList], axis=-1))
-        self.nlLayerList[0].set_constants(self.reactionConstantsNL,self.enzymeInitC,self.activTempInitCNL,self.rescaleFactor)
-        for idx,l in enumerate(self.CascadeLayerList):
-            l.set_constants(self.reactionConstantsCascade, self.enzymeInitC, self.activTempInitC, self.inhibTempInitC, self.rescaleFactor,self.XglobalinitC)
-            self.nlLayerList[idx].set_constants(self.reactionConstantsNL,self.enzymeInitC,self.activTempInitCNL,self.rescaleFactor)
+        modelsConstantShape = [(input_shape[-1],self.layerList[0][0].units)] + [(l[0].units, self.layerList[idx + 1][0].units) for idx, l in enumerate(self.layerList[:-1])]
+        input_shapes = [input_shape]+[(input_shape[0],l[0].units) for l in self.layerList[:-1]]
+        self.firstNlLayer.build()
+        for idx,l in enumerate(self.layerList):
+            l[0].build(input_shapes[idx])
+            l[1].build()
+        self.rescaleFactor.assign(tf.keras.backend.sum([l[0].get_rescaleFactor()+l[1].get_rescaleFactor() for l in self.layerList], axis=-1))
+        self.firstNlLayer.set_constants(self.reactionConstantsNL,self.enzymeInitC,self.activTempInitCNL,self.rescaleFactor)
+        for idx,l in enumerate(self.layerList):
+            l[0].set_constants(self.reactionConstantsCascade, self.enzymeInitC, self.activTempInitC, self.inhibTempInitC, self.rescaleFactor,self.XglobalinitC)
+            l[1].set_constants(self.reactionConstantsNL,self.enzymeInitC,self.activTempInitCNL,self.rescaleFactor)
 
         self.meanGatheredCps = tf.Variable(0,dtype=tf.float32,trainable=False)
         self.built = True
@@ -145,10 +141,9 @@ class chemCascadeNNModel(tf.keras.Model):
         if not self.built:
             raise Exception("model should be built before calling this function")
 
-        for l in self.CascadeLayerList:
-            l.rescale(rescaleFactor)
-        for l in self.nlLayerList:
-            l.rescale(rescaleFactor)
+        for l in self.layerList:
+            l[0].rescale(rescaleFactor)
+            l[1].rescale(rescaleFactor)
 
         self.rescaleFactor.assign(rescaleFactor)
 
@@ -159,13 +154,13 @@ class chemCascadeNNModel(tf.keras.Model):
         tf.print(tf.nn.moments(cps,axes=[0]))
         self.mycps.assign([tf.reduce_mean(cps)])
 
-    @tf.function
+    #@tf.function
     def call(self, inputs, training=None, mask=None):
         """
             Call function for out chemical model.
                 At training time we verify whether the model has changed total number of template due to backpropagation.
                     In this case we compute new values for the rescale factor, and update in all template the real weights.
-        :param inputs: tensor for the inputs, if of rank >= 2, we need to split it.
+        :param inputs: tensor for the inputs.
                        if self.usinglog is true, the inputs should be in logarithmic scale...
         :param training: if we are in training or inference mode (we save time of checking model change)
         :param mask: we don't use it here...
@@ -181,7 +176,6 @@ class chemCascadeNNModel(tf.keras.Model):
         if training:
             self.verifyMask()
 
-        inputs = inputs
 
         gatheredCps = tf.stop_gradient(tf.fill([tf.shape(inputs)[0]],tf.reshape(self._obtainCp(inputs[0]),())))
         gatheredCps = tf.reshape(gatheredCps,((tf.shape(inputs)[0],1)))
@@ -194,11 +188,16 @@ class chemCascadeNNModel(tf.keras.Model):
         #self.meanGatheredCps.assign(tf.reduce_mean(gatheredCps))
         #tf.summary.scalar("mean_cp",data=tf.reduce_mean(gatheredCps),step=tf.summary.experimental.get_step())
 
-
-        x = self.layerList[0][1](inputs, cps=gatheredCps, isFirstLayer=True)
+        # We use batches with * operations, so we need to extend from one dimension
+        tf.print("starting loop")
+        tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(gatheredCps),1,0)),0,message=" computed cps has nan")
+        x = self.firstNlLayer(inputs, cps=gatheredCps, isFirstLayer=True)
+        tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(x),1,0)),0,message="x from first nl layer has nan")
         for idx,l in enumerate(self.layerList):
             x = l[0](x,cps=gatheredCps)
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(x),1,0)),0,message="x from cascade layer has nan")
             x = l[1](x,cps=gatheredCps)
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(x),1,0)),0,message="x from nl layer has nan")
 
         if self.usingSoftmax:
             if self.usingLog:
@@ -216,7 +215,8 @@ class chemCascadeNNModel(tf.keras.Model):
         gatheredCps = tf.stop_gradient(self.obtainCp(inputs))
         #self.meanGatheredCps.assign(tf.reduce_mean(gatheredCps))
         #tf.summary.scalar("mean_cp",data=tf.reduce_mean(gatheredCps),step=tf.summary.experimental.get_step())
-        x = self.nlLayerList[0](inputs, cps=gatheredCps, isFirstLayer=True)
+
+        x = self.firstNlLayer(inputs, cps=gatheredCps, isFirstLayer=True)
         for l in self.layerList:
             x = l[0](x,cps=gatheredCps)
             x = l[1](x,cps=gatheredCps)
@@ -226,41 +226,34 @@ class chemCascadeNNModel(tf.keras.Model):
     @tf.function
     def obtainCp(self,inputs):
         gatheredCps = tf.map_fn(self._obtainCp,inputs,parallel_iterations=32,back_prop=False)
-
         return gatheredCps
 
-    @tf.function
+    #@tf.function
     def _obtainCp(self,input):
-        #first we obtain the born sup:
-        if(input.shape.rank<2):
-            input = tf.reshape(input,(1,tf.shape(input)[0]))
-        bornsupcp,x = self.nlLayerList[0].layer_cp_born_sup(input)
-        layercp = tf.fill([1],1.)
-        for l in self.layerList:
-            layercp,x = l[0].layer_cp_born_sup(x)
-            bornsupcp += layercp
-            layercp,x = l[1].layer_cp_born_sup(x)
-            bornsupcp += layercp
-        #then we solve the fixed point:
-
-        bornsupcp = tf.where(tf.math.is_inf(bornsupcp),1.*10**(20),bornsupcp) # float32 manages value up to 10**40 ...
-
+        borninfcpInv = tf.fill([1],0.)
         cpmin = tf.fill([1],1.)
-        cp = self.brentq(self._computeCPdiff,cpmin,bornsupcp,input)
-        return cp
+        cpInv = self.brentq(self._computeCPInvdiff_fromInv,borninfcpInv,cpmin,input)
+        return 1/cpInv
 
-    @tf.function
-    def _computeCPdiff(self,cp,input):
+    #@tf.function
+    def _computeCPInvdiff_fromInv(self,cpInv,input):
         new_cp = tf.fill([1],1.)
-        layercp,x = self.nlLayerList[0].layer_cp_equilibrium(cp, input, isFirstLayer=True)
+        layercp,x = self.firstNlLayer.layer_cp_equilibrium_FromInv(cpInv, input, isFirstLayer=True)
+        tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl first layer")
+        tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl first layer")
         new_cp += layercp
         for l in self.layerList:
-            layercp,x = l[0].layer_cp_equilibrium(cp,x)
+            layercp,x = l[0].layer_cp_equilibrium_FromInv(cpInv,x)
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp cascade")
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs cascade")
             new_cp += layercp
-            layercp,x = l[1].layer_cp_equilibrium(cp,x)
+            layercp,x = l[1].layer_cp_equilibrium_FromInv(cpInv,x)
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl")
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl")
             new_cp += layercp
-        new_cp = new_cp-cp
-        return (-1)*new_cp
+        new_cpinv = 1/new_cp-cpInv
+        tf.print(cpInv," computed")
+        return (-1)*new_cpinv
 
     # def measureModelRelevancy(self,input):
     #     inputs = tf.stack([input])
@@ -269,40 +262,40 @@ class chemCascadeNNModel(tf.keras.Model):
     #     cp = self.obtainCp(inputs)
     #     Inhib = []
     #     cp2kd = []
-    #     x,b,c=self.CascadeLayerList[0].get_inhib_and_output(cp, input, isFirstLayer=True)
+    #     x,b,c=self.layerList[0].get_inhib_and_output(cp, input, isFirstLayer=True)
     #     Inhib += [b]
     #     cp2kd += [c]
-    #     for l in self.CascadeLayerList[1:]:
-    #         x,b,c=self.CascadeLayerList[0].get_inhib_and_output(cp, x, isFirstLayer=True)
+    #     for l in self.layerList[1:]:
+    #         x,b,c=self.layerList[0].get_inhib_and_output(cp, x, isFirstLayer=True)
     #         Inhib += [b]
     #         cp2kd += [c]
     #     return Inhib,cp2kd
 
-    def lamda_computeCPdiff(self,input):
-        if(input.shape.rank<2):
-            input = tf.reshape(input,(1,tf.shape(input)[0]))
-        return lambda cp: self._computeCPdiff(cp,input)
+    def lamda_computeCPInvdiff(self, input):
+        # if(input.shape.rank<2):
+        #     input = tf.reshape(input,(1,tf.shape(input)[0]))
+        return lambda cp: self._computeCPInvdiff_fromInv(cp,input)
 
     @tf.function
-    def getFunctionStyle(self,cpArray,X0):
+    def getFunctionStyle(self, cpInvArray, X0):
         """
             Given an input, compute the value of f(cp) for all cp in cpArray (where f is the function we would like to find the roots with brentq)
-        :param cpArray:
+        :param cpInvArray:
         :param X0:
         :return:
         """
-        cpArray=tf.cast(tf.convert_to_tensor(cpArray),dtype=tf.float32)
+        cpInvArray=tf.cast(tf.convert_to_tensor(cpInvArray), dtype=tf.float32)
         X0 = tf.cast(tf.convert_to_tensor(X0),dtype=tf.float32)
-        func = self.lamda_computeCPdiff(X0)
-        gatheredCps = tf.map_fn(func,cpArray,parallel_iterations=32,back_prop=False)
+        func = self.lamda_computeCPInvdiff(X0)
+        gatheredCps = tf.map_fn(func, cpInvArray, parallel_iterations=32, back_prop=False)
         return gatheredCps
 
     @tf.function
     def verifyMask(self):
-        newRescaleFactor = tf.stop_gradient(tf.keras.backend.sum([l[0].get_rescaleFactor()+l[1].get_rescaleFactor() for l in self.layerList], axis=-1)+self.nlLayerList[0].get_rescaleFactor())
+        newRescaleFactor = tf.stop_gradient(tf.keras.backend.sum([l[0].get_rescaleFactor()+l[1].get_rescaleFactor() for l in self.layerList], axis=-1)+self.firstNlLayer.get_rescaleFactor())
         if(not tf.equal(self.rescaleFactor,newRescaleFactor)):
             self.rescaleFactor.assign(newRescaleFactor)
-            self.nlLayerList[0].rescale(self.rescaleFactor)
+            self.firstNlLayer.rescale(self.rescaleFactor)
             for l in self.layerList:
                 l[0].rescale(self.rescaleFactor)
                 l[1].rescale(self.rescaleFactor)
@@ -311,7 +304,7 @@ class chemCascadeNNModel(tf.keras.Model):
                            enzymeInitC,activTempInitC,inhibTempInitC,
                            activTempInitCNL):
         for idx,m in enumerate(masks):
-            self.CascadeLayerList[idx].set_mask(tf.convert_to_tensor(m, dtype=tf.float32))
+            self.layerList[idx].set_mask(tf.convert_to_tensor(m, dtype=tf.float32))
 
         self.reactionConstantsCascade = reactionsConstants
         self.reactionConstantsNL = reactionConstantsNL
@@ -320,8 +313,8 @@ class chemCascadeNNModel(tf.keras.Model):
         self.activTempInitC = activTempInitC
         self.inhibTempInitC = inhibTempInitC
 
-        self.rescaleFactor.assign(tf.keras.backend.sum([l[0].get_rescaleFactor()+l[1].get_rescaleFactor() for l in self.layerList], axis=-1)+self.nlLayerList[0].get_rescaleFactor())
-        self.nlLayerList[0].set_constants(self.reactionConstantsCascade, self.enzymeInitC, self.activTempInitC, self.inhibTempInitC)
+        self.rescaleFactor.assign(tf.keras.backend.sum([l[0].get_rescaleFactor()+l[1].get_rescaleFactor() for l in self.layerList], axis=-1)+self.firstNlLayer.get_rescaleFactor())
+        self.firstNlLayer.set_constants(self.reactionConstantsCascade, self.enzymeInitC, self.activTempInitC, self.inhibTempInitC)
         for l in self.layerList:
             l[0].set_constants(self.reactionConstantsCascade, self.enzymeInitC, self.activTempInitC, self.inhibTempInitC, self.rescaleFactor,self.XglobalinitC)
             l[1].set_constants(self.reactionConstantsNL,self.enzymeInitC,self.activTempInitCNL,self.rescaleFactor)
@@ -339,9 +332,13 @@ class chemCascadeNNModel(tf.keras.Model):
         fblk = tf.fill([1],0.)
         spre = tf.fill([1],0.)
         scur = tf.fill([1],0.)
-        fpre = f(xpre, args)
         fcur = f(xcur, args)
-        tf.assert_less((fpre*fcur)[0],0.)
+        fpre = f(xpre, args)
+
+        tf.debugging.assert_all_finite(fpre,"fpre not finite")
+        tf.debugging.assert_all_finite(fcur,"fcur not finite")
+
+        tf.assert_less((fpre*fcur)[0],0.,"fpre * fcur above 0...")
 
         if tf.equal(fpre[0],0):
             return xpre
@@ -397,4 +394,5 @@ class chemCascadeNNModel(tf.keras.Model):
                     else:
                         xcur += -delta
             fcur = f(xcur, args)
+            tf.print(i)
         return xcur
