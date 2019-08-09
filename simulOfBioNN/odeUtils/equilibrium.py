@@ -4,6 +4,9 @@
     This computation requires the solving of a multidimensional fixed-points equations.
         Under assumptions of a high concentration of templates (see model explanations), the solution can be more easily obtained by first approximating the competitions over the enzyme.
     We use scipy's optimize module, more explicitly the brentq and root methods.
+
+    OLD !!!!!!!!!!!!! OUTDATED !!!!!!!!!! PROBABLY ERRRORS
+
 """
 import numpy as np
 from scipy.optimize import root,brentq

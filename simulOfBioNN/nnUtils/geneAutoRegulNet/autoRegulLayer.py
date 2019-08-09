@@ -10,7 +10,7 @@ import tensorflow as tf
 from tensorflow.python.ops import nn
 from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import weightFixedAndClippedConstraint,sparseInitializer,constant_initializer,layerconstantInitiliaizer
 
-def clippedTensorDot(inputs, kernel, rank, bias ,rate):
+def clippedTensorDot(inputs, kernel, rank, bias ,rate, rateInhib):
     """
         Clipped tensorDot on which we apply on a sigmoid function of the form activator*kernelActivator/1+activator*kernelActivator+sumALLInhib*kernelInhibitor
         Clipping follow the rule: weights<0.2 take value -1, weighs>0.2 take value 1 and other take value 0.
@@ -37,7 +37,7 @@ def clippedTensorDot(inputs, kernel, rank, bias ,rate):
     outputs = tf.stop_gradient(tf.divide(rate*activator-bias+inhibitor,activator)-forBackProp)
     return tf.add(forBackProp,outputs)
 
-def clippedMatMul(inputs, kernel,bias, rate):
+def clippedMatMul(inputs, kernel,bias, rate, rateInhib):
     '''
         Clipped matmul on which we apply on a sigmoid function of the form activator*kernelActivator/1+activator*kernelActivator+sumALLInhib*kernelInhibitor
         Clipping follow the rule: weights<0.2 take value -1, weighs>0.2 take value 1 and other take value 0.
@@ -59,9 +59,9 @@ def clippedMatMul(inputs, kernel,bias, rate):
     kernelInibhitor_bp = tf.where(tf.less(kernel,0),kernel,Tzero)
     bp_activator = tf.matmul(inputs,kernelActivator_bp,name="normalActivator")
     bp_inhibitor = tf.matmul(inputs,kernelInibhitor_bp,name="normalInhibitor")
-    forBackProp = tf.divide(rate*bp_activator-bias+bp_inhibitor,bp_activator)
+    forBackProp = tf.divide(rate*bp_activator+-bias+rateInhib*bp_inhibitor,bp_activator)
 
-    outputs = tf.stop_gradient(tf.divide(rate*activator-bias+inhibitor,activator)-forBackProp)
+    outputs = tf.stop_gradient(tf.divide(rate*activator+-bias+rateInhib*inhibitor,activator)-forBackProp)
     return tf.add(forBackProp,outputs)
 
 
@@ -71,7 +71,7 @@ class autoRegulLayer(Dense):
         :param biasValue: bias to be added after each multipication
     """
 
-    def __init__(self,biasValue=[1.0], fractionZero=0.9, min=-1, max=1, rate = 1.,use_bias = True, gpuName=None, **kwargs):
+    def __init__(self,biasValue=[1.0], fractionZero=0.9, min=-1, max=1, rate = 10., rateInhib = 10. ,use_bias = True, gpuName=None, **kwargs):
         """
 
             :param biasValue: either None(random but constant through layer) or 1d-array of size units (nb of output neurons).
@@ -93,6 +93,8 @@ class autoRegulLayer(Dense):
         self.sparseInitializer = sparseInitializer(fractionZero, minval=min, maxval=max)
         assert type(rate)==float
         self.rate = rate
+        assert type(rateInhib) == float
+        self.rateInhib = rateInhib
         self.use_bias = use_bias
 
     def build(self, input_shape):
@@ -135,14 +137,14 @@ class autoRegulLayer(Dense):
         rank = common_shapes.rank(inputs)
         if rank > 2:
             # Broadcasting is required for the inputs.
-            outputs = clippedTensorDot(inputs, self.kernel, rank,self.bias,self.rate)
+            outputs = clippedTensorDot(inputs, self.kernel, rank,self.bias,self.rate, self.rateInhib)
             # Reshape the output back to the original ndim of the input.
             if not context.executing_eagerly():
                 shape = inputs.get_shape().as_list()
                 output_shape = shape[:-1] + [self.units]
                 outputs.set_shape(output_shape)
         else:
-            outputs = clippedMatMul(inputs, self.kernel,self.bias,self.rate)
+            outputs = clippedMatMul(inputs, self.kernel,self.bias,self.rate, self.rateInhib)
         if self.activation is not None:
             return self.activation(outputs)  # pylint: disable=not-callable
         return outputs

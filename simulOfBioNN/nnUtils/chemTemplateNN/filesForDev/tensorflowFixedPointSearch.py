@@ -3,7 +3,7 @@
         implemented: #TODO write implemented stuff
 """
 import tensorflow as tf
-from simulOfBioNN.nnUtils.chemTemplateNN.tensorflowFixedPoint import brentq
+from simulOfBioNN.nnUtils.chemTemplateNN.filesForDev.tensorflowFixedPoint import brentq
 
 def obtainBornSup(k6,kdT,kdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks):
     """

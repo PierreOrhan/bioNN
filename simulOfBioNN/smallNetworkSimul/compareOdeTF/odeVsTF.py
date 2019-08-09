@@ -14,15 +14,17 @@ from simulOfBioNN.parseUtils.parser import generateTemplateNeuralNetwork,read_fi
 from simulOfBioNN.odeUtils.utils import readAttribute,obtainTemplateArray,obtainOutputArray
 from simulOfBioNN.plotUtils.adaptivePlotUtils import colorDiagram,neuronPlot,plotEvolution,fitComparePlot
 
-from simulOfBioNN.smallNetworkSimul.templateModelRandomNetworkSimul import func as oldAllEquilibriumFunc
-from simulOfBioNN.nnUtils.chemTemplateNN import chemTemplateNNModel
 from simulOfBioNN.odeUtils import utils as utilForODE
+from simulOfBioNN.simulNN.simulator import executeODESimulation
+from simulOfBioNN.odeUtils.systemEquation import fPythonSparse
 from simulOfBioNN.smallNetworkSimul.compareTFvsPython.pythonBasicSolver import pythonSolver
+
+
 from scipy.optimize import minimize,root,brentq
 import sys
 import time
 import pandas
-import tensorflow as tf
+
 
 
 
@@ -131,9 +133,13 @@ def _generate_initialConcentration_firstlayer(activatorsOnObserved,inhibitorsOnO
 
 if __name__ == '__main__':
 
-    name = "templateModelTwoLayer/equiNetwork_100_newfit"
+    name = "compare100"
     endTime = 10000
     timeStep = 0.1
+
+    doODEvsTF = True
+    doODEvsPython = True
+    doTFvsPython = True
 
     # masks=[np.array([[1,-1,0,0],[0,0,1,-1]]),np.array([[1,-1]])]
     # nbrInputs=masks[0].shape[1]
@@ -141,7 +147,7 @@ if __name__ == '__main__':
     # activatorsOnObserved = [0]
     # inhibitorsOnObserved = [1]
     # nodeObserved = 0
-    nbrInputs=[100,10]
+    nbrInputs=[10,10]
     nbrOutputs=[10,5]
     activatorsOnObserved = []
     inhibitorsOnObserved = []
@@ -157,17 +163,22 @@ if __name__ == '__main__':
             elif m==-1:
                 inhibitorsOnObserved += [idx]
 
+    ## FOR SOlVING REASONS WE ADD A FIRST NON-LINEAR INITIAL LAYER:
+    masksForTF = [np.transpose(m) for m in masks]
+
+    # We add a non-linear layer, but as its node-to-node, we can keep the value we choosed for the inputs :)
+    # The node observed will then be in the second layer, we just need to change this for the ode !
+
+    masks = [np.identity(nbrInputs[0])] + masks
     print(masks)
     print("Observed nodes has "+str(len(activatorsOnObserved))+" activators and "+str(len(inhibitorsOnObserved))+" inhibitors")
     print(masks[0][nodeObserved])
-    # For debug: we start by working with competition on template from the first node.
-    templateObservedIdx = 1 + nodeObserved*masks[0].shape[1] + activatorsOnObserved[0]
-
 
     modes = ["verbose","outputEqui"]
     FULL = True
     outputMode = "all"
-    outputList = ["X_1_"+str(nodeObserved)] #"all" or None or list of output species
+    #Here we need to choose X_2 this time
+    outputList = ["X_2_"+str(nodeObserved)] #"all" or None or list of output species
     complexity="simple"
     useEndo = False  # if we want to use the complicated endo model
     useProtectionOnActivator = False
@@ -191,145 +202,119 @@ if __name__ == '__main__':
         generateTemplateNeuralNetwork(name,masks,complexity=complexity,endoConstants=None,useProtectionOnActivator=useProtectionOnActivator,
                                       useEndoOnInputs=useEndoOnInputs,useEndoOnOutputs=useEndoOnOutputs)
 
-    X1,X2,x_test,otherActivInitialC,otherInhibInitialC = _generate_initialConcentration_firstlayer(activatorsOnObserved,inhibitorsOnObserved,masks,nbrInputs[0],minLogSpace=-8,maxLogSpace=-4,nbrValue=5)
+    #Here take mass[1:] to use the function withotu considerations of the first non-linear layer.
+    X1,X2,x_test,otherActivInitialC,otherInhibInitialC = _generate_initialConcentration_firstlayer(activatorsOnObserved,inhibitorsOnObserved,masks[1:],nbrInputs[0],minLogSpace=-8,maxLogSpace=-4,nbrValue=5)
 
     # We realised that the rescale factor should be proportionate to the number of edges in order to keep competition low compare to the inhibition.
     # Moreover we observe that rescaling the template rather than the activation is probably better.
 
     if("outputEqui" in modes):
         experiment_path = name
-        C0=readAttribute(experiment_path,["C0"])["C0"]
 
-        nbrConstant = int(readAttribute(experiment_path,["Numbers_of_Constants"])["Numbers_of_Constants"])
+
+        _,rescaleFactor = utilForODE.rescaleInputConcentration(networkMask=masks)
+
+        if doODEvsPython or doODEvsTF:
+            initialization_dic={}
+            for layer in range(0,len(masks)): ## The first layer need not to be initiliazed
+                for node in range(masks[layer].shape[0]):
+                    initialization_dic["X_"+str(layer+1)+"_"+str(node)] = layerInit
+            inhibTemplateNames = obtainTemplateArray(masks=masks,activ=False)
+            for k in inhibTemplateNames:
+                initialization_dic[k] = inhibInit
+            activTemplateNames = obtainTemplateArray(masks=masks,activ=True)
+            for k in activTemplateNames:
+                initialization_dic[k] = activInit
+            initialization_dic["E"] = enzymeInit*rescaleFactor**0.5
+            if complexity!="simple":
+                initialization_dic["E2"] = enzymeInit*rescaleFactor**0.5
+            if complexity!=None and useEndo:
+                initialization_dic["Endo"] = endoInit
+            if useDerivativeLeak:
+                results = executeODESimulation(fPythonSparse, name, x_test, initialization_dic, outputList= outputList,
+                                               leak = leak, endTime=endTime, sparse=True, modes=modes,
+                                               timeStep=timeStep, initValue= initValue, rescaleFactor=rescaleFactor)
+            else:
+                results = executeODESimulation(fPythonSparse, name, x_test, initialization_dic, outputList= outputList,
+                                               leak = 0, endTime=endTime, sparse=True, modes=modes,
+                                               timeStep=timeStep, initValue= initValue, rescaleFactor=rescaleFactor)
+            output = results[modes.index("outputEqui")]
+            output = np.reshape(output,(len(X1),len(X2)))
+
+        C0 = 8.086075400626399e-07
         cstlist = [0.9999999999999998,0.1764705882352941,1.0,0.9999999999999998,0.1764705882352941,1.0,
                    0.018823529411764708,0.9999999999999998,0.1764705882352941,1.0,0.018823529411764708,0.018823529411764708]
         k1,k1n,k2,k3,k3n,k4,_,k5,k5n,k6,kd,_= cstlist
         TA = float(activInit/C0)
         TI = float(inhibInit/C0)
         E0 = float(enzymeInit/C0)
-
         nbUnits = [10,5]
         sparsities=[0.5,0.5]
-
         constantList = [0.9999999999999998,0.1764705882352941,1.0,0.9999999999999998,
                         0.1764705882352941,1.0,0.9999999999999998,0.1764705882352941,1.0,0.018823529411764708]
         constantList+=[constantList[-1]]
-        model = chemTemplateNNModel.chemTemplateNNModel(nbUnits=nbUnits,sparsities=sparsities,reactionConstants= constantList,
-                                                        enzymeInitC=E0, activTempInitC=TA, inhibTempInitC=TI, randomConstantParameter=None)
-        model.compile(optimizer=tf.optimizers.Adam(),
-                      loss='sparse_categorical_crossentropy',
-                      metrics=['accuracy'])
-        model.build(input_shape=(None,nbrInputs[0]))
-        masksForTF = [np.transpose(m) for m in masks]
-        model.updateArchitecture(masksForTF, constantList, TA, TI, E0)
 
-        _,rescaleFactor = utilForODE.rescaleInputConcentration(networkMask=masks)
+        if doODEvsTF or doTFvsPython:
+            import tensorflow as tf
+            from simulOfBioNN.nnUtils.chemTemplateNN import chemTemplateNNModel
+            model = chemTemplateNNModel.chemTemplateNNModel(nbUnits=nbUnits,sparsities=sparsities,reactionConstants= constantList,
+                                                            enzymeInitC=E0, activTempInitC=TA, inhibTempInitC=TI, randomConstantParameter=None, usingLog=False)
+            model.compile(optimizer=tf.optimizers.Adam(),
+                          loss='sparse_categorical_crossentropy',
+                          metrics=['accuracy'])
+            model.build(input_shape=(None,nbrInputs[0]))
+            model.updateArchitecture(masksForTF, constantList, TA, TI, E0)
+            model.force_rescale(rescaleFactor)
 
-        model.force_rescale(rescaleFactor)
+        X1 = X1/C0
+        X2 = X2/C0
+        x_test = np.array(x_test,dtype=np.float32)/C0
 
-        print(kd)
-        print(model.layerList[0].kdT)
-        print(model.layerList[0].firstLayerkdT)
+        print("=================FINISHED ODE SIMULATION========================")
+        if doODEvsTF or doTFvsPython:
+            outputTF = np.array(model.predConcentration(x_test,layerObserved=0,nodeObserved=nodeObserved))
+            outputTF = np.reshape(outputTF,(len(X1),len(X2)))
+            print(outputTF)
 
-        X1 = X1/(C0*rescaleFactor)
-        X2 = X2/(C0*rescaleFactor)
-        x_test = x_test/(C0*rescaleFactor)
-        # otherActivInitialC = otherActivInitialC/(C0*rescaleFactor)
-        # otherInhibInitialC = otherInhibInitialC/(C0*rescaleFactor)
-        E0 = E0*(rescaleFactor**0.5)
-        masks = [np.identity(nbrInputs[0])] + masks
-        pythonModel = pythonSolver(masks,k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd,kd,TA,TI,E0)
+        courbs=[0,int(outputTF.shape[1]/2),outputTF.shape[1]-1,int(outputTF.shape[1]/3),int(2*outputTF.shape[1]/3)]
 
-        print(model.layerList[0].mask)
-        print(pythonModel.masks)
+        if doODEvsTF:
+            fitComparePlot(X1, X2, output, outputTF, courbs,
+                           figname=os.path.join(experiment_path, "TFVSOdeX1.png"),
+                           figname2=os.path.join(experiment_path, "TFVSOdeX2.png"), useLogX=False)
+            fitComparePlot(X1, X2, output, outputTF, courbs,
+                           figname=os.path.join(experiment_path, "TFVSOdelogX1.png"),
+                           figname2=os.path.join(experiment_path, "TFVSOdelogX2.png"), useLogX=True)
 
-        #Third fit, using the compute cp:
-        myX_test= np.reshape(x_test,(len(X1),len(X2),nbrInputs[0]))
-        competitions = np.zeros((len(X1),len(X2)))
-        tfCompetitions = np.zeros((len(X1), len(X2)))
-        fitOutput = np.zeros((len(X1), len(X2)))
-        tfFitOutput = np.zeros((len(X1), len(X2)))
-        styleFit = np.zeros((len(X1),len(X2),1000))
-        tfstyleFit = np.zeros((len(X1),len(X2),1000))
-        testOfCp = np.logspace(-5,5,1000)/kd
-        testOfCpt = np.logspace(-3,-1,1000)/kd
+        print("=================FINISHED TF SIMULATION========================")
 
-        courbs=[0,int(fitOutput.shape[1]/2),fitOutput.shape[1]-1,int(fitOutput.shape[1]/3),int(2*fitOutput.shape[1]/3)]
+        if doODEvsPython or doTFvsPython:
+            outputPython = np.zeros((len(X1),len(X2)))
+            pythonModel = pythonSolver(masks,k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd,kd,TA,TI,E0*(rescaleFactor**0.5))
+            for idx1,x1 in enumerate(X1):
+                for idx2,x2 in enumerate(X2):
+                    cp = pythonModel.computeCPonly(x_test[idx1*len(X1)+idx2]/rescaleFactor)
+                    outputPython[idx1,idx2]=pythonModel.computeEquilibriumValue(cp,x_test[idx1*len(X1)+idx2]/rescaleFactor,observed=(2,nodeObserved))
 
-        visuCPT = np.zeros((len(X1),len(X2),1000))
-        #outCPT = np.zeros((len(X1),len(X2)))
-        for idx1,x1 in enumerate(X1):
-            for idx2,x2 in enumerate(X2):
-                if idx2 in courbs and idx1==idx2:
-                    cpApproxim = pythonModel.computeCPonly(myX_test[idx1,idx2])
-                    #cps = pythonModel.computeCP(myX_test[idx1,idx2],initValue=cpApproxim)
-                    competitions[idx1,idx2] = cpApproxim
-                    #outCPT[idx1,idx2] = cps[1]
-                    x = tf.convert_to_tensor([myX_test[idx1,idx2]],dtype=tf.float32)
-                    t0=time.time()
-                    tfCompetitions[idx1,idx2] = model.obtainCp(x)
-                    print("Ended tensorflow brentq methods in "+str(time.time()-t0))
+        print("=================FINISHED raw PYTHON SIMULATION========================")
+        if doODEvsPython:
+            fitComparePlot(X1, X2, output, outputPython, courbs,
+                           figname=os.path.join(experiment_path, "PythonVSOdeX1.png"),
+                           figname2=os.path.join(experiment_path, "PythonVSOdeX2.png"), useLogX=False)
+            fitComparePlot(X1, X2, output, outputPython, courbs,
+                           figname=os.path.join(experiment_path, "PythonVSOdelogX1.png"),
+                           figname2=os.path.join(experiment_path, "PythonVSOdelogX2.png"), useLogX=True)
+        if doTFvsPython:
+            fitComparePlot(X1, X2, outputTF, outputPython, courbs,
+                           figname=os.path.join(experiment_path, "TFVSPythonX1.png"),
+                           figname2=os.path.join(experiment_path, "TFVSPythonX2.png"), useLogX=False)
+            fitComparePlot(X1, X2, outputTF, outputPython, courbs,
+                           figname=os.path.join(experiment_path, "TFVSPythonlogX1.png"),
+                           figname2=os.path.join(experiment_path, "TFVSPythonlogX2.png"), useLogX=True)
 
-                if idx2 in courbs and idx1==idx2:
-                    testcps = []
-                    for x in testOfCp:
-                        testcps += [np.concatenate(([x],np.zeros(np.sum([m.shape[0]*m.shape[1] for m in masks]))+1))]
-                    t0=time.time()
-                    styleFit[idx1,idx2] = np.array([pythonModel.cpEquilibriumFunc(cp,myX_test[idx1,idx2]) for cp in testOfCp])
-                    print("Obtain the landscape with python in  "+str(time.time()-t0))
-                    t0=time.time()
-                    tfstyleFit[idx1,idx2] = np.reshape(np.array(model.getFunctionStyle(testOfCp,myX_test[idx1,idx2])),(1000))
-                    print("Obtain the landscape with tf in  "+str(time.time()-t0))
-                    #testCPTs=[]
-                    # for x in testOfCpt:
-                    #     cptInitArray = np.zeros(np.sum([m.shape[0]*m.shape[1] for m in masks])-1)+1
-                    #     cptInitArray[templateObservedIdx-1] = x
-                    #     testCPTs += [np.concatenate(([tfCompetitions[idx1, idx2] * kd], cptInitArray))]
-                    # visuCPT[idx1,idx2] = np.array([pythonModel.allEquilibriumFunc(testCPT,myX_test[idx1,idx2])[templateObservedIdx] for testCPT in testCPTs])
-
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots(figsize=(19.2,10.8), dpi=100)
-        cmap = plt.get_cmap('Dark2',X1.shape[0]*len(courbs))
-        for idx1,x1 in enumerate(X1):
-            for idx2,x2 in enumerate(X2):
-                if idx2 in courbs and idx1==idx2:
-                    ax.plot(testOfCp,np.abs(styleFit[idx1,idx2,:]),c=cmap(idx1*(courbs.index(idx2)+1)))
-                    ax.plot(testOfCp,np.abs(tfstyleFit[idx1,idx2,:]),c=cmap(idx1*(courbs.index(idx2)+1)),linestyle="--")
-                    ax.axvline(competitions[idx1,idx2],c=cmap(idx1*(courbs.index(idx2)+1)),marker="o")
-                    ax.axvline(tfCompetitions[idx1,idx2],c=cmap(idx1*(courbs.index(idx2)+1)),marker="x",linestyle="-")
-
-
-                    # ax.plot(testOfCp*kd,np.abs(styleFit[idx1,idx2,:])*kd,c=cmap(idx1*(courbs.index(idx2)+1)))
-                    # ax.plot(testOfCp*kd,np.abs(tfstyleFit[idx1,idx2,:])*kd,c=cmap(idx1*(courbs.index(idx2)+1)),linestyle="--")
-                    # ax.axvline(competitions[idx1,idx2]*kd,c=cmap(idx1*(courbs.index(idx2)+1)),marker="o")
-                    # ax.axvline(tfCompetitions[idx1,idx2]*kd,c=cmap(idx1*(courbs.index(idx2)+1)),marker="x",linestyle="-")
-                    #
-                    #ax.axvline(oldCompetitions[idx1,idx2],c=cmap(idx1*(courbs.index(idx2)+1)),marker="o",linestyle="--")
-                    # ax.scatter(cpFitted[idx1,idx2],func(cpFitted[idx1,idx2],kd,Cactiv,CInhib,Kactiv,Kinhib,masks,myX_test[idx1,idx2]),c=cmap(idx1*(courbs.index(idx2)+1)),marker="x")
-        ax.tick_params(labelsize="xx-large")
-        ax.set_xlabel("cp",fontsize="xx-large")
-        ax.set_ylabel("f(cp)-cp",fontsize="xx-large")
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        fig.savefig("formOfcp.png")
-        plt.show()
-        print(competitions)
-        print(tfCompetitions)
-
-        # import matplotlib.pyplot as plt
-        # fig, ax = plt.subplots(figsize=(19.2,10.8), dpi=100)
-        # cmap = plt.get_cmap('Dark2',X1.shape[0]*len(courbs))
-        # for idx1,x1 in enumerate(X1):
-        #     for idx2,x2 in enumerate(X2):
-        #         if idx2 in courbs and idx1==idx2:
-        #             # ax.plot(testOfCp,np.abs(styleFit[idx1,idx2,:]),c=cmap(idx1*(courbs.index(idx2)+1)))
-        #             ax.plot(testOfCpt*kd,np.abs(visuCPT[idx1,idx2,:])+10**(-10),c=cmap(idx1*(courbs.index(idx2)+1)),linestyle="--")
-        #             # ax.axvline(competitions[idx1,idx2],c=cmap(idx1*(courbs.index(idx2)+1)),marker="o")
-        #             ax.axvline(outCPT[idx1,idx2]*kd,c=cmap(idx1*(courbs.index(idx2)+1)),marker="o",linestyle="--")
-        #             # ax.scatter(cpFitted[idx1,idx2],func(cpFitted[idx1,idx2],kd,Cactiv,CInhib,Kactiv,Kinhib,masks,myX_test[idx1,idx2]),c=cmap(idx1*(courbs.index(idx2)+1)),marker="x")
-        # ax.set_xscale("log")
-        # ax.set_yscale("log")
-        # fig.savefig("formOfcp2.png")
-        # plt.show()
-        # print(outCPT)
-
+        fitComparePlot(X1, X2, outputTF, outputTF, courbs,
+                       figname=os.path.join(experiment_path, "TFVSTFX1.png"),
+                       figname2=os.path.join(experiment_path, "TFVSTFX2.png"), useLogX=False)
+        fitComparePlot(X1, X2, outputTF, outputTF, courbs,
+                       figname=os.path.join(experiment_path, "TFVSTFlogX1.png"),
+                       figname2=os.path.join(experiment_path, "TFVSTFlogX2.png"), useLogX=True)

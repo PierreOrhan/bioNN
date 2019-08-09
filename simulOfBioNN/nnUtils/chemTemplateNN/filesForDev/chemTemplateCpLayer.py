@@ -1,10 +1,5 @@
-from tensorflow.python.keras.layers import Dense
 from tensorflow.python.framework import ops
-from tensorflow.python.ops import standard_ops
-from tensorflow.python.eager import context
-from tensorflow.python.framework import common_shapes
 import tensorflow as tf
-from simulOfBioNN.nnUtils.chemTemplateNN.tensorflowFixedPointSearch import computeCPonly
 
 
 class chemTemplateCpLayer(tf.keras.layers.Layer):

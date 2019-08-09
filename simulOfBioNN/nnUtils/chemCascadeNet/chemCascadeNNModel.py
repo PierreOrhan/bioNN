@@ -62,6 +62,7 @@ class chemCascadeNNModel(tf.keras.Model):
 
         assert len(self.reactionConstantsCascade) == 19
         assert len(self.reactionConstantsNL) == 4
+        print(type(enzymeInitC))
         assert type(self.enzymeInitC) == float
         assert type(self.activTempInitC) == float
         assert type(self.inhibTempInitC) == float
@@ -232,28 +233,84 @@ class chemCascadeNNModel(tf.keras.Model):
     def _obtainCp(self,input):
         borninfcpInv = tf.fill([1],0.)
         cpmin = tf.fill([1],1.)
-        cpInv = self.brentq(self._computeCPInvdiff_fromInv,borninfcpInv,cpmin,input)
+
+        #todo implement 2D brentq:
+        cpg = tf.fill([1],1.)
+
+        cpInv = self.brentq(self._computeCPInvdiff_fromInv_forBrentq,borninfcpInv,cpmin,input)
         return 1/cpInv
 
-    #@tf.function
-    def _computeCPInvdiff_fromInv(self,cpInv,input):
+    @tf.function
+    def _computeCPInvdiff_fromInv(self,cpInv,cpg,input):
         new_cp = tf.fill([1],1.)
-        layercp,x = self.firstNlLayer.layer_cp_equilibrium_FromInv(cpInv, input, isFirstLayer=True)
+        new_cpg = tf.fill([1],1.)
+        layercp,x = self.firstNlLayer.layer_cp_equilibrium_FromInv(cpInv,cpg, input, isFirstLayer=True)
         tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl first layer")
         tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl first layer")
         new_cp += layercp
         for l in self.layerList:
-            layercp,x = l[0].layer_cp_equilibrium_FromInv(cpInv,x)
+            layercp,x = l[0].layer_cp_equilibrium_FromInv(cpInv,cpg,x)
+            layercpg = l[0].layer_XgCp(cpInv,cpg)
+            new_cpg += layercpg
             tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp cascade")
             tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs cascade")
             new_cp += layercp
-            layercp,x = l[1].layer_cp_equilibrium_FromInv(cpInv,x)
+            layercp,x = l[1].layer_cp_equilibrium_FromInv(cpInv,cpg,x)
             tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl")
             tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl")
             new_cp += layercp
         new_cpinv = 1/new_cp-cpInv
-        tf.print(cpInv," computed")
+        tf.print(cpInv," computed with new-cp: ",new_cp," giving ",new_cpinv)
+        tf.print(cpg," computed with new-cp: ",new_cpg)
+        new_cpg = new_cpg - cpg
+        tf.print("giving ",new_cpg)
+        return (-1)*new_cpinv#,(-1)*new_cpg
+
+    @tf.function
+    def bornsup_fromCpg(self,cpg,input):
+        new_cp = tf.fill([1],1.)
+        layercp,x = self.firstNlLayer.bornsup_layer_cp_equilibrium_FromInv(cpg, input, isFirstLayer=True)
+        tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl first layer")
+        tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl first layer")
+        new_cp += layercp
+        for l in self.layerList:
+            layercp,x = l[0].bornsup_layer_cp_equilibrium_FromInv(cpg,x)
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp cascade")
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs cascade")
+            new_cp += layercp
+            layercp,x = l[1].bornsup_layer_cp_equilibrium_FromInv(cpg,x)
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl")
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl")
+            new_cp += layercp
+        return new_cp
+
+
+
+    @tf.function
+    def _computeCPInvdiff_fromInv_forBrentq(self,cpInv,input):
+        cpg = tf.fill([1],1.)
+        new_cp = tf.fill([1],1.)
+        new_cpg = tf.fill([1],1.)
+        layercp,x = self.firstNlLayer.layer_cp_equilibrium_FromInv(cpInv,cpg, input, isFirstLayer=True)
+        tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl first layer")
+        tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl first layer")
+        new_cp += layercp
+        for l in self.layerList:
+            layercp,x = l[0].layer_cp_equilibrium_FromInv(cpInv,cpg,x)
+            layercpg = l[0].layer_XgCp(cpInv,cpg)
+            new_cpg += layercpg
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp cascade")
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs cascade")
+            new_cp += layercp
+            layercp,x = l[1].layer_cp_equilibrium_FromInv(cpInv,cpg,x)
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl")
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl")
+            new_cp += layercp
+        new_cpinv = new_cp-1/cpInv
+        tf.print(cpInv," computed with new-cp: ",new_cp)
+        new_cpg = new_cpg - cpg
         return (-1)*new_cpinv
+
 
     # def measureModelRelevancy(self,input):
     #     inputs = tf.stack([input])
@@ -274,10 +331,10 @@ class chemCascadeNNModel(tf.keras.Model):
     def lamda_computeCPInvdiff(self, input):
         # if(input.shape.rank<2):
         #     input = tf.reshape(input,(1,tf.shape(input)[0]))
-        return lambda cp: self._computeCPInvdiff_fromInv(cp,input)
+        return lambda cp,cpg: self._computeCPInvdiff_fromInv(cp,cpg,input)
 
     @tf.function
-    def getFunctionStyle(self, cpInvArray, X0):
+    def getFunctionStyle(self, cpInvArray,cpg, X0):
         """
             Given an input, compute the value of f(cp) for all cp in cpArray (where f is the function we would like to find the roots with brentq)
         :param cpInvArray:
@@ -285,10 +342,36 @@ class chemCascadeNNModel(tf.keras.Model):
         :return:
         """
         cpInvArray=tf.cast(tf.convert_to_tensor(cpInvArray), dtype=tf.float32)
+        cpgArray = tf.cast(tf.convert_to_tensor(cpg), dtype=tf.float32)
         X0 = tf.cast(tf.convert_to_tensor(X0),dtype=tf.float32)
         func = self.lamda_computeCPInvdiff(X0)
-        gatheredCps = tf.map_fn(func, cpInvArray, parallel_iterations=32, back_prop=False)
+
+
+        def lamdaForcpg(func,cpg):
+            return lambda cp : func(cp,cpg)
+        gatheredCps =  tf.map_fn(lamdaForcpg(func,cpg),cpInvArray,parallel_iterations=32,back_prop=False,dtype=(tf.float32,tf.float32))
         return gatheredCps
+
+    @tf.function
+    def getFunctionStyleFromsize(self,size,cpg, X0):
+        """
+            Given an input, compute the value of f(cp) for all cp in cpArray (where f is the function we would like to find the roots with brentq)
+        :param cpInvArray:
+        :param X0:
+        :return:
+        """
+        max =self.bornsup_fromCpg(tf.convert_to_tensor(cpg,dtype=tf.float32),X0)
+
+        cpInvArray=tf.cast(tf.convert_to_tensor(tf.exp(tf.linspace(tf.math.log(1./tf.reshape(max,())),tf.math.log(1.),size))), dtype=tf.float32)
+        cpg = tf.cast(tf.convert_to_tensor(cpg), dtype=tf.float32)
+        X0 = tf.cast(tf.convert_to_tensor(X0),dtype=tf.float32)
+        func = self.lamda_computeCPInvdiff(X0)
+
+        def lamdaForcpg(func,cpg):
+            return lambda cp : func(cp,cpg)
+        gatheredCps =  tf.map_fn(lamdaForcpg(func,cpg),cpInvArray,parallel_iterations=32,back_prop=False,dtype=tf.float32)
+        return tf.squeeze(gatheredCps,axis=-1),cpInvArray
+
 
     @tf.function
     def verifyMask(self):

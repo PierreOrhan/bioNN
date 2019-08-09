@@ -60,9 +60,9 @@ def _getConfig(config):
         
         """
         Sparsity={
-            "sparsity":[[[0.9,0.9,0.8,0.7] for _ in range (4)],[[0.9,0.8,0.7,0.6] for _ in range (4)],[[0.9,0.5,0.3,0.3] for _ in range (4)],[[0.9,0.3,0.3,0.3] for _ in range (4)]],
-            "pyramid":[[[0.9,0.9,0.9] for _ in range(4)],[[0.7,0.7,0.7] for _ in range(4)],[[0.5,0.5,0.5] for _ in range(4)]],
-            "sparsePyramid": [[[0.9,0.8,0.7] for _ in range (4)],[[0.9,0.8,0.5] for _ in range (4)],[[0.9,0.8,0] for _ in range (4)],[[0.9,0.5,0.3] for _ in range (4)],[[0.9,0.5,0]for _ in range (4)]]
+            "sparsity":[[[0.9,0.9,0.8,0] for _ in range (4)],[[0.9,0.8,0.7,0] for _ in range (4)],[[0.9,0.5,0.3,0] for _ in range (4)],[[0.9,0.3,0.3,0] for _ in range (4)]],
+            "pyramid":[[[0.9,0.9,0] for _ in range(4)],[[0.7,0.7,0] for _ in range(4)],[[0.5,0.5,0] for _ in range(4)]],
+            "sparsePyramid": [[[0.9,0.8,0] for _ in range (4)],[[0.9,0.8,0] for _ in range (4)],[[0.9,0.8,0] for _ in range (4)],[[0.9,0.5,0] for _ in range (4)],[[0.9,0.5,0]for _ in range (4)]]
         }
         NbUnits={
             "sparsity":[[[15,15,15,10],[30,30,30,10],[50,50,50,10],[75,75,75,10]] for _ in range (4)],
@@ -77,9 +77,9 @@ def _getConfig(config):
         return Batches,colors,colors2,colors3,Sparsity,NbUnits,Layers
     else:
         Sparsity={
-            "sparsity":[[[0.9,0.9,0.9]]],
-            "pyramid":[[[0.9,0.9,0.9]]],
-            "sparsePyramid":[[[0.9,0.9,0.9]]]
+            "sparsity":[[[0.9,0.9,0]]],
+            "pyramid":[[[0.9,0.9,0]]],
+            "sparsePyramid":[[[0.9,0.9,0]]]
         }
         NbUnits={
             "sparsity":[[[15,15,10]]],

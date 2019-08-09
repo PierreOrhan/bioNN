@@ -5,11 +5,8 @@
 
 
 import tensorflow as tf
-import numpy as np
-from simulOfBioNN.nnUtils.chemTemplateNN.tensorflowFixedPointSearch import computeCPonly
 from simulOfBioNN.nnUtils.chemTemplateNN.chemTemplateLayers import chemTemplateLayer
 # from simulOfBioNN.nnUtils.chemTemplateNN.chemTemplateCpLayer import chemTemplateCpLayer
-from tensorflow import initializers
 
 class chemTemplateNNModel(tf.keras.Model):
     """
@@ -190,17 +187,27 @@ class chemTemplateNNModel(tf.keras.Model):
             s = x
         return s
 
-    @tf.function
-    def predConcentration(self, inputs):
-        inputs = tf.convert_to_tensor(inputs)
+
+    def predConcentration(self, inputs, layerObserved,nodeObserved):
+        inputs = tf.convert_to_tensor(inputs,dtype=tf.float32)
+        tf.print(inputs.shape,"inputs shape")
+        tf.assert_rank(inputs,2)
         inputs = inputs/self.rescaleFactor
         gatheredCps = tf.stop_gradient(self.obtainCp(inputs))
         #self.meanGatheredCps.assign(tf.reduce_mean(gatheredCps))
         #tf.summary.scalar("mean_cp",data=tf.reduce_mean(gatheredCps),step=tf.summary.experimental.get_step())
+        tf.print(inputs,"inputs")
         x = self.layerList[0](inputs,cps=gatheredCps,isFirstLayer=True)
-        for l in self.layerList[1:]:
+        if layerObserved==0:
+            return x[:,nodeObserved]
+        tf.print(x,"x")
+        tf.print(gatheredCps,"gatheredcps")
+        for idx,l in enumerate(self.layerList[1:]):
             x = l(x,cps=gatheredCps)
-        return x
+            tf.print(x,"x")
+            tf.print(idx,"idx")
+            if tf.equal(idx,layerObserved-1):
+                return x[:,nodeObserved]
 
 
     @tf.function
@@ -211,20 +218,33 @@ class chemTemplateNNModel(tf.keras.Model):
 
     @tf.function
     def _obtainCp(self,input):
-        #first we obtain the born sup:
+
         if(input.shape.rank<2):
             input = tf.reshape(input,(1,tf.shape(input)[0]))
-        bornsupcp,x = self.layerList[0].layer_cp_born_sup(input)
-        layercp = tf.fill([1],1.)
-        for l in self.layerList[1:]:
-            layercp,x = l.layer_cp_born_sup(x)
-            bornsupcp += layercp
-        #then we solve the fixed point:
+        #first we obtain the born sup:
 
-        bornsupcp = tf.where(tf.math.is_inf(bornsupcp),1.*10**(20),bornsupcp) # float32 manages value up to 10**40 ...
+        bornsupIncremental = tf.cast(tf.fill([1],1.),dtype=tf.float32)
+        bornsupcpdiff = self._computeCPdiff(bornsupIncremental,input)
+        tf.print("ended initial bornsup with 1 :",bornsupIncremental," found value",bornsupcpdiff)
+        tf.print("starting while")
+        for idx in tf.range(20): #stop after 20 iteration
+            bornsupIncremental = bornsupIncremental * 10.
+            bornsupcpdiff = self._computeCPdiff(bornsupIncremental,input)
+            if tf.greater(bornsupcpdiff[0],0.):
+                tf.print("ended bornsup loop",idx," found value",bornsupcpdiff, "using as sup:",bornsupIncremental)
+                break
+            tf.print("ended bornsup loop",idx," found value",bornsupcpdiff)
+            if tf.equal(idx,20):
+                bornsupcp0,x = self.layerList[0].layer_cp_born_sup(input)
+                layercp = tf.fill([1],1.)
+                for l in self.layerList[1:]:
+                    layercp,x = l.layer_cp_born_sup(x)
+                    bornsupcp0 += layercp
+                tf.print("had to use layer born sup and found",bornsupcp0)
+                bornsupIncremental = tf.reshape(bornsupcp0,bornsupIncremental.shape)
 
         cpmin = tf.fill([1],1.)
-        cp = self.brentq(self._computeCPdiff,cpmin,bornsupcp,input)
+        cp = self.brentq(self._computeCPdiff,cpmin,bornsupIncremental,input)
         return cp
 
     @tf.function
@@ -309,13 +329,16 @@ class chemTemplateNNModel(tf.keras.Model):
         scur = tf.fill([1],0.)
         fpre = f(xpre, args)
         fcur = f(xcur, args)
-        tf.assert_less((fpre*fcur)[0],0.)
+
+        tf.print(fpre,"fpre",xpre ,"xpre")
+        tf.print(fcur,"fcur",xcur,"xcur")
 
         if tf.equal(fpre[0],0):
             return xpre
         if tf.equal(fcur[0],0):
             return xcur
         else:
+            tf.assert_less((fpre*fcur)[0],0.,message="seems like fpre*fcur have same sign",summarize=1)
             tf.assert_greater(fcur,0.)
 
         for i in tf.range(iter):

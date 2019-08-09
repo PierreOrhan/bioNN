@@ -88,6 +88,11 @@ class chemTemplateLayer(Dense):
         self.Kinhib = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
 
         self.k5M = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float32),trainable=False)
+        self.firstLayerTA0 = tf.Variable(tf.zeros(variableShape[0],dtype=tf.float32),trainable=False)
+        self.firstLayerK1M = tf.Variable(tf.zeros(variableShape[0],dtype=tf.float32),trainable=False)
+        self.firstLayerkdT = tf.Variable(tf.zeros(variableShape[0],dtype=tf.float32),trainable=False)
+        self.firstLayerk2 = tf.Variable(tf.zeros(variableShape[0],dtype=tf.float32),trainable=False)
+
 
         self.built = True
         print("Layer successfully built")
@@ -159,8 +164,13 @@ class chemTemplateLayer(Dense):
         self.TI0.assign(tf.fill(self.TI0.shape,inhibInitC))
         self.E0.assign(tf.constant(enzymeInitTensor,dtype=tf.float32))
 
-        #now we compute other intermediate values:
+        #used in the first layer:
+        self.firstLayerTA0.assign(tf.fill(self.firstLayerTA0.shape,activInitC))
+        self.firstLayerK1M.assign(tf.fill(self.firstLayerK1M.shape,constantArray[0]/(constantArray[1]+constantArray[2])))
+        self.firstLayerkdT.assign(tf.fill(self.firstLayerkdT.shape,constantArray[10]))
+        self.firstLayerk2.assign(tf.fill(self.firstLayerk2.shape,constantArray[2]))
 
+        #intermediate values for faster computations:
         self.k1M.assign(self.k1/(self.k1n+self.k2))
         self.Cactiv.assign(self.k2*self.k1M*self.E0*self.TA0)
         self.k5M.assign(self.k5/(self.k5n+self.k6))
@@ -181,48 +191,59 @@ class chemTemplateLayer(Dense):
         self.rescaleFactor.assign(rescaleFactor)
 
     def call(self, inputs, cps = None, isFirstLayer=False):
-        if cps is None:
-            cps = tf.ones((tf.shape(inputs)[0],1))*(2.*10**6)
 
         if isFirstLayer:
-            Kactivs = tf.where(self.mask>0,self.Kactiv,0)
-            Kinhibs = tf.where(self.mask<0,self.Kinhib,0)
-            w_inpIdx = tf.keras.backend.sum(Kactivs,axis=1)+tf.keras.backend.sum(Kinhibs,axis=1)
-            olderInput = tf.divide(inputs,(1+self.E0*w_inpIdx/cps)) #need to rescale the initial inputs too
-
-            Kactivs_unclipped = tf.where(self.kernel>0,self.Kactiv,0)
-            Kinhibs_unclipped = tf.where(self.kernel<0,self.Kinhib,0)
-            w_inpIdx_unclipped = tf.keras.backend.sum(Kactivs_unclipped,axis=1)+tf.keras.backend.sum(Kinhibs_unclipped,axis=1)
-            olderInput_unclipped = tf.divide(inputs,(1+self.E0*w_inpIdx_unclipped/cps))
+            bOnA = inputs - self.firstLayerTA0 - cps / (self.firstLayerK1M * self.E0)
+            olderInput = tf.where(tf.equal(self.firstLayerK1M * self.E0 * self.firstLayerTA0 / cps, 0), inputs, 1 / 2 * (bOnA + (bOnA ** 2 + 4 * inputs * cps / (self.firstLayerK1M * self.E0))))
         else:
             olderInput = inputs
-            olderInput_unclipped = inputs
+
+        #For batch computation: k1m * tf.transpose(inputs) doesn't work and we need to add a 1 axis in the end and use only *
+        #Just above we use rank1 vector so should keep rank2 batches of input
+        cpsExpand = tf.expand_dims(cps,-1)
+        tf.assert_rank(cpsExpand,3)
+        tf.assert_rank(cps,2)
+        olderInputExpand=tf.expand_dims(olderInput,-1)
+        tf.assert_rank(olderInputExpand,3)
+        olderInputMidExpand = tf.expand_dims(olderInput,1)
 
         #clipped version
-        Cactivs= tf.where(self.mask>0,self.Cactiv,0)
-        Cinhibs = tf.where(self.mask<0,self.Cinhib,0)
-        Inhib = tf.divide(tf.matmul(olderInput,Cinhibs),self.kdT)
-        if self.usingLog:
-            x_eq_clipped = tf.math.log(tf.matmul(olderInput,Cactivs))-tf.math.log(self.kdI*cps+Inhib/cps)
-        else:
-            x_eq_clipped = tf.matmul(olderInput,Cactivs)/(self.kdI*cps+Inhib/cps)
+        # Cactivs= tf.where(self.mask>0,self.Cactiv,0)
+        # Cinhibs = tf.where(self.mask<0,self.Cinhib,0)
+        # Inhib = tf.divide(tf.matmul(olderInput,Cinhibs),self.kdT)
+        # if self.usingLog:
+        #     x_eq_clipped = tf.math.log(tf.matmul(olderInput,Cactivs))-tf.math.log(self.kdI*cp+Inhib/cp)
+        # else:
+        #     x_eq_clipped = tf.matmul(olderInput,Cactivs)/(self.kdI*cp+Inhib/cp)
+
+        Cactivs= tf.where(self.mask > 0, self.Cactiv / (1 + self.k1M * self.E0 * olderInputExpand / cpsExpand), 0)
+        Cinhibs = tf.where(self.mask < 0, self.Cinhib / (1 + self.k3M * self.E0 * olderInputExpand / cpsExpand), 0)
+        tf.assert_rank(Cactivs,3)
+        tf.assert_rank(Cinhibs,3)
+        Inhib = tf.squeeze(tf.matmul(olderInputMidExpand,Cinhibs),axis=1)/self.kdT
+        x_eq_clipped = tf.squeeze(tf.matmul(olderInputMidExpand,Cactivs),axis=1)/(self.kdI * cps + Inhib / cps)
 
         #unclipped version:
-        Cactivs_unclipped= tf.where(self.kernel>0,self.Cactiv*self.kernel,0)
-        Cinhibs_unclipped = tf.where(self.kernel<0,(-1)*self.Cinhib*self.kernel,0)
-        Inhib_unclipped = tf.matmul(olderInput,Cinhibs_unclipped)/self.kdT
-        if self.usingLog:
-            x_eq_unclipped = tf.math.log(tf.matmul(olderInput,Cactivs_unclipped))-tf.math.log(self.kdI*cps+Inhib_unclipped/cps)
-        else:
-            x_eq_unclipped = tf.matmul(olderInput_unclipped,Cactivs_unclipped)/(self.kdI*cps+Inhib_unclipped/cps)
-
+        Cactivs_unclipped= tf.where(self.kernel > 0, self.Cactiv * self.kernel/(1 + self.k1M * self.E0 * olderInputExpand / cpsExpand), 0)
+        Cinhibs_unclipped = tf.where(self.kernel < 0, (-1) * self.Cinhib * self.kernel / (1 + self.k3M * self.E0 * olderInputExpand / cpsExpand), 0)
+        tf.assert_rank(Cactivs_unclipped,3)
+        tf.assert_rank(Cinhibs_unclipped,3)
+        #CAREFUL: now the cactivs has taken the batch size, it is of rank 3 : [None,inputdims,outputdims]
+        # THUS WE NEED: [None,1,inputdims] to use the matmul, and then squeeze the result!
+        Inhib_unclipped = tf.squeeze(tf.matmul(olderInputMidExpand,Cinhibs_unclipped),axis=1)/self.kdT
+        x_eq_unclipped = tf.squeeze(tf.matmul(olderInputMidExpand,Cactivs_unclipped),axis=1)/(self.kdI * cps + Inhib_unclipped / cps)
+        # if self.usingLog:
+        #     x_eq_unclipped = tf.math.log(tf.matmul(olderInput,Cactivs_unclipped))-tf.math.log(self.kdI*cp+Inhib_unclipped/cp)
+        # else:
+        #     x_eq_unclipped = tf.matmul(olderInput_unclipped,Cactivs_unclipped)/(self.kdI*cp+Inhib_unclipped/cp)
+        tf.assert_rank(tf.squeeze(tf.matmul(olderInputMidExpand,Cinhibs_unclipped),axis=1),2,message="compute not good dims")
         outputs =  tf.stop_gradient(x_eq_clipped - x_eq_unclipped) + x_eq_unclipped
-
-        #outputs = chemTemplateClippedMatMul(self.deviceName, inputs, self.kernel, cps, self.Cactiv, self.Cinhib, self.kdI,self.kdT)
+        tf.assert_rank(outputs,2,message="outputs not good dims")
+        #outputs = chemTemplateClippedMatMul(self.deviceName, inputs, self.kernel, cp, self.Cactiv, self.Cinhib, self.kdI,self.kdT)
         return outputs
 
     def get_config(self):
-        config = {'E0':float(self.E0.read_value())} #'cps for last batch': float(self.cps.read_value()),
+        config = {'E0':float(self.E0.read_value())} #'cp for last batch': float(self.cp.read_value()),
         base_config = super(chemTemplateLayer, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
@@ -253,41 +274,54 @@ class chemTemplateLayer(Dense):
     @tf.function
     def layer_cp_equilibrium(self,cp,input,isFirstLayer=False):
         with tf.device(self.deviceName):
-            Kactivs = tf.where(self.mask>0,self.Kactiv,0)
-            Kinhibs = tf.where(self.mask<0,self.Kinhib,0)
-            #need to take axis = 1 here:
-            w_inpIdx = tf.keras.backend.sum(Kactivs,axis=1)+tf.keras.backend.sum(Kinhibs,axis=1)
+            # Kactivs = tf.where(self.mask>0,self.Kactiv,0)
+            # Kinhibs = tf.where(self.mask<0,self.Kinhib,0)
+            # #need to take axis = 1 here:
+            # w_inpIdx = tf.keras.backend.sum(Kactivs,axis=1)+tf.keras.backend.sum(Kinhibs,axis=1)
+            layer_cp = 0
             if isFirstLayer:
-                olderInput = input/(1+self.E0*w_inpIdx/cp) #need to rescale the initial inputs too
+                EandTemplate = self.firstLayerK1M*self.E0*self.firstLayerTA0/cp
+
+                bOnA = input -self.firstLayerTA0 - cp/(self.firstLayerK1M*self.E0)
+                tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(bOnA),1,0)),0,message=" bOnA has nan")
+
+                olderInput = tf.where(tf.equal(EandTemplate,0),input,1/2*(bOnA + (bOnA**2+4*input*cp/(self.firstLayerK1M*self.E0))**0.5))
+
+                tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(olderInput),1,0)),0,message=" olderInput has nan")
+                tf.debugging.assert_greater_equal(olderInput,0.,message="older input has negative element")
+
+                cp_with_Input = tf.where(tf.math.is_inf(olderInput),cp*self.firstLayerTA0/self.E0,self.firstLayerK1M*olderInput*self.firstLayerTA0/(1+self.firstLayerK1M*self.E0*olderInput/cp))
+                tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_inf(cp_with_Input),1,0)),0,message=" cp_with_Input has inf")
+                layer_cp += tf.keras.backend.sum(tf.where(tf.equal(EandTemplate,0),0.,cp_with_Input)) #first layer non-linearity!
+                tf.print("initial layer adding ",layer_cp)
+
+                layer1input =self.firstLayerk2*self.firstLayerK1M/self.firstLayerkdT*self.firstLayerTA0*self.E0/cp*olderInput/(1+self.firstLayerK1M*self.E0/cp*olderInput)
+
+                templateComplex = tf.where(self.mask>0,self.Kactiv*tf.transpose(layer1input)/(1+self.k1M*self.E0*tf.transpose(layer1input)/cp),
+                                           tf.where(self.mask<0,self.Kinhib*tf.transpose(layer1input)/(1+self.k3M*self.E0*tf.transpose(layer1input)/cp),0)) # template complexes in the layer
+                templateComplexCp = tf.keras.backend.sum(templateComplex)
+                layer_cp += templateComplexCp
+
+                # Be careful here: olderInput might have taken infinite value for cp very large, so we compute it again but divided by cp!
+                Cactivs= tf.where(self.mask>0,self.Cactiv/(1+self.k1M*self.E0*tf.transpose(layer1input)/cp),0)
+                Cinhibs = tf.where(self.mask<0,self.Cinhib/(1+self.k3M*self.E0*tf.transpose(layer1input)/cp),0)
+                Inhib = tf.matmul(layer1input,Cinhibs)/self.kdT
+                x_eq = tf.matmul(layer1input,Cactivs)/(self.kdI*cp+Inhib/cp)
+                Inhib2 = tf.matmul(layer1input,Cinhibs)/(self.kdT*self.k6)
+
+                layer_cp += tf.keras.backend.sum(Inhib2*x_eq/(self.E0*cp))
+                tf.print("next layer adding ",tf.keras.backend.sum(Inhib2*x_eq/self.E0)+templateComplexCp)
             else:
                 olderInput = input
-
-            firstComplex = tf.tensordot(olderInput[0],w_inpIdx,axes=[[0],[0]]) # template complexes in the layer
-
-            Cactivs= tf.where(self.mask>0,self.Cactiv,0)
-            Cinhibs = tf.where(self.mask<0,self.Cinhib,0)
-            Inhib = tf.matmul(olderInput,Cinhibs)/self.kdT
-            x_eq = tf.matmul(olderInput,Cactivs)/(self.kdI*cp+Inhib/cp)
-
-            Inhib2 = tf.matmul(olderInput,Cinhibs)/(self.kdT*self.k6)
-            layer_cp = tf.keras.backend.sum(Inhib2*x_eq/(self.E0*cp)) + tf.keras.backend.sum(firstComplex)
+                templateComplex = tf.where(self.mask>0,self.Kactiv*tf.transpose(olderInput)/(1+self.k1M*self.E0*tf.transpose(olderInput)/cp),
+                                           tf.where(self.mask<0,self.Kinhib*tf.transpose(olderInput)/(1+self.k3M*self.E0*tf.transpose(olderInput)/cp),0)) # template complexes in the layer
+                templateComplexCp = tf.keras.backend.sum(templateComplex)# template complexes in the layer
+                Cactivs= tf.where(self.mask>0,self.Cactiv/(1+self.k1M*self.E0*tf.transpose(olderInput)/cp),0)
+                Cinhibs = tf.where(self.mask<0,self.Cinhib/(1+self.k3M*self.E0*tf.transpose(olderInput)/cp),0)
+                Inhib = tf.matmul(olderInput,Cinhibs)/self.kdT
+                x_eq = tf.matmul(olderInput,Cactivs)/(self.kdI*cp+Inhib/cp)
+                Inhib2 = tf.matmul(olderInput,Cinhibs)/(self.kdT*self.k6)
+                layer_cp += tf.keras.backend.sum(Inhib2*x_eq/(self.E0*cp)) + templateComplexCp
+                tf.print("next layer adding ",tf.keras.backend.sum(Inhib2*x_eq/self.E0) + templateComplexCp)
 
             return layer_cp,x_eq
-
-    @tf.function
-    def get_inhib_and_output(self,cps,inputs,isFirstLayer=False):
-        if isFirstLayer:
-            Kactivs = tf.where(self.mask>0,self.Kactiv,0)
-            Kinhibs = tf.where(self.mask<0,self.Kinhib,0)
-            w_inpIdx = tf.keras.backend.sum(Kactivs,axis=1)+tf.keras.backend.sum(Kinhibs,axis=1)
-            olderInput = tf.divide(inputs,(1+self.E0*w_inpIdx/cps)) #need to rescale the initial inputs too
-        else:
-            olderInput = inputs
-
-        #clipped version
-        Cactivs= tf.where(self.mask>0,self.Cactiv,0)
-        Cinhibs = tf.where(self.mask<0,self.Cinhib,0)
-        Inhib = tf.divide(tf.matmul(olderInput,Cinhibs),self.kdT)
-        x_eq_clipped = tf.matmul(olderInput,Cactivs)/(self.kdI*cps+Inhib/cps)
-
-        return x_eq_clipped,Inhib,cps*cps*self.kdI

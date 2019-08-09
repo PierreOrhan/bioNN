@@ -284,19 +284,18 @@ class chemCascadeLayer(Dense):
 
 
     @tf.function
-    def hornerMultiX(self,Xs,hornerMask):
+    def hornerMultiX(self,Xs,hornerMask,kp):
         """
             Execute horner algorithm on a vector X giving:
-                1+X[0]+X[0]*X[1]+X[0]*X[1]*X[2]+..
+                X[0]+X[0]*X[1]+X[0]*X[1]*X[2]+..
             but using the horner strategy, for elements of X that appear to have a positive boolean value in Xs.
-            The algorithm is executed on the second axis of vector X to accomodate for batches
         :param Xs: the vector of interest should be of rank 2
         :return:
         """
         tf.assert_equal(tf.rank(Xs),2)
-        p = tf.fill([Xs.shape[-1]],1.)
+        p = tf.fill([Xs.shape[-1]],0.)
         for idx in tf.range(Xs.shape[0]-1,-1,-1):
-            p += 1. + tf.where(tf.less(0.,hornerMask[idx,:]),Xs[idx,:]*p,p-1.)
+            p = tf.where(tf.less(0.,hornerMask[idx,:]),Xs[idx,:]*(1+kp[idx,:]*p),p)
         return p
 
     @tf.function
@@ -306,9 +305,13 @@ class chemCascadeLayer(Dense):
 
 
     @tf.function
-    def layer_XgCp(self,cp):
-        return tf.keras.backend.sum(self.k1Mg*self.TA0*self.E0/(cp+self.k1Mg*self.E0*self.Xglobal)) + \
-               tf.keras.backend.sum(self.k3Mg*self.TI0*self.E0/(cp+self.k3Mg*self.E0*self.Xglobal))
+    def layer_XgCp(self, cpInv, cpg):
+        if self.usingLog:
+            return tf.keras.backend.sum(self.k1Mg * self.TA0 * self.E0 / (1/cpInv + self.k1Mg * self.E0 * tf.exp(self.Xglobal) / cpg)) + \
+                   tf.keras.backend.sum(self.k3Mg * self.TI0 * self.E0 / (1/cpInv + self.k3Mg * self.E0 * tf.exp(self.Xglobal) / cpg))
+        else:
+            return tf.keras.backend.sum(self.k1Mg * self.TA0 * self.E0 / (1/cpInv + self.k1Mg * self.E0 * self.Xglobal / cpg)) + \
+                   tf.keras.backend.sum(self.k3Mg * self.TI0 * self.E0 / (1/cpInv + self.k3Mg * self.E0 * self.Xglobal / cpg))
 
     @tf.function
     def get_inhib_and_output(self,cps,inputs,isFirstLayer=False):
@@ -329,7 +332,7 @@ class chemCascadeLayer(Dense):
         return x_eq_clipped,Inhib,cps*cps*self.kdpT
 
     @tf.function
-    def layer_cp_equilibrium_FromInv(self, cpInv, input, isFirstLayer=False):
+    def layer_cp_equilibrium_FromInv(self, cpInv, cpg, input, isFirstLayer=False):
         with tf.device(self.deviceName):
 
             #In the following computation we did not solve the case where input could have infinite value:
@@ -337,34 +340,48 @@ class chemCascadeLayer(Dense):
                 tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_inf(input),1,0)),0,message="inf detected in inputs cascade")
 
             if cpInv==0:
-                XActivs = self.k1 * 0.
-                Xinhibs = self.k3 * 0.
+                Qijm = self.k1 * 0.
+                Qdijm = self.k3 * 0.
             else:
                 if self.usingLog:
-                    XActivs = self.k1*tf.tensordot(self.k1M,tf.exp(input),axes=[[0],[0]])*self.E0*cpInv/self.kdT
-                    Xinhibs = self.k3*tf.tensordot(self.k3M,tf.exp(input),axes=[[0],[0]])*self.E0*cpInv/self.kdT
+                    Qijm = self.k1M*tf.transpose(tf.exp([input]))*self.E0*cpInv/self.kdT
+                    Qdijm = self.k3M*tf.transpose(tf.exp([input]))*self.E0*cpInv/self.kdT
                 else:
-                    XActivs = self.k1*tf.tensordot(self.k1M,input,axes=[[0],[0]])*self.E0*cpInv/self.kdT
-                    Xinhibs = self.k3*tf.tensordot(self.k3M,input,axes=[[0],[0]])*self.E0*cpInv/self.kdT
+                    Qijm = self.k1M*tf.transpose([input])*self.E0*cpInv/self.kdT
+                    Qdijm = self.k3M*tf.transpose([input])*self.E0*cpInv/self.kdT
             #hornerActiv should take infinite value only when cpInv is not 0.
-            hornerActiv = self.hornerMultiX(XActivs,self.mask)
-            hornerInhib = self.hornerMultiX(Xinhibs,(-1)*self.mask)
+            tf.print(Qijm,"Qijm")
+            tf.print(Qdijm,"Qdijm")
+            hornerActiv = self.hornerMultiX(Qijm,self.mask,self.k2)
+            hornerInhib = self.hornerMultiX(Qdijm,(-1)*self.mask,self.k4)
+
+            # tf.print(hornerActiv,"hornerActiv")
+            # tf.print(hornerInhib,"hornerInhib")
 
             if self.usingLog:
-                Template_Activation_eq = self.TA0/(1 + self.k1Mg * tf.exp(self.Xglobal) * self.E0 *cpInv)
-                #similarly the complexes of the template binding with Xglobal and enzyme reach equilibrium:
-                # X1s = T1/(k2g*E) = TA:E:Xglobal/E
-                X1s = self.k1Mg*Template_Activation_eq*tf.exp(self.Xglobal)
+                # We must be careful of the case where cpg --> +infinity
+                #tf.where(tf.math.is_inf(self.k1Mg*tf.exp(self.Xglobal)/cpg),self.TA0/(self.E0*cpInv),self.TA0*self.k1Mg*tf.exp(self.Xglobal)/(cpg + self.k1Mg *tf.exp(self.Xglobal) * self.E0 *cpInv))
+                Template_eqXg = self.TA0*tf.exp(self.Xglobal)/(cpg*(1+self.k1Mg*self.E0*cpInv*tf.exp(self.Xglobal)/cpg))
+                QgijTemplate_eq = self.TA0*self.k2g*self.k1Mg*tf.exp(self.Xglobal)/(cpg*(1+self.k1Mg*self.E0*cpInv*tf.exp(self.Xglobal)/cpg))
             else:
-                Template_Activation_eq = self.TA0/(1 + self.k1Mg * self.Xglobal * self.E0 *cpInv)
-                #similarly the complexes of the template binding with Xglobal and enzyme reach equilibrium:
-                #X1s = T1/(k2g*E) = TA:E:Xglobal/E
-                X1s = self.k1Mg*Template_Activation_eq*self.Xglobal
+                Template_eqXg = self.TA0*self.Xglobal/(cpg*(1+self.k1Mg*self.E0*cpInv*self.Xglobal/cpg))
+                QgijTemplate_eq = self.TA0*self.k2g*self.k1Mg*self.Xglobal/(cpg*(1+self.k1Mg*self.E0*cpInv*self.Xglobal/cpg))
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_inf(QgijTemplate_eq),1,0)),0,message="inf detected in QgijTemplate_eq")
+            activCP = QgijTemplate_eq * hornerActiv + self.k1Mg*Template_eqXg
 
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_inf(X1s),1,0)),0,message="inf detected in X1s")
+            if self.usingLog:
+                # We must be careful of the case where cpg --> +infinity
+                #tf.where(tf.math.is_inf(self.k1Mg*tf.exp(self.Xglobal)/cpg),self.TA0/(self.E0*cpInv),self.TA0*self.k1Mg*tf.exp(self.Xglobal)/(cpg + self.k1Mg *tf.exp(self.Xglobal) * self.E0 *cpInv))
+                TemplateI_eqXg = self.TI0*tf.exp(self.Xglobal)/(cpg*(1+self.k3Mg*self.E0*cpInv*tf.exp(self.Xglobal)/cpg))
+                QdgijTemplate_eq = self.TI0*self.k4g*self.k3Mg*tf.exp(self.Xglobal)/(cpg*(1+self.k3Mg*self.E0*cpInv*tf.exp(self.Xglobal)/cpg))
+            else:
+                TemplateI_eqXg = self.TI0*self.Xglobal/(cpg*(1+self.k3Mg*self.E0*cpInv*self.Xglobal/cpg))
+                QdgijTemplate_eq = self.TI0*self.k4g*self.k3Mg*self.Xglobal/(cpg*(1+self.k3Mg*self.E0*cpInv*self.Xglobal/cpg))
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_inf(QdgijTemplate_eq),1,0)),0,message="inf detected in QdgijTemplate_eq")
 
-            activCP = tf.tensordot(X1s,hornerActiv,axes=[[0],[0]])
-            inhibCP_no_pT = tf.tensordot(X1s,hornerInhib,axes=[[0],[0]])
+            inhibCP_no_pT = QdgijTemplate_eq * hornerInhib + self.k3Mg*TemplateI_eqXg
+
+
             #Here we might encounter NaN in the case where Xglobal is 0 and hornerActiv or hornerInhib exceed machine precision.
             #   In these case the unknown result should be found by plugging in the computation of hornerActiv and hornerInhib a fraction of cpg....
             #   To begin with we took cpg = 1 ... thus the incertitude comes from the fact that the initial value of Xglobal is null in which case no production is possible
@@ -372,47 +389,198 @@ class chemCascadeLayer(Dense):
             activCP = tf.where(tf.math.is_nan(activCP),0.,activCP)
             inhibCP_no_pT = tf.where(tf.math.is_nan(inhibCP_no_pT),0.,inhibCP_no_pT)
 
-            activBias = tf.keras.backend.sum(tf.where(self.mask > 0, tf.math.log(self.k2 * self.k1M * self.E0 * cpInv/ self.kdT), 0), axis=0) + tf.math.log(self.k2g * X1s * self.E0 *cpInv)
+            activBias = tf.keras.backend.sum(tf.where(self.mask > 0, tf.math.log(self.k2 * self.k1M * self.E0 * cpInv/ self.kdT), 0), axis=0) + tf.math.log(QgijTemplate_eq * self.E0 *cpInv)
             activKernel = tf.where(self.mask>0,self.mask,0)
             #when the input is 0 so -inf in log, its multiplication by 0 gives NaN.
             if self.usingLog:
-                # !! Here the tensordot does not act as a sum, because input is 0d. We only have element to element multiplication of each row of activKernel with input here!
-                activations = tf.where(activKernel>0,tf.math.log(tf.tensordot(activKernel,tf.math.exp(input),axes=[[0],[0]])),0)
+                activations = tf.where(activKernel>0,activKernel*tf.transpose([input]) ,0)
             else:
-                activations = tf.where(activKernel>0,tf.math.log(tf.tensordot(activKernel,input,axes=[[0],[0]])),0)
+                activations = tf.where(activKernel>0,tf.math.log(activKernel*tf.transpose([input])),0)
             logActivationsSum = tf.keras.backend.sum(activations,axis=0)
 
             if self.usingLog:
-                if cpInv==0:
+                if tf.equal(cpInv,0):
                     pT_eq = 0. *self.k3Mg
+                    inhib = pT_eq
+                    x_eq = logActivationsSum + activBias -tf.math.log(self.kd)
+                    pT_cp = 0*self.k5M
                 else:
-                    pT_eq = tf.reduce_prod(tf.where(self.mask < 0, self.k4 * self.E0 * tf.transpose([tf.exp(input)]) * self.k3M *cpInv / self.kdT2, 1), axis=0) * \
-                        self.k3Mg * self.TI0 * self.E0 * tf.exp(self.Xglobal) *cpInv / (self.kdpT * (1 + cpInv*self.k3Mg * tf.exp(self.Xglobal) * self.E0))
+                    pT_eq = tf.keras.backend.sum(tf.where(self.mask<0,tf.math.log(self.k4 * self.E0 *self.k3M *cpInv / self.kdT2 ),0),axis=0) +\
+                            tf.keras.backend.sum(tf.where(self.mask < 0, self.mask * tf.transpose([input]), 0), axis=0) + \
+                            tf.math.log(QdgijTemplate_eq*self.E0*cpInv)
+                        # tf.math.log(tf.where(tf.math.is_inf(self.k3Mg*tf.exp(self.Xglobal)/cpg),self.TI0/self.kdpT,self.k3Mg*self.TI0*self.E0*tf.exp(self.Xglobal)/cpg*cpInv/(self.kdpT*(1+cpInv*self.k3Mg*tf.exp(self.Xglobal)*self.E0/cpg))))
+                    inhib = self.k6*self.k5M*self.E0*cpInv*tf.exp(pT_eq)/self.kdpT
+                    inhibition = tf.where(tf.equal(tf.exp(pT_eq),0),tf.math.log(self.kd),(tf.math.log(self.k6*self.k5M*self.E0*cpInv/self.kdpT)+pT_eq)+tf.math.log(self.kd/inhib+1))
+                    x_eq = logActivationsSum + activBias - inhibition
+
+                    pT_cp = tf.where(tf.equal(tf.exp(pT_eq),0),0.,self.k5M*tf.exp(logActivationsSum+activBias)/(self.kd/tf.exp(pT_eq) + self.k6*self.k5M*self.E0*cpInv/self.kdpT))
             else:
                 pT_eq = tf.reduce_prod(tf.where(self.mask < 0, self.k4 * self.E0 * tf.transpose([input]) * self.k3M * cpInv / self.kdT2, 1), axis=0) * \
-                        self.k3Mg * self.TI0 * self.E0 * self.Xglobal*cpInv / (self.kdpT * (1 + cpInv * self.k3Mg * self.Xglobal * self.E0))
-            inhib = self.k6 * self.k5M * self.E0*cpInv * pT_eq
-
-            if self.usingLog:
-                x_eq = logActivationsSum + activBias - tf.math.log(self.kd+inhib)
-                pT_cp = tf.where(tf.equal(pT_eq,0),0.,self.k5M*tf.exp(logActivationsSum+activBias)/(self.kd/pT_eq + self.k6*self.k5M*self.E0*cpInv))
-            else:
+                        QdgijTemplate_eq*self.E0*cpInv
+                inhib = self.k6 * self.k5M * self.E0*cpInv * pT_eq /self.kdpT
                 x_eq = tf.exp(logActivationsSum + activBias)/(self.kd+inhib)
-                pT_cp = self.k5M*x_eq*pT_eq
+                pT_cp = tf.where(tf.equal(pT_eq,0),0.,self.k5M*tf.exp(logActivationsSum+activBias)/(self.kd/pT_eq + self.k6*self.k5M*self.E0*cpInv/self.kdpT))
+
+
+            # tf.print(tf.transpose([tf.exp(input)]),"tf.transpose([tf.exp(input)])")
+            # tf.print((tf.math.log(self.k6*self.k5M*self.E0*cpInv)+pT_eq),"(tf.math.log(self.k6*self.k5M*self.E0*cpInv)+pT_eq)")
+            # tf.print(tf.math.log(self.kd/inhib+1),"tf.math.log(self.kd/inhib+1)")
+            # tf.print(x_eq,"x_eq")
+            # tf.print(logActivationsSum,"logActivationsSum")
+            # tf.print(activBias,"activBias")
+            # tf.print(pT_eq,"pT_eq")
+            # tf.print(cpInv,"cpInv")
+            # tf.print(activCP,"activCP")
+            # tf.print(inhibCP_no_pT,"inhibCP_no_pT")
+            # tf.print(pT_cp,"pT_cp")
 
             tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(activCP),1,0)),0,message="nan detected in activCP of cascade layer")
             tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(inhibCP_no_pT),1,0)),0,message="nan detected in inhibCP_no_pT of cascade layer")
-            tf.print(tf.transpose([tf.exp(input)]),"tf.transpose([input])")
-            tf.print(tf.reduce_prod(tf.where(self.mask < 0, self.k4 * self.E0 * tf.transpose([tf.exp(input)]) * self.k3M *cpInv / self.kdT2, 1), axis=0),"tf.reduce_prod(tf.where(self.mask < 0, self.k4 * self.E0 * tf.transpose([tf.exp(input)]) * self.k3M *cpInv / self.kdT2, 1), axis=0)")
-            tf.print(self.k3Mg * self.TI0 * self.E0 * tf.exp(self.Xglobal) *cpInv / (self.kdpT * (1 + cpInv*self.k3Mg * tf.exp(self.Xglobal) * self.E0)),"self.k3Mg * self.TI0 * self.E0 * tf.exp(self.Xglobal) *cpInv / (self.kdpT * (1 + cpInv*self.k3Mg * tf.exp(self.Xglobal) * self.E0))")
-            tf.print(pT_eq,"pT_eq")
-            tf.print(cpInv,"cpInv")
-            tf.print(activCP,"activCP")
-            tf.print(inhibCP_no_pT,"inhibCP_no_pT")
             tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(pT_cp),1,0)),0,message="nan detected in pT_cp of cascade layer pT_eq:"+str(pT_eq)+" cpInv:"+str(cpInv))
 
             layer_cp = activCP + inhibCP_no_pT + pT_cp
 
             tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(x_eq),1,0)),0,message="nan detected in outputs of cascade layer")
 
+            # tf.print(tf.keras.backend.sum(layer_cp),"computed cascade layer_cp")
+
             return tf.keras.backend.sum(layer_cp),x_eq
+
+
+    @tf.function
+    def bornsup_layer_cp_equilibrium_FromInv(self, cpg, input, isFirstLayer=False):
+        with tf.device(self.deviceName):
+
+            #In the following computation we did not solve the case where input could have infinite value:
+            if not self.usingLog:
+                tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_inf(input),1,0)),0,message="inf detected in inputs cascade")
+
+
+            if self.usingLog:
+                Qijm = self.k1M*tf.transpose(tf.exp([input]))*self.E0/self.kdT
+                Qdijm = self.k3M*tf.transpose(tf.exp([input]))*self.E0/self.kdT
+            else:
+                Qijm = self.k1M*tf.transpose([input])*self.E0/self.kdT
+                Qdijm = self.k3M*tf.transpose([input])*self.E0/self.kdT
+            #hornerActiv should take infinite value only when cpInv is not 0.
+            # tf.print(Qijm,"Qijm")
+            # tf.print(Qdijm,"Qdijm")
+            hornerActiv = self.hornerMultiX(Qijm,self.mask,self.k2)
+            hornerInhib = self.hornerMultiX(Qdijm,(-1)*self.mask,self.k4)
+
+            # tf.print(hornerActiv,"hornerActiv")
+            # tf.print(hornerInhib,"hornerInhib")
+
+            if self.usingLog:
+                # We must be careful of the case where cpg --> +infinity
+                #tf.where(tf.math.is_inf(self.k1Mg*tf.exp(self.Xglobal)/cpg),self.TA0/(self.E0*cpInv),self.TA0*self.k1Mg*tf.exp(self.Xglobal)/(cpg + self.k1Mg *tf.exp(self.Xglobal) * self.E0 *cpInv))
+                Template_eqXg = self.TA0*tf.exp(self.Xglobal)/(cpg*(1+self.k1Mg*self.E0*tf.exp(self.Xglobal)/cpg))
+                QgijTemplate_eq = self.TA0*self.k2g*self.k1Mg*tf.exp(self.Xglobal)/(cpg*(1+self.k1Mg*self.E0*tf.exp(self.Xglobal)/cpg))
+            else:
+                Template_eqXg = self.TA0*self.Xglobal/(cpg*(1+self.k1Mg*self.E0*self.Xglobal/cpg))
+                QgijTemplate_eq = self.TA0*self.k2g*self.k1Mg*self.Xglobal/(cpg*(1+self.k1Mg*self.E0*self.Xglobal/cpg))
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_inf(QgijTemplate_eq),1,0)),0,message="inf detected in QgijTemplate_eq")
+            activCP = QgijTemplate_eq * hornerActiv + self.k1Mg*Template_eqXg
+
+            if self.usingLog:
+                # We must be careful of the case where cpg --> +infinity
+                #tf.where(tf.math.is_inf(self.k1Mg*tf.exp(self.Xglobal)/cpg),self.TA0/(self.E0*cpInv),self.TA0*self.k1Mg*tf.exp(self.Xglobal)/(cpg + self.k1Mg *tf.exp(self.Xglobal) * self.E0 *cpInv))
+                TemplateI_eqXg = self.TI0*tf.exp(self.Xglobal)/(cpg*(1+self.k3Mg*self.E0*tf.exp(self.Xglobal)/cpg))
+                QdgijTemplate_eq = self.TI0*self.k4g*self.k3Mg*tf.exp(self.Xglobal)/(cpg*(1+self.k3Mg*self.E0*tf.exp(self.Xglobal)/cpg))
+            else:
+                TemplateI_eqXg = self.TI0*self.Xglobal/(cpg*(1+self.k3Mg*self.E0*self.Xglobal/cpg))
+                QdgijTemplate_eq = self.TI0*self.k4g*self.k3Mg*self.Xglobal/(cpg*(1+self.k3Mg*self.E0*self.Xglobal/cpg))
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_inf(QdgijTemplate_eq),1,0)),0,message="inf detected in QdgijTemplate_eq")
+
+            inhibCP_no_pT = QdgijTemplate_eq * hornerInhib + self.k3Mg*TemplateI_eqXg
+
+
+            #Here we might encounter NaN in the case where Xglobal is 0 and hornerActiv or hornerInhib exceed machine precision.
+            #   In these case the unknown result should be found by plugging in the computation of hornerActiv and hornerInhib a fraction of cpg....
+            #   To begin with we took cpg = 1 ... thus the incertitude comes from the fact that the initial value of Xglobal is null in which case no production is possible
+            #   In this case, activCp and inhibCP_no_pT takes value of 0!
+            activCP = tf.where(tf.math.is_nan(activCP),0.,activCP)
+            inhibCP_no_pT = tf.where(tf.math.is_nan(inhibCP_no_pT),0.,inhibCP_no_pT)
+
+            activBias = tf.keras.backend.sum(tf.where(self.mask > 0, tf.math.log(self.k2 * self.k1M * self.E0 / self.kdT), 0), axis=0) + tf.math.log(QgijTemplate_eq * self.E0)
+            activKernel = tf.where(self.mask>0,self.mask,0)
+            #when the input is 0 so -inf in log, its multiplication by 0 gives NaN.
+            if self.usingLog:
+                activations = tf.where(activKernel>0,activKernel*tf.transpose([input]) ,0)
+            else:
+                activations = tf.where(activKernel>0,tf.math.log(activKernel*tf.transpose([input])),0)
+            logActivationsSum = tf.keras.backend.sum(activations,axis=0)
+
+            if self.usingLog:
+                pT_eq = tf.keras.backend.sum(tf.where(self.mask<0,tf.math.log(self.k4 * self.E0 *self.k3M  / self.kdT2 ),0),axis=0) + \
+                        tf.keras.backend.sum(tf.where(self.mask < 0, self.mask * tf.transpose([input]), 0), axis=0) + \
+                        tf.math.log(QdgijTemplate_eq*self.E0)
+                # tf.math.log(tf.where(tf.math.is_inf(self.k3Mg*tf.exp(self.Xglobal)/cpg),self.TI0/self.kdpT,self.k3Mg*self.TI0*self.E0*tf.exp(self.Xglobal)/cpg*cpInv/(self.kdpT*(1+cpInv*self.k3Mg*tf.exp(self.Xglobal)*self.E0/cpg))))
+                inhib = self.k6*self.k5M*self.E0*tf.exp(pT_eq)/self.kdpT
+                inhibition = tf.where(tf.equal(tf.exp(pT_eq),0),tf.math.log(self.kd),(tf.math.log(self.k6*self.k5M*self.E0/self.kdpT)+pT_eq)+tf.math.log(self.kd/inhib+1))
+                x_eq = logActivationsSum + activBias - inhibition
+                pT_cp = tf.where(tf.equal(tf.exp(pT_eq),0),0.,self.k5M*tf.exp(logActivationsSum+activBias)/(self.kd/tf.exp(pT_eq) + self.k6*self.k5M*self.E0/self.kdpT))
+            else:
+                pT_eq = tf.reduce_prod(tf.where(self.mask < 0, self.k4 * self.E0 * tf.transpose([input]) * self.k3M / self.kdT2, 1), axis=0) * \
+                        QdgijTemplate_eq*self.E0
+                inhib = self.k6 * self.k5M * self.E0 * pT_eq /self.kdpT
+                x_eq = tf.exp(logActivationsSum + activBias)/(self.kd+inhib)
+                pT_cp = tf.where(tf.equal(pT_eq,0),0.,self.k5M*tf.exp(logActivationsSum+activBias)/(self.kd/pT_eq + self.k6*self.k5M*self.E0/self.kdpT))
+
+
+            # tf.print(tf.transpose([tf.exp(input)]),"tf.transpose([tf.exp(input)])")
+            # tf.print((tf.math.log(self.k6*self.k5M*self.E0*cpInv)+pT_eq),"(tf.math.log(self.k6*self.k5M*self.E0*cpInv)+pT_eq)")
+            # tf.print(tf.math.log(self.kd/inhib+1),"tf.math.log(self.kd/inhib+1)")
+            # tf.print(x_eq,"x_eq")
+            # tf.print(logActivationsSum,"logActivationsSum")
+            # tf.print(activBias,"activBias")
+            # tf.print(pT_eq,"pT_eq")
+            # tf.print(cpInv,"cpInv")
+            # tf.print(activCP,"activCP")
+            # tf.print(inhibCP_no_pT,"inhibCP_no_pT")
+            # tf.print(pT_cp,"pT_cp")
+
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(activCP),1,0)),0,message="nan detected in activCP of cascade layer")
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(inhibCP_no_pT),1,0)),0,message="nan detected in inhibCP_no_pT of cascade layer")
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(pT_cp),1,0)),0,message="nan detected in pT_cp of cascade layer pT_eq:"+str(pT_eq))
+
+            layer_cp = activCP + inhibCP_no_pT + pT_cp
+
+            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(x_eq),1,0)),0,message="nan detected in outputs of cascade layer")
+
+            # tf.print(tf.keras.backend.sum(layer_cp),"computed cascade layer_cp")
+
+            return tf.keras.backend.sum(layer_cp),x_eq
+
+
+    def displayVariable(self):
+        tf.print(self.k1,"self.k1")
+        tf.print(self.Xglobal,"self.Xglobal")
+        tf.print(self.rescaleFactor,"self.rescaleFactor")
+        tf.print(self.E0,"self.E0")
+        tf.print(self.kdT2,"self.kdT2")
+        tf.print(self.kdT,"self.kdT")
+        tf.print(self.kd,"self.kd")
+        tf.print(self.kdpT,"self.kdpT")
+        tf.print(self.k6,"self.k6")
+        tf.print(self.k5n,"self.k5n")
+        tf.print(self.k5,"self.k5")
+        tf.print(self.TI0 ,"self.TI0 ")
+        tf.print(self.TA0 ,"self.TA0 ")
+        tf.print(self.k4,"self.k4")
+        tf.print(self.k3n,"self.k3n")
+        tf.print(self.k3,"self.k3")
+        tf.print(self.k2 ,"self.k2 ")
+        tf.print(self.k1n,"self.k1n")
+        tf.print(self.k1M ,"self.k1M ")
+        tf.print(self.k3M ,"self.k3M ")
+        tf.print(self.k5M,"self.k5M")
+        tf.print(self.k1g,"self.k1g")
+        tf.print(self.k1ng,"self.k1ng")
+        tf.print(self.k2g,"self.k2g")
+        tf.print(self.k3g,"self.k3g")
+        tf.print(self.k3ng,"self.k3ng")
+        tf.print(self.k4g,"self.k4g")
+        tf.print(self.k1Mg ,"self.k1Mg ")
+        tf.print(self.k3Mg,"self.k3Mg")
+
