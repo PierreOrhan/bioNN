@@ -129,9 +129,76 @@ def _generate_initialConcentration_firstlayer(activatorsOnObserved,inhibitorsOnO
     return X1,X2,x_test,otherActivInitialC,otherInhibInitialC
 
 
+def compareCpRootFunction(x_test,X1,X2,nbrInputs,model,pythonModel):
+    myX_test= np.reshape(x_test,(len(X1),len(X2),nbrInputs[0]))
+    competitions = np.zeros((len(X1),len(X2)))
+    tfCompetitions = np.zeros((len(X1), len(X2)))
+    fitOutput = np.zeros((len(X1), len(X2)))
+    tfFitOutput = np.zeros((len(X1), len(X2)))
+    styleFit = np.zeros((len(X1),len(X2),1000))
+    tfstyleFit = np.zeros((len(X1),len(X2),1000))
+    testOfCp = np.logspace(-1,7,1000)
+
+    courbs=[0,int(fitOutput.shape[1]/2),fitOutput.shape[1]-1,int(fitOutput.shape[1]/3),int(2*fitOutput.shape[1]/3)]
+
+    for idx,c in enumerate(model.layerList[0].cstList):
+        if(model.layerList[0].cstListName[idx] in pythonModel.cstListName):
+            idx2 = pythonModel.cstListName.index(model.layerList[0].cstListName[idx])
+            if tf.equal(tf.rank(c),2):
+                tf.print(model.layerList[0].cstList[idx][0,0],model.layerList[0].cstListName[idx]," VS ",pythonModel.cstList[idx2][0][0,0],pythonModel.cstListName[idx2])
+            elif tf.equal(tf.rank(c),1):
+                tf.print(model.layerList[0].cstList[idx][0],model.layerList[0].cstListName[idx]," VS ",pythonModel.cstList[idx2][0][0],pythonModel.cstListName[idx2])
+            else:
+                tf.print(model.layerList[0].cstList[idx],model.layerList[0].cstListName[idx]," VS ",pythonModel.cstList[idx2],pythonModel.cstListName[idx2])
+
+    visuCPT = np.zeros((len(X1),len(X2),1000))
+    #outCPT = np.zeros((len(X1),len(X2)))
+    for idx1,x1 in enumerate(X1):
+        for idx2,x2 in enumerate(X2):
+            if idx2 in courbs and idx1==idx2:
+                cpApproxim = pythonModel.computeCPonly(myX_test[idx1,idx2])
+                #cps = pythonModel.computeCP(myX_test[idx1,idx2],initValue=cpApproxim)
+                competitions[idx1,idx2] = cpApproxim
+                #outCPT[idx1,idx2] = cps[1]
+                x = tf.convert_to_tensor([myX_test[idx1,idx2]],dtype=tf.float32)
+                t0=time.time()
+                tfCompetitions[idx1,idx2] = model.obtainCp(x)
+                print("Ended tensorflow brentq methods in "+str(time.time()-t0))
+
+            if idx2 in courbs and idx1==idx2:
+                t0=time.time()
+                styleFit[idx1,idx2] = np.array([pythonModel.cpEquilibriumFunc(cp,myX_test[idx1,idx2]) for cp in testOfCp])
+                print("Obtain the landscape with python in  "+str(time.time()-t0))
+                t0=time.time()
+                tfstyleFit[idx1,idx2] = np.reshape(np.array(model.getFunctionStyle(testOfCp,myX_test[idx1,idx2])),(1000))
+                print("Obtain the landscape with tf in  "+str(time.time()-t0))
+
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(19.2,10.8), dpi=100)
+    cmap = plt.get_cmap('Dark2',X1.shape[0]*len(courbs))
+    for idx1,x1 in enumerate(X1):
+        for idx2,x2 in enumerate(X2):
+            if idx2 in courbs and idx1==idx2:
+                ax.plot(testOfCp,np.abs(styleFit[idx1,idx2,:]),c=cmap(idx1*(courbs.index(idx2)+1)))
+                ax.plot(testOfCp,np.abs(tfstyleFit[idx1,idx2,:]),c=cmap(idx1*(courbs.index(idx2)+1)),linestyle="--")
+                ax.axvline(competitions[idx1,idx2],c=cmap(idx1*(courbs.index(idx2)+1)),marker="o")
+                ax.axvline(tfCompetitions[idx1,idx2],c=cmap(idx1*(courbs.index(idx2)+1)),marker="x",linestyle="-")
+    ax.tick_params(labelsize="xx-large")
+    ax.set_xlabel("cp",fontsize="xx-large")
+    ax.set_ylabel("f(cp)-cp",fontsize="xx-large")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    fig.savefig("formOfcp.png")
+    plt.show()
+    print(competitions)
+    print(tfCompetitions)
+
+
+
+
 if __name__ == '__main__':
 
-    name = "templateModelTwoLayer/equiNetwork_100_newfit"
+    name = os.path.join("templateModelTwoLayer","equiNetwork_100_newfit")
     endTime = 10000
     timeStep = 0.1
 
@@ -198,9 +265,8 @@ if __name__ == '__main__':
 
     if("outputEqui" in modes):
         experiment_path = name
-        C0=readAttribute(experiment_path,["C0"])["C0"]
+        C0= 8.086075400626399*10**(-7)
 
-        nbrConstant = int(readAttribute(experiment_path,["Numbers_of_Constants"])["Numbers_of_Constants"])
         cstlist = [0.9999999999999998,0.1764705882352941,1.0,0.9999999999999998,0.1764705882352941,1.0,
                    0.018823529411764708,0.9999999999999998,0.1764705882352941,1.0,0.018823529411764708,0.018823529411764708]
         k1,k1n,k2,k3,k3n,k4,_,k5,k5n,k6,kd,_= cstlist
@@ -221,115 +287,22 @@ if __name__ == '__main__':
                       metrics=['accuracy'])
         model.build(input_shape=(None,nbrInputs[0]))
         masksForTF = [np.transpose(m) for m in masks]
-        model.updateArchitecture(masksForTF, constantList, TA, TI, E0)
+        model.updateArchitecture(masksForTF, constantList,E0 ,TA, TI)
 
         _,rescaleFactor = utilForODE.rescaleInputConcentration(networkMask=masks)
 
         model.force_rescale(rescaleFactor)
-
-        print(kd)
-        print(model.layerList[0].kdT)
-        print(model.layerList[0].firstLayerkdT)
-
         X1 = X1/(C0*rescaleFactor)
         X2 = X2/(C0*rescaleFactor)
         x_test = x_test/(C0*rescaleFactor)
-        # otherActivInitialC = otherActivInitialC/(C0*rescaleFactor)
-        # otherInhibInitialC = otherInhibInitialC/(C0*rescaleFactor)
+
+
         E0 = E0*(rescaleFactor**0.5)
         masks = [np.identity(nbrInputs[0])] + masks
         pythonModel = pythonSolver(masks,k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd,kd,TA,TI,E0)
 
-        print(model.layerList[0].mask)
-        print(pythonModel.masks)
 
         #Third fit, using the compute cp:
-        myX_test= np.reshape(x_test,(len(X1),len(X2),nbrInputs[0]))
-        competitions = np.zeros((len(X1),len(X2)))
-        tfCompetitions = np.zeros((len(X1), len(X2)))
-        fitOutput = np.zeros((len(X1), len(X2)))
-        tfFitOutput = np.zeros((len(X1), len(X2)))
-        styleFit = np.zeros((len(X1),len(X2),1000))
-        tfstyleFit = np.zeros((len(X1),len(X2),1000))
-        testOfCp = np.logspace(-5,5,1000)/kd
-        testOfCpt = np.logspace(-3,-1,1000)/kd
+        compareCpRootFunction(x_test,X1,X2,nbrInputs,model,pythonModel)
 
-        courbs=[0,int(fitOutput.shape[1]/2),fitOutput.shape[1]-1,int(fitOutput.shape[1]/3),int(2*fitOutput.shape[1]/3)]
-
-        visuCPT = np.zeros((len(X1),len(X2),1000))
-        #outCPT = np.zeros((len(X1),len(X2)))
-        for idx1,x1 in enumerate(X1):
-            for idx2,x2 in enumerate(X2):
-                if idx2 in courbs and idx1==idx2:
-                    cpApproxim = pythonModel.computeCPonly(myX_test[idx1,idx2])
-                    #cps = pythonModel.computeCP(myX_test[idx1,idx2],initValue=cpApproxim)
-                    competitions[idx1,idx2] = cpApproxim
-                    #outCPT[idx1,idx2] = cps[1]
-                    x = tf.convert_to_tensor([myX_test[idx1,idx2]],dtype=tf.float32)
-                    t0=time.time()
-                    tfCompetitions[idx1,idx2] = model.obtainCp(x)
-                    print("Ended tensorflow brentq methods in "+str(time.time()-t0))
-
-                if idx2 in courbs and idx1==idx2:
-                    testcps = []
-                    for x in testOfCp:
-                        testcps += [np.concatenate(([x],np.zeros(np.sum([m.shape[0]*m.shape[1] for m in masks]))+1))]
-                    t0=time.time()
-                    styleFit[idx1,idx2] = np.array([pythonModel.cpEquilibriumFunc(cp,myX_test[idx1,idx2]) for cp in testOfCp])
-                    print("Obtain the landscape with python in  "+str(time.time()-t0))
-                    t0=time.time()
-                    tfstyleFit[idx1,idx2] = np.reshape(np.array(model.getFunctionStyle(testOfCp,myX_test[idx1,idx2])),(1000))
-                    print("Obtain the landscape with tf in  "+str(time.time()-t0))
-                    #testCPTs=[]
-                    # for x in testOfCpt:
-                    #     cptInitArray = np.zeros(np.sum([m.shape[0]*m.shape[1] for m in masks])-1)+1
-                    #     cptInitArray[templateObservedIdx-1] = x
-                    #     testCPTs += [np.concatenate(([tfCompetitions[idx1, idx2] * kd], cptInitArray))]
-                    # visuCPT[idx1,idx2] = np.array([pythonModel.allEquilibriumFunc(testCPT,myX_test[idx1,idx2])[templateObservedIdx] for testCPT in testCPTs])
-
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots(figsize=(19.2,10.8), dpi=100)
-        cmap = plt.get_cmap('Dark2',X1.shape[0]*len(courbs))
-        for idx1,x1 in enumerate(X1):
-            for idx2,x2 in enumerate(X2):
-                if idx2 in courbs and idx1==idx2:
-                    ax.plot(testOfCp,np.abs(styleFit[idx1,idx2,:]),c=cmap(idx1*(courbs.index(idx2)+1)))
-                    ax.plot(testOfCp,np.abs(tfstyleFit[idx1,idx2,:]),c=cmap(idx1*(courbs.index(idx2)+1)),linestyle="--")
-                    ax.axvline(competitions[idx1,idx2],c=cmap(idx1*(courbs.index(idx2)+1)),marker="o")
-                    ax.axvline(tfCompetitions[idx1,idx2],c=cmap(idx1*(courbs.index(idx2)+1)),marker="x",linestyle="-")
-
-
-                    # ax.plot(testOfCp*kd,np.abs(styleFit[idx1,idx2,:])*kd,c=cmap(idx1*(courbs.index(idx2)+1)))
-                    # ax.plot(testOfCp*kd,np.abs(tfstyleFit[idx1,idx2,:])*kd,c=cmap(idx1*(courbs.index(idx2)+1)),linestyle="--")
-                    # ax.axvline(competitions[idx1,idx2]*kd,c=cmap(idx1*(courbs.index(idx2)+1)),marker="o")
-                    # ax.axvline(tfCompetitions[idx1,idx2]*kd,c=cmap(idx1*(courbs.index(idx2)+1)),marker="x",linestyle="-")
-                    #
-                    #ax.axvline(oldCompetitions[idx1,idx2],c=cmap(idx1*(courbs.index(idx2)+1)),marker="o",linestyle="--")
-                    # ax.scatter(cpFitted[idx1,idx2],func(cpFitted[idx1,idx2],kd,Cactiv,CInhib,Kactiv,Kinhib,masks,myX_test[idx1,idx2]),c=cmap(idx1*(courbs.index(idx2)+1)),marker="x")
-        ax.tick_params(labelsize="xx-large")
-        ax.set_xlabel("cp",fontsize="xx-large")
-        ax.set_ylabel("f(cp)-cp",fontsize="xx-large")
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        fig.savefig("formOfcp.png")
-        plt.show()
-        print(competitions)
-        print(tfCompetitions)
-
-        # import matplotlib.pyplot as plt
-        # fig, ax = plt.subplots(figsize=(19.2,10.8), dpi=100)
-        # cmap = plt.get_cmap('Dark2',X1.shape[0]*len(courbs))
-        # for idx1,x1 in enumerate(X1):
-        #     for idx2,x2 in enumerate(X2):
-        #         if idx2 in courbs and idx1==idx2:
-        #             # ax.plot(testOfCp,np.abs(styleFit[idx1,idx2,:]),c=cmap(idx1*(courbs.index(idx2)+1)))
-        #             ax.plot(testOfCpt*kd,np.abs(visuCPT[idx1,idx2,:])+10**(-10),c=cmap(idx1*(courbs.index(idx2)+1)),linestyle="--")
-        #             # ax.axvline(competitions[idx1,idx2],c=cmap(idx1*(courbs.index(idx2)+1)),marker="o")
-        #             ax.axvline(outCPT[idx1,idx2]*kd,c=cmap(idx1*(courbs.index(idx2)+1)),marker="o",linestyle="--")
-        #             # ax.scatter(cpFitted[idx1,idx2],func(cpFitted[idx1,idx2],kd,Cactiv,CInhib,Kactiv,Kinhib,masks,myX_test[idx1,idx2]),c=cmap(idx1*(courbs.index(idx2)+1)),marker="x")
-        # ax.set_xscale("log")
-        # ax.set_yscale("log")
-        # fig.savefig("formOfcp2.png")
-        # plt.show()
-        # print(outCPT)
 

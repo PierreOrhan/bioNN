@@ -18,6 +18,7 @@ from simulOfBioNN.odeUtils import utils as utilForODE
 from simulOfBioNN.simulNN.simulator import executeODESimulation
 from simulOfBioNN.odeUtils.systemEquation import fPythonSparse
 from simulOfBioNN.smallNetworkSimul.compareTFvsPython.pythonBasicSolver import pythonSolver
+from simulOfBioNN.smallNetworkSimul.compareTFvsPython.tfVSPython import compareCpRootFunction
 
 
 from scipy.optimize import minimize,root,brentq
@@ -137,8 +138,8 @@ if __name__ == '__main__':
     endTime = 10000
     timeStep = 0.1
 
-    doODEvsTF = True
-    doODEvsPython = True
+    doODEvsTF = False
+    doODEvsPython = False
     doTFvsPython = True
 
     # masks=[np.array([[1,-1,0,0],[0,0,1,-1]]),np.array([[1,-1]])]
@@ -263,7 +264,7 @@ if __name__ == '__main__':
                           loss='sparse_categorical_crossentropy',
                           metrics=['accuracy'])
             model.build(input_shape=(None,nbrInputs[0]))
-            model.updateArchitecture(masksForTF, constantList, TA, TI, E0)
+            model.updateArchitecture(masksForTF, constantList, E0,TA,TI)
             model.force_rescale(rescaleFactor)
 
         X1 = X1/C0
@@ -318,3 +319,5 @@ if __name__ == '__main__':
         fitComparePlot(X1, X2, outputTF, outputTF, courbs,
                        figname=os.path.join(experiment_path, "TFVSTFlogX1.png"),
                        figname2=os.path.join(experiment_path, "TFVSTFlogX2.png"), useLogX=True)
+
+        compareCpRootFunction(x_test,X1,X2,nbrInputs,model,pythonModel)

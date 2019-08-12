@@ -142,6 +142,7 @@ class chemTemplateLayer(Dense):
         self.kernel.assign(newKernel)
         self.mask.assign(tf.where(tf.less(self.kernel,-0.2),-1.,tf.where(tf.less(0.2,self.kernel),1.,0.)))
 
+
     def set_constants(self,constantArray,enzymeInit,activInitC,inhibInitC,computedRescaleFactor):
         """
             Define the ops assigning the values for the network constants.
@@ -181,6 +182,14 @@ class chemTemplateLayer(Dense):
 
         self.mask.assign(tf.where(tf.less(self.kernel,-0.2),-1.,tf.where(tf.less(0.2,self.kernel),1.,0.)))
 
+        self.cstList = [self.k1,self.k1n,self.k2,self.k3,self.k3n,self.k4,self.k5,self.k5n,self.k6,self.kdI,self.kdT,self.TA0,self.E0,
+                        self.k1M,self.Cactiv,self.Cinhib,self.Kactiv,self.Kinhib,self.k5M,self.k3M,self.firstLayerTA0,self.firstLayerK1M,
+                        self.firstLayerkdT,self.firstLayerk2]
+        self.cstListName = ["self.k1","self.k1n","self.k2","self.k3","self.k3n","self.k4","self.k5","self.k5n","self.k6","self.kdI","self.kdT","self.TA0","self.E0",
+                            "self.k1M","self.Cactiv","self.Cinhib","self.Kactiv","self.Kinhib","self.k5M","self.k3M","self.firstLayerTA0","self.firstLayerK1M",
+                            "self.firstLayerkdT","self.firstLayerk2"]
+
+    @tf.function
     def rescale(self,rescaleFactor):
         """
             Rescale the enzyme value
@@ -188,6 +197,8 @@ class chemTemplateLayer(Dense):
         :return:
         """
         self.E0.assign(self.E0.read_value()*(rescaleFactor**0.5)/(self.rescaleFactor.read_value()**0.5))
+        self.Cactiv.assign(self.k2*self.k1M*self.E0*self.TA0)
+        self.Cinhib.assign(tf.stack([self.k6*self.k5M]*(self.k4.shape[0]),axis=0)*self.k4*self.k3M*self.E0*self.E0*self.TI0)
         self.rescaleFactor.assign(rescaleFactor)
 
     def call(self, inputs, cps = None, isFirstLayer=False):
@@ -293,7 +304,6 @@ class chemTemplateLayer(Dense):
                 cp_with_Input = tf.where(tf.math.is_inf(olderInput),cp*self.firstLayerTA0/self.E0,self.firstLayerK1M*olderInput*self.firstLayerTA0/(1+self.firstLayerK1M*self.E0*olderInput/cp))
                 tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_inf(cp_with_Input),1,0)),0,message=" cp_with_Input has inf")
                 layer_cp += tf.keras.backend.sum(tf.where(tf.equal(EandTemplate,0),0.,cp_with_Input)) #first layer non-linearity!
-                tf.print("initial layer adding ",layer_cp)
 
                 layer1input =self.firstLayerk2*self.firstLayerK1M/self.firstLayerkdT*self.firstLayerTA0*self.E0/cp*olderInput/(1+self.firstLayerK1M*self.E0/cp*olderInput)
 
@@ -310,7 +320,6 @@ class chemTemplateLayer(Dense):
                 Inhib2 = tf.matmul(layer1input,Cinhibs)/(self.kdT*self.k6)
 
                 layer_cp += tf.keras.backend.sum(Inhib2*x_eq/(self.E0*cp))
-                tf.print("next layer adding ",tf.keras.backend.sum(Inhib2*x_eq/self.E0)+templateComplexCp)
             else:
                 olderInput = input
                 templateComplex = tf.where(self.mask>0,self.Kactiv*tf.transpose(olderInput)/(1+self.k1M*self.E0*tf.transpose(olderInput)/cp),
@@ -322,6 +331,14 @@ class chemTemplateLayer(Dense):
                 x_eq = tf.matmul(olderInput,Cactivs)/(self.kdI*cp+Inhib/cp)
                 Inhib2 = tf.matmul(olderInput,Cinhibs)/(self.kdT*self.k6)
                 layer_cp += tf.keras.backend.sum(Inhib2*x_eq/(self.E0*cp)) + templateComplexCp
-                tf.print("next layer adding ",tf.keras.backend.sum(Inhib2*x_eq/self.E0) + templateComplexCp)
 
             return layer_cp,x_eq
+
+    def print_constants(self):
+        for idx,c in enumerate(self.cstList):
+            if tf.equal(tf.rank(c),2):
+                tf.print(self.cstList[idx][0,0],self.cstListName[idx]," rank 2")
+            elif tf.equal(tf.rank(c),1):
+                tf.print(self.cstList[idx][0],self.cstListName[idx]," rank 1")
+            else:
+                tf.print(self.cstList[idx],self.cstListName[idx]," rank 0")

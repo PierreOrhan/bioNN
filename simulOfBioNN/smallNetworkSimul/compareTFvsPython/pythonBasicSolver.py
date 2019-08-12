@@ -30,6 +30,11 @@ class pythonSolver():
         self.E0 = E0
         self.masks = masks
 
+        self.cstList = [self.k1,self.k1n,self.k2,self.k3,self.k3n,self.k4,self.k5,self.k5n,self.k6,self.kdI,self.kdT,self.TA0,self.E0,
+                        self.k1M,self.Cactiv0,self.Cinhib0,self.k5M,self.k3M]
+        self.cstListName = ["self.k1","self.k1n","self.k2","self.k3","self.k3n","self.k4","self.k5","self.k5n","self.k6","self.kdI","self.kdT","self.TA0","self.E0",
+                            "self.k1M","self.Cactiv","self.Cinhib","self.k5M","self.k3M"]
+
 
     def obtainBornSup(self,X0):
         return self._obtainBornSup(self.k6,self.kdT,self.kdI,self.Kactiv0,self.Kinhib0,self.Cactiv0,self.Cinhib0,self.E0,X0,self.masks)
@@ -107,7 +112,7 @@ class pythonSolver():
         for layeridx,layer in enumerate(masks):
             layerEq = np.zeros(layer.shape[1])
             if(layeridx==0):
-                print(X0)
+
                 for inpIdx in range(layer.shape[1]):
                     if self.k1M[layeridx][inpIdx,inpIdx]*E0*self.TA0[layeridx][inpIdx,inpIdx]/cp == 0:
                         #case where there is no polynomial equation
@@ -121,7 +126,7 @@ class pythonSolver():
                         new_cp += self.k1M[layeridx][inpIdx,inpIdx]*new_input*self.TA0[layeridx][inpIdx,inpIdx]/(1+self.k1M[layeridx][inpIdx,inpIdx]*new_input*E0/cp)
                     layerEq[inpIdx] = new_input
                 olderX[layeridx] = layerEq
-                print("first layer adding",new_cp-1)
+
             else:
                 e=0
                 for inpIdx in range(layer.shape[1]):
@@ -151,7 +156,7 @@ class pythonSolver():
                         new_cp += Inhib2/(E0*cp)*x_eq
                     new_cp += firstComplex
                     e+=firstComplex
-                print("next layer adding",e)
+
                 olderX[layeridx] = layerEq
 
         #Finally we must add the effect of pseudoTemplate enzymatic complex in the last layer
@@ -165,7 +170,7 @@ class pythonSolver():
             Inhib2 = np.sum(Cinhibs*olderX[-1]/(kdT[-1][outputsIdx]*k6[-1][outputsIdx]))
             new_cp += Inhib2/(E0*cp)*x_eq
             e+=Inhib2/(E0*cp)*x_eq
-        print("final ouptput adding",e)
+
         return cp - new_cp
     def _allEquilibriumFunc(self,cps,k6,kdT,kdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks,k1M,k3M):
         """
@@ -292,8 +297,8 @@ class pythonSolver():
 
 
     def computeEquilibriumValue(self,cp,X0,observed=None):
-        return self._computeEquilibriumValue(cp,self.k6,self.kdT,self.kdI,self.Kactiv0,self.Kinhib0,self.Cactiv0,self.Cinhib0,self.E0,X0,self.masks,observed=observed)
-    def _computeEquilibriumValue(self,cp,k6,kdT,kdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks,observed=None):
+        return self._computeEquilibriumValue(cp,self.kdT,self.kdI,self.Cactiv0,self.Cinhib0,self.E0,X0,self.masks,observed=observed)
+    def _computeEquilibriumValue(self,cp,kdT,kdI,Cactiv0,Cinhib0,E0,X0,masks,observed=None):
         """
             Given cp, compute the equilibrium values for all nodes in solutions.
         :param cps: Value for the competitions over enzyme and template obtained by fixed point strategy.
@@ -348,49 +353,14 @@ class pythonSolver():
             return olderX[observed[0]][observed[1]]
         return olderX
 
-    def computeEquilibriumValueCPS(self,cps,X0,observed=None):
-        return self._computeEquilibriumValueCPS(cps,self.k6,self.kdT,self.kdI,self.Kactiv0,self.Kinhib0,self.Cactiv0,self.Cinhib0,self.E0,X0,self.masks,observed=observed)
-    def _computeEquilibriumValueCPS(self,cps,k6,kdT,kdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks,observed=None):
-        """
-            Given cp, compute the equilibrium values for all nodes in solutions.
-        :param cps: Value for the competitions over enzyme and template obtained by fixed point strategy.
-        :param observed: tuple, default to None. If provided, we only give the value for the species at the position observed.
-        :return:
-        """
-        # We move from an array to a list of 2d-array for the competition over each template:
-        olderX = [np.zeros(m.shape[1]) for m in masks]
-        cp = cps[0]
-        cpt = [np.reshape(cps[(l+1):(l+1+m.shape[0]*m.shape[1])],(m.shape[0],m.shape[1])) for l,m in enumerate(masks)]
-        for layeridx,layer in enumerate(masks):
-            layerEq = np.zeros(layer.shape[1])
-            if(layeridx==0):
-                for inpIdx in range(layer.shape[1]):
-                    #compute of Kactivs,Kinhibs;
-                    Kactivs = np.where(layer[:,inpIdx]>0,Kactiv0[layeridx][:,inpIdx]/cpt[layeridx][:,inpIdx],0) #This is also a matrix element wise multiplication
-                    Kinhibs = np.where(layer[:,inpIdx]<0,Kinhib0[layeridx][:,inpIdx]/cpt[layeridx][:,inpIdx],0)
-                    #compute of "weights": sum of kactivs and kinhibs
-                    w_inpIdx = np.sum(Kactivs)+np.sum(Kinhibs)
-                    x_eq = X0[inpIdx]/(1+E0*w_inpIdx/cp)
-                    # saving values
-                    layerEq[inpIdx] = x_eq
-                olderX[layeridx] = layerEq
+    def print_constant(self):
+        for idx,c in enumerate(self.cstList):
+            if(type(c)==list):
+                if len(c[0].shape)==2:
+                    print(self.cstList[idx][0][0,0],self.cstListName[idx]," dim 2")
+                elif len(c[0].shape)==1:
+                    print(self.cstList[idx][0][0],self.cstListName[idx]," dim 1")
+                else:
+                    print(self.cstList[idx][0],self.cstListName[idx]," dim 0")
             else:
-                for inpIdx in range(layer.shape[1]):
-
-                    #compute of Cactivs,Cinhibs, the denominator marks the template's variation from equilibrium
-                    #Terms for the previous layers
-                    CactivsOld = np.where(masks[layeridx-1][inpIdx,:]>0,Cactiv0[layeridx-1][inpIdx]/cpt[layeridx-1][inpIdx],0)
-                    CinhibsOld = np.where(masks[layeridx-1][inpIdx,:]<0,Cinhib0[layeridx-1][inpIdx]/cpt[layeridx-1][inpIdx],0)
-                    Inhib = np.sum(CinhibsOld*olderX[layeridx-1]/kdT[layeridx-1][inpIdx])
-                    #computing of new equilibrium
-                    x_eq = np.sum(CactivsOld*olderX[layeridx-1]/(kdI[layeridx-1][inpIdx]*cp+Inhib/cp))
-                    layerEq[inpIdx] = x_eq
-                    #compute of Kactivs,Kinhibs, for the current layer:
-                olderX[layeridx] = layerEq
-        if observed is not None:
-            try:
-                assert len(observed)==2
-            except:
-                raise Exception("please provide a tuple of size two for observed indicating the value to use.")
-            return olderX[observed[0]][observed[1]]
-        return olderX
+                print(self.cstList[idx],self.cstListName[idx]," cste")
