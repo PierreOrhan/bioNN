@@ -28,7 +28,7 @@ class chemTemplateNNModel(tf.keras.Model):
         :param nbUnits: list, for each layer its number of units
         :param sparsities: the value of sparsity in each layer
                 """
-        super(chemTemplateNNModel,self).__init__(name="")
+        super(chemTemplateNNModel,self).__init__(name="",dtype=tf.float64)
         nbLayers = len(nbUnits)
 
         if tf.test.is_gpu_available():
@@ -41,7 +41,7 @@ class chemTemplateNNModel(tf.keras.Model):
 
         self.layerList = []
         for e in range(nbLayers):
-            self.layerList += [chemTemplateLayer(Deviceidx,units=nbUnits[e],sparsity=sparsities[e],dynamic=False,usingLog=usingLog)]
+            self.layerList += [chemTemplateLayer(Deviceidx,units=nbUnits[e],sparsity=sparsities[e],dynamic=False,usingLog=usingLog,dtype=tf.float64)]
 
         self.reactionConstants = reactionConstants
         self.enzymeInitC = enzymeInitC
@@ -69,6 +69,7 @@ class chemTemplateNNModel(tf.keras.Model):
         self.built = False
         self.gathered = None
 
+
     def build(self,input_shape):
         """
             Build the model and make the following initialization steps:
@@ -94,7 +95,7 @@ class chemTemplateNNModel(tf.keras.Model):
                                         Second value for reactions constant (list of size reaction constants).
         :return:
         """
-        self.rescaleFactor = tf.Variable(0,trainable=False,dtype=tf.float32)
+        self.rescaleFactor = tf.Variable(0,trainable=False,dtype=tf.float64)
 
         # We need to Initiate variable for the call to the herited build which will compile the call and thus need it.
         # BUT at the time of this function the model is still in eager mode, and the graph activated in the non-eager mode doesn't get all informations
@@ -110,9 +111,9 @@ class chemTemplateNNModel(tf.keras.Model):
         for l in self.layerList:
             l.set_constants(self.reactionConstants,self.enzymeInitC,self.activTempInitC,self.inhibTempInitC,self.rescaleFactor)
 
-        self.meanGatheredCps = tf.Variable(0,dtype=tf.float32,trainable=False)
+        self.meanGatheredCps = tf.Variable(0,dtype=tf.float64,trainable=False)
         self.built = True
-        self.mycps = tf.Variable(tf.zeros(1),dtype=tf.float32,trainable=False)
+        self.mycps = tf.Variable(tf.zeros(1,dtype=tf.float64),trainable=False)
         super(chemTemplateNNModel,self).build(input_shape)
 
         print("model successfully built")
@@ -130,7 +131,7 @@ class chemTemplateNNModel(tf.keras.Model):
         self.rescaleFactor.assign(rescaleFactor)
 
     def greedy_set_cps(self,inputs):
-        inputs = tf.convert_to_tensor(inputs,dtype=tf.float32)
+        inputs = tf.convert_to_tensor(inputs,dtype=tf.float64)
         cps = self.obtainCp(inputs)
         tf.print(cps)
         tf.print(tf.nn.moments(cps,axes=[0]))
@@ -152,7 +153,7 @@ class chemTemplateNNModel(tf.keras.Model):
             The problem here, is that tf.map_fn creates a graph for each realisation, making us loose the initialization on the current graph...
             Thus we cannot use it here, while this has not been fixed in tensorflow!
         """
-        inputs = tf.convert_to_tensor(inputs,dtype=tf.float32)
+        inputs = tf.cast(tf.convert_to_tensor(inputs),dtype=tf.float64)
 
         if training:
             self.verifyMask()
@@ -189,17 +190,19 @@ class chemTemplateNNModel(tf.keras.Model):
 
 
     def predConcentration(self, inputs, layerObserved,nodeObserved):
-        inputs = tf.convert_to_tensor(inputs,dtype=tf.float32)
+        inputs = tf.convert_to_tensor(inputs,dtype=tf.float64)
         tf.print(inputs.shape,"inputs shape")
         tf.assert_rank(inputs,2)
+        tf.print("rescale factor for TF:",self.rescaleFactor)
         inputs = inputs/self.rescaleFactor
         gatheredCps = tf.stop_gradient(self.obtainCp(inputs))
         #self.meanGatheredCps.assign(tf.reduce_mean(gatheredCps))
         #tf.summary.scalar("mean_cp",data=tf.reduce_mean(gatheredCps),step=tf.summary.experimental.get_step())
-        tf.print(inputs,"inputs")
+        tf.print(inputs[0]," first input after rescale")
         x = self.layerList[0](inputs,cps=gatheredCps,isFirstLayer=True)
         if layerObserved==0:
-            return x[:,nodeObserved]
+            tf.print("outputs shape:",x.shape)
+            return x[:,nodeObserved],gatheredCps
         tf.print(x,"x")
         tf.print(gatheredCps,"gatheredcps")
         for idx,l in enumerate(self.layerList[1:]):
@@ -207,8 +210,7 @@ class chemTemplateNNModel(tf.keras.Model):
             tf.print(x,"x")
             tf.print(idx,"idx")
             if tf.equal(idx,layerObserved-1):
-                return x[:,nodeObserved]
-
+                return x[:,nodeObserved],gatheredCps
 
     @tf.function
     def obtainCp(self,inputs):
@@ -223,33 +225,33 @@ class chemTemplateNNModel(tf.keras.Model):
             input = tf.reshape(input,(1,tf.shape(input)[0]))
         #first we obtain the born sup:
 
-        bornsupIncremental = tf.cast(tf.fill([1],1.),dtype=tf.float32)
+        bornsupIncremental = tf.cast(tf.fill([1],1.),dtype=tf.float64)
         bornsupcpdiff = self._computeCPdiff(bornsupIncremental,input)
-        tf.print("ended initial bornsup with 1 :",bornsupIncremental," found value",bornsupcpdiff)
-        tf.print("starting while")
+        #tf.print("ended initial bornsup with 1 :",bornsupIncremental," found value",bornsupcpdiff)
+        #tf.print("starting while")
         for idx in tf.range(20): #stop after 20 iteration
             bornsupIncremental = bornsupIncremental * 10.
             bornsupcpdiff = self._computeCPdiff(bornsupIncremental,input)
             if tf.greater(bornsupcpdiff[0],0.):
-                tf.print("ended bornsup loop",idx," found value",bornsupcpdiff, "using as sup:",bornsupIncremental)
+                #tf.print("ended bornsup loop",idx," found value",bornsupcpdiff, "using as sup:",bornsupIncremental)
                 break
-            tf.print("ended bornsup loop",idx," found value",bornsupcpdiff)
+            #tf.print("ended bornsup loop",idx," found value",bornsupcpdiff)
             if tf.equal(idx,20):
                 bornsupcp0,x = self.layerList[0].layer_cp_born_sup(input)
                 layercp = tf.fill([1],1.)
                 for l in self.layerList[1:]:
                     layercp,x = l.layer_cp_born_sup(x)
                     bornsupcp0 += layercp
-                tf.print("had to use layer born sup and found",bornsupcp0)
+                #tf.print("had to use layer born sup and found",bornsupcp0)
                 bornsupIncremental = tf.reshape(bornsupcp0,bornsupIncremental.shape)
 
-        cpmin = tf.fill([1],1.)
+        cpmin = tf.cast(tf.fill([1],1.),dtype=tf.float64)
         cp = self.brentq(self._computeCPdiff,cpmin,bornsupIncremental,input)
         return cp
 
     @tf.function
     def _computeCPdiff(self,cp,input):
-        new_cp = tf.fill([1],1.)
+        new_cp = tf.cast(tf.fill([1],1.),dtype =tf.float64)
         layercp,x = self.layerList[0].layer_cp_equilibrium(cp,input,isFirstLayer=True)
         new_cp += layercp
         for l in self.layerList[1:]:
@@ -287,8 +289,8 @@ class chemTemplateNNModel(tf.keras.Model):
         :param X0:
         :return:
         """
-        cpArray=tf.cast(tf.convert_to_tensor(cpArray),dtype=tf.float32)
-        X0 = tf.cast(tf.convert_to_tensor(X0),dtype=tf.float32)
+        cpArray=tf.cast(tf.convert_to_tensor(cpArray),dtype=tf.float64)
+        X0 = tf.cast(tf.convert_to_tensor(X0),dtype=tf.float64)
         func = self.lamda_computeCPdiff(X0)
         gatheredCps = tf.map_fn(func,cpArray,parallel_iterations=32,back_prop=False)
         return gatheredCps
@@ -303,7 +305,7 @@ class chemTemplateNNModel(tf.keras.Model):
 
     def updateArchitecture(self,masks,reactionsConstants,enzymeInitC,activTempInitC,inhibTempInitC):
         for idx,m in enumerate(masks):
-            self.layerList[idx].set_mask(tf.convert_to_tensor(m,dtype=tf.float32))
+            self.layerList[idx].set_mask(tf.convert_to_tensor(m,dtype=tf.float64))
 
         self.reactionConstants = reactionsConstants
         self.enzymeInitC = enzymeInitC
@@ -320,26 +322,23 @@ class chemTemplateNNModel(tf.keras.Model):
         return cp
 
     @tf.function
-    def brentq(self, f, xa, xb,args=(),xtol=tf.constant(10**(-12)), rtol=tf.constant(4.4408920985006262*10**(-16)),iter=tf.constant(100)):
-        xpre = tf.fill([1],0.) + xa
-        xcur = tf.fill([1],0.) + xb
-        xblk = tf.fill([1],0.)
-        fblk = tf.fill([1],0.)
-        spre = tf.fill([1],0.)
-        scur = tf.fill([1],0.)
+    def brentq(self, f, xa, xb,args=(),xtol=tf.constant(10**(-12),dtype=tf.float64), rtol=tf.constant(4.4408920985006262*10**(-16),dtype=tf.float64),iter=tf.constant(100)):
+        xpre = tf.cast(tf.fill([1],0.),dtype=tf.float64) + xa
+        xcur = tf.cast(tf.fill([1],0.),dtype=tf.float64)+ xb
+        xblk = tf.cast(tf.fill([1],0.),dtype=tf.float64)
+        fblk = tf.cast(tf.fill([1],0.),dtype=tf.float64)
+        spre = tf.cast(tf.fill([1],0.),dtype=tf.float64)
+        scur = tf.cast(tf.fill([1],0.),dtype=tf.float64)
         fpre = f(xpre, args)
         fcur = f(xcur, args)
-
-        tf.print(fpre,"fpre",xpre ,"xpre")
-        tf.print(fcur,"fcur",xcur,"xcur")
 
         if tf.equal(fpre[0],0):
             return xpre
         if tf.equal(fcur[0],0):
             return xcur
         else:
-            tf.assert_less((fpre*fcur)[0],0.,message="seems like fpre*fcur have same sign",summarize=1)
-            tf.assert_greater(fcur,0.)
+            tf.assert_less((fpre*fcur)[0],tf.cast(0,dtype=tf.float64),message="seems like fpre*fcur have same sign",summarize=1)
+            tf.assert_greater(fcur,tf.cast(0,dtype=tf.float64))
 
         for i in tf.range(iter):
             if tf.less((fpre*fcur)[0],0):

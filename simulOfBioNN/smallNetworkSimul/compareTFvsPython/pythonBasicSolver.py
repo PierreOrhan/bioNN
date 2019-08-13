@@ -128,9 +128,7 @@ class pythonSolver():
                 olderX[layeridx] = layerEq
 
             else:
-                e=0
                 for inpIdx in range(layer.shape[1]):
-
                     #compute of Cactivs,Cinhibs, the denominator marks the template's variation from equilibrium
                     #Terms for the previous layers
                     CactivsOld = np.where(masks[layeridx-1][inpIdx,:]>0,Cactiv0[layeridx-1][inpIdx]/(1+self.k1M[layeridx-1][inpIdx]*olderX[layeridx-1]*self.E0/cp),0)
@@ -155,12 +153,10 @@ class pythonSolver():
                         Inhib2 = np.sum(CinhibsOld*olderX[layeridx-1]/(kdT[layeridx-1][inpIdx]*k6[layeridx-1][inpIdx]))
                         new_cp += Inhib2/(E0*cp)*x_eq
                     new_cp += firstComplex
-                    e+=firstComplex
 
                 olderX[layeridx] = layerEq
 
         #Finally we must add the effect of pseudoTemplate enzymatic complex in the last layer
-        e=0
         for outputsIdx in range(masks[-1].shape[0]):
             Cactivs = np.where(masks[-1][outputsIdx,:]>0,Cactiv0[-1][outputsIdx]/(1+self.k1M[-1][outputsIdx]*olderX[-1]*self.E0/cp),0)
             Cinhibs = np.where(masks[-1][outputsIdx,:]<0,Cinhib0[-1][outputsIdx]/(1+self.k3M[-1][outputsIdx]*olderX[-1]*self.E0/cp),0)
@@ -169,7 +165,7 @@ class pythonSolver():
             x_eq = np.sum(Cactivs*olderX[-1]/(kdI[-1][outputsIdx]*cp+Inhib/cp))
             Inhib2 = np.sum(Cinhibs*olderX[-1]/(kdT[-1][outputsIdx]*k6[-1][outputsIdx]))
             new_cp += Inhib2/(E0*cp)*x_eq
-            e+=Inhib2/(E0*cp)*x_eq
+
 
         return cp - new_cp
     def _allEquilibriumFunc(self,cps,k6,kdT,kdI,Kactiv0,Kinhib0,Cactiv0,Cinhib0,E0,X0,masks,k1M,k3M):
@@ -272,7 +268,7 @@ class pythonSolver():
             return 1
 
         computedCp,r = brentq(self.cpEquilibriumFunc,1,cp0max,args=(X0),full_output=True)
-        print("Ended brentq methods in "+str(time.time()-t0)+" with "+str(r.iterations)+" steps")
+        #print("Ended brentq methods in "+str(time.time()-t0)+" with "+str(r.iterations)+" steps")
         return computedCp
     def computeCP(self,X0,initValue=None):
         """
@@ -296,9 +292,9 @@ class pythonSolver():
         return computedCp["x"]
 
 
-    def computeEquilibriumValue(self,cp,X0,observed=None):
-        return self._computeEquilibriumValue(cp,self.kdT,self.kdI,self.Cactiv0,self.Cinhib0,self.E0,X0,self.masks,observed=observed)
-    def _computeEquilibriumValue(self,cp,kdT,kdI,Cactiv0,Cinhib0,E0,X0,masks,observed=None):
+    def computeEquilibriumValue(self,cp,X0,observed=None,verbose=False):
+        return self._computeEquilibriumValue(cp,self.kdT,self.kdI,self.Cactiv0,self.Cinhib0,self.E0,X0,self.masks,observed=observed,verbose=verbose)
+    def _computeEquilibriumValue(self,cp,kdT,kdI,Cactiv0,Cinhib0,E0,X0,masks,observed=None,verbose=False):
         """
             Given cp, compute the equilibrium values for all nodes in solutions.
         :param cps: Value for the competitions over enzyme and template obtained by fixed point strategy.
@@ -310,16 +306,23 @@ class pythonSolver():
         for layeridx,layer in enumerate(masks):
             layerEq = np.zeros(layer.shape[1])
             if(layeridx==0):
+                if verbose:
+                    print(" input to python:",X0," with cp: ",cp)
                 for inpIdx in range(layer.shape[1]):
                     # The first layer is a one to one non-linearity leading to an equation of the second order:
                     if self.k1M[layeridx][inpIdx,inpIdx]*E0*self.TA0[layeridx][inpIdx,inpIdx]/cp == 0:
                         x_eq = X0[inpIdx]
                     else:
                         bOnA = X0[inpIdx]-self.TA0[layeridx][inpIdx,inpIdx]- cp/(self.k1M[layeridx][inpIdx,inpIdx]*self.E0)
+                        if verbose:
+                            print("bOnA python",bOnA)
+                            print("second part",4*cp*X0[inpIdx]/(self.k1M[layeridx][inpIdx,inpIdx]*self.E0))
                         x_eq = 1/2*(bOnA  + (bOnA**2+4*cp*X0[inpIdx]/(self.k1M[layeridx][inpIdx,inpIdx]*self.E0))**0.5)
                     # saving values
                     layerEq[inpIdx] = x_eq
                 olderX[layeridx] = layerEq
+                if verbose:
+                    print("python first layer:",layerEq)
             else:
                 for inpIdx in range(layer.shape[1]):
 
@@ -330,6 +333,8 @@ class pythonSolver():
                     Inhib = np.sum(CinhibsOld*olderX[layeridx-1]/kdT[layeridx-1][inpIdx])
                     #computing of new equilibrium
                     x_eq = np.sum(CactivsOld*olderX[layeridx-1]/(kdI[layeridx-1][inpIdx]*cp+Inhib/cp))
+                    if verbose:
+                        print("numerateur: ",np.sum(CactivsOld*olderX[layeridx-1]), " denominateur: ",np.sum(kdI[layeridx-1][inpIdx]*cp+Inhib/cp))
                     layerEq[inpIdx] = x_eq
                     #compute of Kactivs,Kinhibs, for the current layer:
                 olderX[layeridx] = layerEq

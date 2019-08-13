@@ -50,7 +50,7 @@ def sparse_random_uniform(newshape,shape,indices,minval=0,maxval=None,dtype=dtyp
     '''
     with ops.name_scope(name, "sparse_random_uniform", [newshape,shape, minval, maxval,indices]) as name:
         init = random_ops.random_uniform(newshape,minval,maxval, dtype, seed=seed,name=name)
-        params = tf.concat([tf.zeros((shape[0],1)),init],axis=1)
+        params = tf.concat([tf.zeros((shape[0],1),dtype=dtype),init],axis=1)
         finalInit = []
         for e in range(shape[0]):
             finalInit += [tf.gather(params[e],indices=indices[e])]

@@ -19,15 +19,10 @@ from simulOfBioNN.simulNN.simulator import executeODESimulation
 from simulOfBioNN.odeUtils.systemEquation import fPythonSparse
 from simulOfBioNN.smallNetworkSimul.compareTFvsPython.pythonBasicSolver import pythonSolver
 from simulOfBioNN.smallNetworkSimul.compareTFvsPython.tfVSPython import compareCpRootFunction
-
-
-from scipy.optimize import minimize,root,brentq
-import sys
-import time
-import pandas
-
-
-
+import tensorflow as tf
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# for gpu in gpus:
+#     tf.config.experimental.set_memory_growth(gpu,True)
 
 def sample_bimodal_distrib(nbrInputs,peak1=-4,peak2=-8,sigma1=1.,sigma2=1.,mixture = 0.5):
     """
@@ -134,6 +129,8 @@ def _generate_initialConcentration_firstlayer(activatorsOnObserved,inhibitorsOnO
 
 if __name__ == '__main__':
 
+
+
     name = "compare100"
     endTime = 10000
     timeStep = 0.1
@@ -173,7 +170,7 @@ if __name__ == '__main__':
     masks = [np.identity(nbrInputs[0])] + masks
     print(masks)
     print("Observed nodes has "+str(len(activatorsOnObserved))+" activators and "+str(len(inhibitorsOnObserved))+" inhibitors")
-    print(masks[0][nodeObserved])
+    print(masks[1][nodeObserved])
 
     modes = ["verbose","outputEqui"]
     FULL = True
@@ -254,9 +251,9 @@ if __name__ == '__main__':
         constantList = [0.9999999999999998,0.1764705882352941,1.0,0.9999999999999998,
                         0.1764705882352941,1.0,0.9999999999999998,0.1764705882352941,1.0,0.018823529411764708]
         constantList+=[constantList[-1]]
+        constantList = np.array(constantList,dtype=np.float64)
 
         if doODEvsTF or doTFvsPython:
-            import tensorflow as tf
             from simulOfBioNN.nnUtils.chemTemplateNN import chemTemplateNNModel
             model = chemTemplateNNModel.chemTemplateNNModel(nbUnits=nbUnits,sparsities=sparsities,reactionConstants= constantList,
                                                             enzymeInitC=E0, activTempInitC=TA, inhibTempInitC=TI, randomConstantParameter=None, usingLog=False)
@@ -269,12 +266,13 @@ if __name__ == '__main__':
 
         X1 = X1/C0
         X2 = X2/C0
-        x_test = np.array(x_test,dtype=np.float32)/C0
+        x_test = np.array(x_test,dtype=np.float64)/C0
 
         print("=================FINISHED ODE SIMULATION========================")
         if doODEvsTF or doTFvsPython:
-            outputTF = np.array(model.predConcentration(x_test,layerObserved=0,nodeObserved=nodeObserved))
-            outputTF = np.reshape(outputTF,(len(X1),len(X2)))
+            outputTF,outputCP = np.array(model.predConcentration(x_test,layerObserved=0,nodeObserved=nodeObserved))
+            outputTF = np.reshape(np.array(outputTF),(len(X1),len(X2)))
+            outputCP=np.reshape(outputCP,(len(X1),len(X2)))
             print(outputTF)
 
         courbs=[0,int(outputTF.shape[1]/2),outputTF.shape[1]-1,int(outputTF.shape[1]/3),int(2*outputTF.shape[1]/3)]
@@ -290,14 +288,21 @@ if __name__ == '__main__':
         print("=================FINISHED TF SIMULATION========================")
 
         if doODEvsPython or doTFvsPython:
+            print("Rescale factor for python:",rescaleFactor)
+            pythonx_test = np.reshape(x_test,(len(X1),len(X2),x_test.shape[-1]))
             outputPython = np.zeros((len(X1),len(X2)))
             pythonModel = pythonSolver(masks,k1,k1n,k2,k3,k3n,k4,k5,k5n,k6,kd,kd,TA,TI,E0*(rescaleFactor**0.5))
             for idx1,x1 in enumerate(X1):
                 for idx2,x2 in enumerate(X2):
-                    cp = pythonModel.computeCPonly(x_test[idx1*len(X1)+idx2]/rescaleFactor)
-                    outputPython[idx1,idx2]=pythonModel.computeEquilibriumValue(cp,x_test[idx1*len(X1)+idx2]/rescaleFactor,observed=(2,nodeObserved))
+                    #cp = pythonModel.computeCPonly(pythonx_test[idx1,idx2]/rescaleFactor)
+                    cp = outputCP[idx1,idx2]
+                    if idx1==len(X1)-1 and idx2==len(X2)-1:
+                        outputPython[idx1,idx2]=pythonModel.computeEquilibriumValue(cp,pythonx_test[idx1,idx2]/rescaleFactor,observed=(2,nodeObserved),verbose=True)
+                    else:
+                        outputPython[idx1,idx2]=pythonModel.computeEquilibriumValue(cp,pythonx_test[idx1,idx2]/rescaleFactor,observed=(2,nodeObserved))
 
         print("=================FINISHED raw PYTHON SIMULATION========================")
+
         if doODEvsPython:
             fitComparePlot(X1, X2, output, outputPython, courbs,
                            figname=os.path.join(experiment_path, "PythonVSOdeX1.png"),
@@ -306,6 +311,8 @@ if __name__ == '__main__':
                            figname=os.path.join(experiment_path, "PythonVSOdelogX1.png"),
                            figname2=os.path.join(experiment_path, "PythonVSOdelogX2.png"), useLogX=True)
         if doTFvsPython:
+            print(outputTF)
+            print(outputPython)
             fitComparePlot(X1, X2, outputTF, outputPython, courbs,
                            figname=os.path.join(experiment_path, "TFVSPythonX1.png"),
                            figname2=os.path.join(experiment_path, "TFVSPythonX2.png"), useLogX=False)

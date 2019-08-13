@@ -2,7 +2,7 @@
     Utilitarian for data management
 """
 
-from umap import UMAP
+#from umap import UMAP
 import numpy as np
 import skimage.transform as skt
 from skimage.util import random_noise

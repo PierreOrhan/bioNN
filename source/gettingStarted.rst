@@ -21,6 +21,7 @@ Installation
     For installation, please clone the github directory, after creating a virtual environment (we suggest a conda one) and having activated it
     one can run the following instruction to obtain all necessary files.
     Please note that you need to have a proper cuda installation linked with tensorflow to use this API.
+    If you have any trouble concerning the installation, I recommend using conda. It might not find all package in casual channel so you will need to find these channel by yourself. For example for mkl, I used conda install -c intel mkl-fft, which use the intel channel
 
 .. code-block:: [python]
 

@@ -30,7 +30,7 @@ class chemTemplateLayer(Dense):
         """
         super(chemTemplateLayer, self).__init__(**kwargs)
         self.supports_masking = False
-        self.sparseInitializer = sparseInitializer(sparsity, minval=min, maxval=max)
+        self.sparseInitializer = sparseInitializer(sparsity, minval=min, maxval=max,dtype=tf.float64)
         self.deviceName=deviceName #the device on which the main operations will be conducted (forward and backward propagations)
 
         self.usingLog = usingLog
@@ -57,66 +57,63 @@ class chemTemplateLayer(Dense):
 
 
         variableShape=(input_shape[-1],self.units)
-        self.mask = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
+        self.mask = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
 
-        self.k1 = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.k1n = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.k2 = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.k3 = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.k3n = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.k4 = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.TA0 = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.TI0 = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
+        self.k1 = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
+        self.k1n = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
+        self.k2 = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
+        self.k3 = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
+        self.k3n = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
+        self.k4 = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
+        self.TA0 = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
+        self.TI0 = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
 
         #only one inhibition by outputs (units):
-        self.k5 = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float32),trainable=False)
-        self.k5n = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float32),trainable=False)
-        self.k6 = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float32),trainable=False)
-        self.kdI = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float32),trainable=False)
-        self.kdT = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float32),trainable=False)
+        self.k5 = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float64),trainable=False)
+        self.k5n = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float64),trainable=False)
+        self.k6 = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float64),trainable=False)
+        self.kdI = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float64),trainable=False)
+        self.kdT = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float64),trainable=False)
 
 
-        self.E0 = tf.Variable(tf.constant(1,dtype=tf.float32),trainable=False,dtype=tf.float32)
-        self.rescaleFactor = tf.Variable(1,dtype=tf.float32,trainable=False)
+        self.E0 = tf.Variable(tf.constant(1,dtype=tf.float64),trainable=False,dtype=tf.float64)
+        self.rescaleFactor = tf.Variable(1,dtype=tf.float64,trainable=False)
 
         #other intermediates variable:
-        self.k1M = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.Cactiv = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.k3M = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.Cinhib = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.Kactiv = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
-        self.Kinhib = tf.Variable(tf.zeros(variableShape,dtype=tf.float32),trainable=False)
+        self.k1M = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
+        self.Cactiv = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
+        self.k3M = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
+        self.Cinhib = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
+        self.Kactiv = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
+        self.Kinhib = tf.Variable(tf.zeros(variableShape,dtype=tf.float64),trainable=False)
 
-        self.k5M = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float32),trainable=False)
-        self.firstLayerTA0 = tf.Variable(tf.zeros(variableShape[0],dtype=tf.float32),trainable=False)
-        self.firstLayerK1M = tf.Variable(tf.zeros(variableShape[0],dtype=tf.float32),trainable=False)
-        self.firstLayerkdT = tf.Variable(tf.zeros(variableShape[0],dtype=tf.float32),trainable=False)
-        self.firstLayerk2 = tf.Variable(tf.zeros(variableShape[0],dtype=tf.float32),trainable=False)
+        self.k5M = tf.Variable(tf.zeros(variableShape[-1],dtype=tf.float64),trainable=False)
+        self.firstLayerTA0 = tf.Variable(tf.zeros(variableShape[0],dtype=tf.float64),trainable=False)
+        self.firstLayerK1M = tf.Variable(tf.zeros(variableShape[0],dtype=tf.float64),trainable=False)
+        self.firstLayerkdT = tf.Variable(tf.zeros(variableShape[0],dtype=tf.float64),trainable=False)
+        self.firstLayerk2 = tf.Variable(tf.zeros(variableShape[0],dtype=tf.float64),trainable=False)
 
 
         self.built = True
         print("Layer successfully built")
 
-
     def get_rescaleFactor(self):
-        Tminus = tf.cast(tf.fill(self.kernel.shape,-1),dtype=tf.float32)
-        Tplus = tf.cast(tf.fill(self.kernel.shape,1),dtype=tf.float32)
-        Tzero = tf.cast(tf.fill(self.kernel.shape,0),dtype=tf.float32)
+        Tminus = tf.cast(tf.fill(self.kernel.shape,-1),dtype=tf.float64)
+        Tplus = tf.cast(tf.fill(self.kernel.shape,1),dtype=tf.float64)
+        Tzero = tf.cast(tf.fill(self.kernel.shape,0),dtype=tf.float64)
         clippedKernel=tf.where(tf.less(self.kernel,-0.2),Tminus,tf.where(tf.less(0.2,self.kernel),Tplus,Tzero))
         rescaleFactor = tf.keras.backend.sum(tf.where(tf.less(clippedKernel,0.),Tplus,Tzero)) + tf.keras.backend.sum(tf.where(tf.less(0.,clippedKernel),Tplus,Tzero))
         return rescaleFactor
-
     def get_mask(self):
-        Tminus = tf.cast(tf.fill(self.kernel.shape,-1),dtype=tf.float32)
-        Tplus = tf.cast(tf.fill(self.kernel.shape,1),dtype=tf.float32)
-        Tzero = tf.cast(tf.fill(self.kernel.shape,0),dtype=tf.float32)
+        Tminus = tf.cast(tf.fill(self.kernel.shape,-1),dtype=tf.float64)
+        Tplus = tf.cast(tf.fill(self.kernel.shape,1),dtype=tf.float64)
+        Tzero = tf.cast(tf.fill(self.kernel.shape,0),dtype=tf.float64)
         clippedKernel=tf.where(tf.less(self.kernel,-0.2),Tminus,tf.where(tf.less(0.2,self.kernel),Tplus,Tzero))
         return clippedKernel
-
     def set_mask(self,mask):
-        Tminus = tf.cast(tf.fill(self.kernel.shape,-1),dtype=tf.float32)
-        Tplus = tf.cast(tf.fill(self.kernel.shape,1),dtype=tf.float32)
-        Tzero = tf.cast(tf.fill(self.kernel.shape,0),dtype=tf.float32)
+        Tminus = tf.cast(tf.fill(self.kernel.shape,-1),dtype=tf.float64)
+        Tplus = tf.cast(tf.fill(self.kernel.shape,1),dtype=tf.float64)
+        Tzero = tf.cast(tf.fill(self.kernel.shape,0),dtype=tf.float64)
 
         clippedKernel=tf.where(tf.less(self.kernel,-0.2),Tminus,tf.where(tf.less(0.2,self.kernel),Tplus,Tzero))
         newClippedKernel = tf.where(mask*clippedKernel>0.,clippedKernel,
@@ -140,8 +137,7 @@ class chemTemplateLayer(Dense):
                                          ))
 
         self.kernel.assign(newKernel)
-        self.mask.assign(tf.where(tf.less(self.kernel,-0.2),-1.,tf.where(tf.less(0.2,self.kernel),1.,0.)))
-
+        self.mask.assign(tf.cast(tf.where(tf.less(self.kernel,-0.2),-1.,tf.where(tf.less(0.2,self.kernel),1.,0.)),dtype=tf.float64))
 
     def set_constants(self,constantArray,enzymeInit,activInitC,inhibInitC,computedRescaleFactor):
         """
@@ -150,26 +146,26 @@ class chemTemplateLayer(Dense):
         """
         self.rescaleFactor.assign(computedRescaleFactor)
         enzymeInitTensor = enzymeInit*(computedRescaleFactor**0.5)
-        self.k1.assign(tf.fill(self.k1.shape,constantArray[0]))
-        self.k1n.assign(tf.fill(self.k1n.shape,constantArray[1]))
-        self.k2.assign(tf.fill(self.k2.shape,constantArray[2]))
-        self.k3.assign(tf.fill(self.k3.shape,constantArray[3]))
-        self.k3n.assign(tf.fill(self.k3n.shape,constantArray[4]))
-        self.k4.assign(tf.fill(self.k4.shape,constantArray[5]))
-        self.k5.assign(tf.fill(self.k5.shape,constantArray[6]))
-        self.k5n.assign(tf.fill(self.k5n.shape,constantArray[7]))
-        self.k6.assign(tf.fill(self.k6.shape,constantArray[8]))
-        self.kdI.assign(tf.fill(self.kdI.shape,constantArray[9]))
-        self.kdT.assign(tf.fill(self.kdT.shape,constantArray[10]))
-        self.TA0.assign(tf.fill(self.TA0.shape,activInitC))
-        self.TI0.assign(tf.fill(self.TI0.shape,inhibInitC))
-        self.E0.assign(tf.constant(enzymeInitTensor,dtype=tf.float32))
+        self.k1.assign(tf.cast(tf.fill(self.k1.shape,constantArray[0]),dtype=tf.float64))
+        self.k1n.assign(tf.cast(tf.fill(self.k1n.shape,constantArray[1]),dtype=tf.float64))
+        self.k2.assign(tf.cast(tf.fill(self.k2.shape,constantArray[2]),dtype=tf.float64))
+        self.k3.assign(tf.cast(tf.fill(self.k3.shape,constantArray[3]),dtype=tf.float64))
+        self.k3n.assign(tf.cast(tf.fill(self.k3n.shape,constantArray[4]),dtype=tf.float64))
+        self.k4.assign(tf.cast(tf.fill(self.k4.shape,constantArray[5]),dtype=tf.float64))
+        self.k5.assign(tf.cast(tf.fill(self.k5.shape,constantArray[6]),dtype=tf.float64))
+        self.k5n.assign(tf.cast(tf.fill(self.k5n.shape,constantArray[7]),dtype=tf.float64))
+        self.k6.assign(tf.cast(tf.fill(self.k6.shape,constantArray[8]),dtype=tf.float64))
+        self.kdI.assign(tf.cast(tf.fill(self.kdI.shape,constantArray[9]),dtype=tf.float64))
+        self.kdT.assign(tf.cast(tf.fill(self.kdT.shape,constantArray[10]),dtype=tf.float64))
+        self.TA0.assign(tf.cast(tf.fill(self.TA0.shape,activInitC),dtype=tf.float64))
+        self.TI0.assign(tf.cast(tf.fill(self.TI0.shape,inhibInitC),dtype=tf.float64))
+        self.E0.assign(tf.constant(enzymeInitTensor,dtype=tf.float64))
 
         #used in the first layer:
-        self.firstLayerTA0.assign(tf.fill(self.firstLayerTA0.shape,activInitC))
-        self.firstLayerK1M.assign(tf.fill(self.firstLayerK1M.shape,constantArray[0]/(constantArray[1]+constantArray[2])))
-        self.firstLayerkdT.assign(tf.fill(self.firstLayerkdT.shape,constantArray[10]))
-        self.firstLayerk2.assign(tf.fill(self.firstLayerk2.shape,constantArray[2]))
+        self.firstLayerTA0.assign(tf.cast(tf.fill(self.firstLayerTA0.shape,activInitC),dtype=tf.float64))
+        self.firstLayerK1M.assign(tf.cast(tf.fill(self.firstLayerK1M.shape,constantArray[0]/(constantArray[1]+constantArray[2])),dtype=tf.float64))
+        self.firstLayerkdT.assign(tf.cast(tf.fill(self.firstLayerkdT.shape,constantArray[10]),dtype=tf.float64))
+        self.firstLayerk2.assign(tf.cast(tf.fill(self.firstLayerk2.shape,constantArray[2]),dtype=tf.float64))
 
         #intermediate values for faster computations:
         self.k1M.assign(self.k1/(self.k1n+self.k2))
@@ -180,7 +176,7 @@ class chemTemplateLayer(Dense):
         self.Kactiv.assign(self.k1M*self.TA0)
         self.Kinhib.assign(self.k3M*self.TI0)
 
-        self.mask.assign(tf.where(tf.less(self.kernel,-0.2),-1.,tf.where(tf.less(0.2,self.kernel),1.,0.)))
+        self.mask.assign(tf.cast(tf.where(tf.less(self.kernel,-0.2),-1.,tf.where(tf.less(0.2,self.kernel),1.,0.)),dtype=tf.float64))
 
         self.cstList = [self.k1,self.k1n,self.k2,self.k3,self.k3n,self.k4,self.k5,self.k5n,self.k6,self.kdI,self.kdT,self.TA0,self.E0,
                         self.k1M,self.Cactiv,self.Cinhib,self.Kactiv,self.Kinhib,self.k5M,self.k3M,self.firstLayerTA0,self.firstLayerK1M,
@@ -204,8 +200,14 @@ class chemTemplateLayer(Dense):
     def call(self, inputs, cps = None, isFirstLayer=False):
 
         if isFirstLayer:
+            tf.print("computed cp for the last input",cps[-1])
             bOnA = inputs - self.firstLayerTA0 - cps / (self.firstLayerK1M * self.E0)
-            olderInput = tf.where(tf.equal(self.firstLayerK1M * self.E0 * self.firstLayerTA0 / cps, 0), inputs, 1 / 2 * (bOnA + (bOnA ** 2 + 4 * inputs * cps / (self.firstLayerK1M * self.E0))))
+            tf.print("computed bOna for the last input",bOnA[-1])
+            tf.print("second parts", (4*inputs * cps/ (self.firstLayerK1M * self.E0))[-1])
+            tf.assert_rank(self.firstLayerK1M * self.E0 * self.firstLayerTA0 / cps,tf.rank(inputs))
+            olderInput = tf.where(tf.equal(self.firstLayerK1M * self.E0 * self.firstLayerTA0 / cps, 0),
+                                  inputs, 0.5 * (bOnA + (tf.pow(bOnA,2) + 4 * inputs * cps / (self.firstLayerK1M * self.E0 ))**0.5))
+            tf.print("solution for the last inputs of first layer: ",olderInput[-1])
         else:
             olderInput = inputs
 
@@ -217,15 +219,6 @@ class chemTemplateLayer(Dense):
         olderInputExpand=tf.expand_dims(olderInput,-1)
         tf.assert_rank(olderInputExpand,3)
         olderInputMidExpand = tf.expand_dims(olderInput,1)
-
-        #clipped version
-        # Cactivs= tf.where(self.mask>0,self.Cactiv,0)
-        # Cinhibs = tf.where(self.mask<0,self.Cinhib,0)
-        # Inhib = tf.divide(tf.matmul(olderInput,Cinhibs),self.kdT)
-        # if self.usingLog:
-        #     x_eq_clipped = tf.math.log(tf.matmul(olderInput,Cactivs))-tf.math.log(self.kdI*cp+Inhib/cp)
-        # else:
-        #     x_eq_clipped = tf.matmul(olderInput,Cactivs)/(self.kdI*cp+Inhib/cp)
 
         Cactivs= tf.where(self.mask > 0, self.Cactiv / (1 + self.k1M * self.E0 * olderInputExpand / cpsExpand), 0)
         Cinhibs = tf.where(self.mask < 0, self.Cinhib / (1 + self.k3M * self.E0 * olderInputExpand / cpsExpand), 0)
@@ -243,14 +236,10 @@ class chemTemplateLayer(Dense):
         # THUS WE NEED: [None,1,inputdims] to use the matmul, and then squeeze the result!
         Inhib_unclipped = tf.squeeze(tf.matmul(olderInputMidExpand,Cinhibs_unclipped),axis=1)/self.kdT
         x_eq_unclipped = tf.squeeze(tf.matmul(olderInputMidExpand,Cactivs_unclipped),axis=1)/(self.kdI * cps + Inhib_unclipped / cps)
-        # if self.usingLog:
-        #     x_eq_unclipped = tf.math.log(tf.matmul(olderInput,Cactivs_unclipped))-tf.math.log(self.kdI*cp+Inhib_unclipped/cp)
-        # else:
-        #     x_eq_unclipped = tf.matmul(olderInput_unclipped,Cactivs_unclipped)/(self.kdI*cp+Inhib_unclipped/cp)
         tf.assert_rank(tf.squeeze(tf.matmul(olderInputMidExpand,Cinhibs_unclipped),axis=1),2,message="compute not good dims")
-        outputs =  tf.stop_gradient(x_eq_clipped - x_eq_unclipped) + x_eq_unclipped
+
+        outputs =  tf.stop_gradient(x_eq_clipped)# - x_eq_unclipped) + x_eq_unclipped
         tf.assert_rank(outputs,2,message="outputs not good dims")
-        #outputs = chemTemplateClippedMatMul(self.deviceName, inputs, self.kernel, cp, self.Cactiv, self.Cinhib, self.kdI,self.kdT)
         return outputs
 
     def get_config(self):
@@ -299,11 +288,11 @@ class chemTemplateLayer(Dense):
                 olderInput = tf.where(tf.equal(EandTemplate,0),input,1/2*(bOnA + (bOnA**2+4*input*cp/(self.firstLayerK1M*self.E0))**0.5))
 
                 tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(olderInput),1,0)),0,message=" olderInput has nan")
-                tf.debugging.assert_greater_equal(olderInput,0.,message="older input has negative element")
+                tf.debugging.assert_greater_equal(olderInput,tf.cast(0.,dtype=tf.float64),message="older input has negative element")
 
                 cp_with_Input = tf.where(tf.math.is_inf(olderInput),cp*self.firstLayerTA0/self.E0,self.firstLayerK1M*olderInput*self.firstLayerTA0/(1+self.firstLayerK1M*self.E0*olderInput/cp))
                 tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_inf(cp_with_Input),1,0)),0,message=" cp_with_Input has inf")
-                layer_cp += tf.keras.backend.sum(tf.where(tf.equal(EandTemplate,0),0.,cp_with_Input)) #first layer non-linearity!
+                layer_cp += tf.keras.backend.sum(tf.where(tf.equal(EandTemplate,0),tf.cast(0.,dtype=tf.float64),cp_with_Input)) #first layer non-linearity!
 
                 layer1input =self.firstLayerk2*self.firstLayerK1M/self.firstLayerkdT*self.firstLayerTA0*self.E0/cp*olderInput/(1+self.firstLayerK1M*self.E0/cp*olderInput)
 
