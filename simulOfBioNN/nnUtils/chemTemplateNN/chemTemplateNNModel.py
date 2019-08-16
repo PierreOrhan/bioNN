@@ -236,14 +236,15 @@ class chemTemplateNNModel(tf.keras.Model):
                 #tf.print("ended bornsup loop",idx," found value",bornsupcpdiff, "using as sup:",bornsupIncremental)
                 break
             #tf.print("ended bornsup loop",idx," found value",bornsupcpdiff)
-            if tf.equal(idx,20):
-                bornsupcp0,x = self.layerList[0].layer_cp_born_sup(input)
-                layercp = tf.fill([1],1.)
-                for l in self.layerList[1:]:
-                    layercp,x = l.layer_cp_born_sup(x)
-                    bornsupcp0 += layercp
-                #tf.print("had to use layer born sup and found",bornsupcp0)
-                bornsupIncremental = tf.reshape(bornsupcp0,bornsupIncremental.shape)
+            # if tf.equal(idx,20):
+            #
+                # bornsupcp0,x = self.layerList[0].layer_cp_born_sup(input)
+                # layercp = tf.fill([1],1.)
+                # for l in self.layerList[1:]:
+                #     layercp,x = l.layer_cp_born_sup(x)
+                #     bornsupcp0 += layercp
+                # #tf.print("had to use layer born sup and found",bornsupcp0)
+                # bornsupIncremental = tf.reshape(bornsupcp0,bornsupIncremental.shape)
 
         cpmin = tf.cast(tf.fill([1],1.),dtype=tf.float64)
         cp = self.brentq(self._computeCPdiff,cpmin,bornsupIncremental,input)

@@ -208,6 +208,7 @@ class chemTemplateLayer(Dense):
             olderInput = tf.where(tf.equal(self.firstLayerK1M * self.E0 * self.firstLayerTA0 / cps, 0),
                                   inputs, 0.5 * (bOnA + (tf.pow(bOnA,2) + 4 * inputs * cps / (self.firstLayerK1M * self.E0 ))**0.5))
             tf.print("solution for the last inputs of first layer: ",olderInput[-1])
+            olderInput =self.firstLayerk2*self.firstLayerK1M/self.firstLayerkdT*self.firstLayerTA0*self.E0/cps*olderInput/(1+self.firstLayerK1M*self.E0/cps*olderInput)
         else:
             olderInput = inputs
 
@@ -238,14 +239,11 @@ class chemTemplateLayer(Dense):
         x_eq_unclipped = tf.squeeze(tf.matmul(olderInputMidExpand,Cactivs_unclipped),axis=1)/(self.kdI * cps + Inhib_unclipped / cps)
         tf.assert_rank(tf.squeeze(tf.matmul(olderInputMidExpand,Cinhibs_unclipped),axis=1),2,message="compute not good dims")
 
-        outputs =  tf.stop_gradient(x_eq_clipped)# - x_eq_unclipped) + x_eq_unclipped
+        tf.print("solution from an unknown layer:",x_eq_clipped[-1])
+
+        outputs =  tf.stop_gradient(x_eq_clipped - x_eq_unclipped) + x_eq_unclipped
         tf.assert_rank(outputs,2,message="outputs not good dims")
         return outputs
-
-    def get_config(self):
-        config = {'E0':float(self.E0.read_value())} #'cp for last batch': float(self.cp.read_value()),
-        base_config = super(chemTemplateLayer, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
 
     @tf.function
     def layer_cp_born_sup(self,olderInput):
@@ -273,6 +271,7 @@ class chemTemplateLayer(Dense):
 
     @tf.function
     def layer_cp_equilibrium(self,cp,input,isFirstLayer=False):
+        input = tf.cast(input,dtype=tf.float64)
         with tf.device(self.deviceName):
             # Kactivs = tf.where(self.mask>0,self.Kactiv,0)
             # Kinhibs = tf.where(self.mask<0,self.Kinhib,0)

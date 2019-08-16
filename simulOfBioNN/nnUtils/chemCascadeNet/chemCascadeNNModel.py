@@ -24,6 +24,7 @@ class chemCascadeNNModel(tf.keras.Model):
     def __init__(self, nbUnits, sparsities, reactionConstantsCascade,reactionConstantsNL,
                  enzymeInitC,activTempInitC, inhibTempInitC,
                  activTempInitCNL,sizeInput,XglobalinitC,
+                 TAglobalInitC,cstGlobalInitC,
                  randomConstantParameter=None, usingLog = True, usingSoftmax = True ):
         """
             Initialization of the model:
@@ -58,6 +59,10 @@ class chemCascadeNNModel(tf.keras.Model):
         self.inhibTempInitC = inhibTempInitC
         self.activTempInitCNL = activTempInitCNL
         self.randomConstantParameter =randomConstantParameter
+        self.TAglobalInitC = TAglobalInitC
+        assert len(cstGlobalInitC) == 4 # [k1gi,k1ngi,k2ngi,kdgi]
+        self.cstGlobalInitC = cstGlobalInitC
+
 
 
         assert len(self.reactionConstantsCascade) == 19
@@ -128,7 +133,7 @@ class chemCascadeNNModel(tf.keras.Model):
 
         self.meanGatheredCps = tf.Variable(0,dtype=tf.float32,trainable=False)
         self.built = True
-        self.mycps = tf.Variable(tf.zeros(1),dtype=tf.float32,trainable=False)
+        self.mycps = tf.Variable(0,dtype=tf.float32,trainable=False)
         super(chemCascadeNNModel, self).build(input_shape)
 
         print("model successfully built")
@@ -149,16 +154,12 @@ class chemCascadeNNModel(tf.keras.Model):
         self.rescaleFactor.assign(rescaleFactor)
 
     def greedy_set_cps(self,inputs):
-        inputs = tf.convert_to_tensor(inputs,dtype=tf.float32)
-        cps = self.obtainCp(inputs)
-        tf.print(cps)
-        tf.print(tf.nn.moments(cps,axes=[0]))
-        self.mycps.assign([tf.reduce_mean(cps)])
+        self.mycps.assign(tf.stop_gradient(tf.reshape(self._obtainCp(inputs[0]),())))
 
-    #@tf.function
+    @tf.function
     def call(self, inputs, training=None, mask=None):
         """
-            Call function for out chemical model.
+            Call function for our chemical model.
                 At training time we verify whether the model has changed total number of template due to backpropagation.
                     In this case we compute new values for the rescale factor, and update in all template the real weights.
         :param inputs: tensor for the inputs.
@@ -178,8 +179,10 @@ class chemCascadeNNModel(tf.keras.Model):
             self.verifyMask()
 
 
-        gatheredCps = tf.stop_gradient(tf.fill([tf.shape(inputs)[0]],tf.reshape(self._obtainCp(inputs[0]),())))
-        gatheredCps = tf.reshape(gatheredCps,((tf.shape(inputs)[0],1)))
+        gatheredCps = tf.reshape(tf.fill([tf.shape(inputs)[0]],self.mycps),(tf.shape(inputs)[0],1))
+
+        # gatheredCps = tf.stop_gradient(tf.fill([tf.shape(inputs)[0]],tf.reshape(self._obtainCp(inputs[0]),())))
+        # gatheredCps = tf.reshape(gatheredCps,((tf.shape(inputs)[0],1)))
         tf.assert_equal(tf.shape(gatheredCps),(tf.shape(inputs)[0],1))
         #
         # gatheredCps = tf.stop_gradient(self.obtainCp(inputs))
@@ -226,152 +229,97 @@ class chemCascadeNNModel(tf.keras.Model):
 
     @tf.function
     def obtainCp(self,inputs):
+        inputs = tf.cast(inputs,tf.float32)
+        tf.assert_rank(inputs,2,message="inputs should be of rank 2 (at least if one input: (1,...)")
         gatheredCps = tf.map_fn(self._obtainCp,inputs,parallel_iterations=32,back_prop=False)
         return gatheredCps
 
-    #@tf.function
+    @tf.function
     def _obtainCp(self,input):
-        borninfcpInv = tf.fill([1],0.)
-        cpmin = tf.fill([1],1.)
+        if(tf.less(tf.rank(input),2)):
+            tf.print("input rank:",tf.rank(input))
+            input = tf.reshape(input,(1,tf.shape(input)[0]))
+        #first we obtain the born sup:
+        bornsupIncremental = tf.cast(tf.fill([1],1.),dtype=tf.float32)
+        bornsupcpdiff = self._computeCPdiff(bornsupIncremental,input)
+        tf.debugging.assert_less_equal(bornsupcpdiff[0],0.,message="With cp = 1, got positive or null...")
+        for idx in tf.range(20): #stop after 20 iteration
+            tf.print(idx,"=========iteration=============, last value:",bornsupcpdiff)
+            bornsupIncremental = bornsupIncremental * 10.
+            bornsupcpdiff = self._computeCPdiff(bornsupIncremental,input)
+            if tf.greater(bornsupcpdiff[0],0.):
+                tf.print("========found born sup!!!=======")
+                break
+            if (tf.equal(idx,20)):
+                tf.print("DID NOT FIND A BORN SUP.... in iteration")
 
-        #todo implement 2D brentq:
-        cpg = tf.fill([1],1.)
-
-        cpInv = self.brentq(self._computeCPInvdiff_fromInv_forBrentq,borninfcpInv,cpmin,input)
-        return 1/cpInv
+        cpmin = tf.cast(tf.fill([1],1.),dtype=tf.float32)
+        cp = self.brentq(self._computeCPdiff,cpmin,bornsupIncremental,input)
+        return cp
 
     @tf.function
-    def _computeCPInvdiff_fromInv(self,cpInv,cpg,input):
+    def _computeCPdiff(self,cp,input):
+        tf.assert_rank(cp,1)
         new_cp = tf.fill([1],1.)
-        new_cpg = tf.fill([1],1.)
-        layercp,x = self.firstNlLayer.layer_cp_equilibrium_FromInv(cpInv,cpg, input, isFirstLayer=True)
+        #First: we need to solve for the value of Xglobal at equilibrium and its produced species
+        # Xglobal activates Xglobal2 by one template and the enzyme:
+        k1gi,k1ngi,k2ngi,kdgi = self.cstGlobalInitC
+        k1Mgi = k1gi/(k1ngi+k2ngi)
+        bOnA = tf.exp(self.XglobalinitC) - self.TAglobalInitC - cp/(k1Mgi* self.enzymeInitC)
+        Xglobaleq = 0.5*(bOnA + ((bOnA)**2 + 4 * tf.exp(self.XglobalinitC)*cp/(k1Mgi * self.enzymeInitC))**0.5)
+        Xglobaleq = tf.where(tf.math.is_nan(Xglobaleq),tf.nn.relu(tf.exp(self.XglobalinitC)),Xglobaleq)
+        Xglobal2 = k2ngi/kdgi*k1Mgi*self.TAglobalInitC*Xglobaleq*self.enzymeInitC/cp
+
+        for l in self.layerList:
+            if self.usingLog:
+                l[0].updateXglobal(tf.reshape(tf.math.log(Xglobal2),()))
+            else:
+                l[0].updateXglobal(tf.reshape(Xglobal2,()))
+        new_cp += k1Mgi*self.TAglobalInitC*Xglobaleq
+        #Then we compute the cp produces by each layer as well as the equilibrium reached by its node so that we input them in the next layer:
+        tf.assert_rank(input,2,"input has not the good rank in _computeCPdiff")
+        layercp,x = self.firstNlLayer.layer_cp_equilibrium(cp, input, isFirstLayer=True)
         tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl first layer")
         tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl first layer")
         new_cp += layercp
+        tf.print(layercp," adding this to new_cp")
+
+
         for l in self.layerList:
-            layercp,x = l[0].layer_cp_equilibrium_FromInv(cpInv,cpg,x)
-            layercpg = l[0].layer_XgCp(cpInv,cpg)
-            new_cpg += layercpg
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp cascade")
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs cascade")
-            new_cp += layercp
-            layercp,x = l[1].layer_cp_equilibrium_FromInv(cpInv,cpg,x)
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl")
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl")
-            new_cp += layercp
-        new_cpinv = 1/new_cp-cpInv
-        tf.print(cpInv," computed with new-cp: ",new_cp," giving ",new_cpinv)
-        tf.print(cpg," computed with new-cp: ",new_cpg)
-        new_cpg = new_cpg - cpg
-        tf.print("giving ",new_cpg)
-        return (-1)*new_cpinv#,(-1)*new_cpg
+            if tf.equal(tf.math.is_inf(new_cp)[0],False):
+                #We need to use a tensorflow loop here in order to use the break depending on a tensor condition later on.
+                tf.assert_rank(x,2,"x from NL has not the good rank in _computeCPdiff")
+                layercp,x = l[0].layer_cp_equilibrium(cp,x)
+                tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp cascade")
+                tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs cascade")
+                new_cp += layercp
+            if tf.equal(tf.math.is_inf(new_cp)[0],False):
+                tf.assert_rank(x,2,"x from cascade has not the good rank in _computeCPdiff")
+                layercp,x = l[1].layer_cp_equilibrium(cp,x)
+                tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl")
+                if tf.equal(tf.math.is_inf(layercp),False):
+                    tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl")
+                new_cp += layercp
+        new_cp = new_cp - cp
+        return (-1)*new_cp
+
+    def lambda_computeCPdiff(self,input):
+        input = tf.expand_dims(input,axis=0)
+        return lambda cp: self._computeCPdiff(tf.expand_dims(cp,axis=0),input)
 
     @tf.function
-    def bornsup_fromCpg(self,cpg,input):
-        new_cp = tf.fill([1],1.)
-        layercp,x = self.firstNlLayer.bornsup_layer_cp_equilibrium_FromInv(cpg, input, isFirstLayer=True)
-        tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl first layer")
-        tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl first layer")
-        new_cp += layercp
-        for l in self.layerList:
-            layercp,x = l[0].bornsup_layer_cp_equilibrium_FromInv(cpg,x)
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp cascade")
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs cascade")
-            new_cp += layercp
-            layercp,x = l[1].bornsup_layer_cp_equilibrium_FromInv(cpg,x)
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl")
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl")
-            new_cp += layercp
-        return new_cp
-
-
-
-    @tf.function
-    def _computeCPInvdiff_fromInv_forBrentq(self,cpInv,input):
-        cpg = tf.fill([1],1.)
-        new_cp = tf.fill([1],1.)
-        new_cpg = tf.fill([1],1.)
-        layercp,x = self.firstNlLayer.layer_cp_equilibrium_FromInv(cpInv,cpg, input, isFirstLayer=True)
-        tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl first layer")
-        tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl first layer")
-        new_cp += layercp
-        for l in self.layerList:
-            layercp,x = l[0].layer_cp_equilibrium_FromInv(cpInv,cpg,x)
-            layercpg = l[0].layer_XgCp(cpInv,cpg)
-            new_cpg += layercpg
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp cascade")
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs cascade")
-            new_cp += layercp
-            layercp,x = l[1].layer_cp_equilibrium_FromInv(cpInv,cpg,x)
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl")
-            tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl")
-            new_cp += layercp
-        new_cpinv = new_cp-1/cpInv
-        tf.print(cpInv," computed with new-cp: ",new_cp)
-        new_cpg = new_cpg - cpg
-        return (-1)*new_cpinv
-
-
-    # def measureModelRelevancy(self,input):
-    #     inputs = tf.stack([input])
-    #     if(input.shape.rank<2):
-    #         input = tf.reshape(input,(1,tf.shape(input)[0]))
-    #     cp = self.obtainCp(inputs)
-    #     Inhib = []
-    #     cp2kd = []
-    #     x,b,c=self.layerList[0].get_inhib_and_output(cp, input, isFirstLayer=True)
-    #     Inhib += [b]
-    #     cp2kd += [c]
-    #     for l in self.layerList[1:]:
-    #         x,b,c=self.layerList[0].get_inhib_and_output(cp, x, isFirstLayer=True)
-    #         Inhib += [b]
-    #         cp2kd += [c]
-    #     return Inhib,cp2kd
-
-    def lamda_computeCPInvdiff(self, input):
-        # if(input.shape.rank<2):
-        #     input = tf.reshape(input,(1,tf.shape(input)[0]))
-        return lambda cp,cpg: self._computeCPInvdiff_fromInv(cp,cpg,input)
-
-    @tf.function
-    def getFunctionStyle(self, cpInvArray,cpg, X0):
+    def getFunctionStyle(self, cpArray, X0):
         """
             Given an input, compute the value of f(cp) for all cp in cpArray (where f is the function we would like to find the roots with brentq)
-        :param cpInvArray:
+        :param cpArray:
         :param X0:
         :return:
         """
-        cpInvArray=tf.cast(tf.convert_to_tensor(cpInvArray), dtype=tf.float32)
-        cpgArray = tf.cast(tf.convert_to_tensor(cpg), dtype=tf.float32)
+        cpArray=tf.cast(tf.convert_to_tensor(cpArray),dtype=tf.float32)
         X0 = tf.cast(tf.convert_to_tensor(X0),dtype=tf.float32)
-        func = self.lamda_computeCPInvdiff(X0)
-
-
-        def lamdaForcpg(func,cpg):
-            return lambda cp : func(cp,cpg)
-        gatheredCps =  tf.map_fn(lamdaForcpg(func,cpg),cpInvArray,parallel_iterations=32,back_prop=False,dtype=(tf.float32,tf.float32))
+        func = self.lambda_computeCPdiff(X0)
+        gatheredCps = tf.map_fn(func,cpArray,parallel_iterations=32,back_prop=False)
         return gatheredCps
-
-    @tf.function
-    def getFunctionStyleFromsize(self,size,cpg, X0):
-        """
-            Given an input, compute the value of f(cp) for all cp in cpArray (where f is the function we would like to find the roots with brentq)
-        :param cpInvArray:
-        :param X0:
-        :return:
-        """
-        max =self.bornsup_fromCpg(tf.convert_to_tensor(cpg,dtype=tf.float32),X0)
-
-        cpInvArray=tf.cast(tf.convert_to_tensor(tf.exp(tf.linspace(tf.math.log(1./tf.reshape(max,())),tf.math.log(1.),size))), dtype=tf.float32)
-        cpg = tf.cast(tf.convert_to_tensor(cpg), dtype=tf.float32)
-        X0 = tf.cast(tf.convert_to_tensor(X0),dtype=tf.float32)
-        func = self.lamda_computeCPInvdiff(X0)
-
-        def lamdaForcpg(func,cpg):
-            return lambda cp : func(cp,cpg)
-        gatheredCps =  tf.map_fn(lamdaForcpg(func,cpg),cpInvArray,parallel_iterations=32,back_prop=False,dtype=tf.float32)
-        return tf.squeeze(gatheredCps,axis=-1),cpInvArray
-
 
     @tf.function
     def verifyMask(self):
@@ -447,8 +395,10 @@ class chemCascadeNNModel(tf.keras.Model):
 
             delta = (xtol + rtol*tf.abs(xcur))/2
             sbis = (xblk - xcur)/2
-            if tf.equal(fcur[0],0) or tf.less(tf.abs(sbis)[0],delta[0]):
-                break #BREAK FAILS HERE!!! ==> strange behavior?
+            if tf.equal(fcur[0],0):
+                break
+            elif tf.less(tf.abs(sbis)[0],delta[0]):
+                break
             else:
                 if tf.greater(tf.abs(spre)[0],delta[0]) and tf.less(tf.abs(fcur)[0],tf.abs(fpre)[0]):
                     if tf.equal(xpre[0],xblk[0]):

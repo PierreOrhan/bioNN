@@ -10,18 +10,10 @@
 import numpy as np
 import os
 from simulOfBioNN.parseUtils.parser import generateTemplateNeuralNetwork,read_file
-
-from simulOfBioNN.odeUtils.utils import readAttribute,obtainTemplateArray,obtainOutputArray
-from simulOfBioNN.plotUtils.adaptivePlotUtils import colorDiagram,neuronPlot,plotEvolution,fitComparePlot
-
-from simulOfBioNN.smallNetworkSimul.templateModelRandomNetworkSimul import func as oldAllEquilibriumFunc
 from simulOfBioNN.nnUtils.chemTemplateNN import chemTemplateNNModel
 from simulOfBioNN.odeUtils import utils as utilForODE
 from simulOfBioNN.smallNetworkSimul.compareTFvsPython.pythonBasicSolver import pythonSolver
-from scipy.optimize import minimize,root,brentq
-import sys
 import time
-import pandas
 import tensorflow as tf
 
 
@@ -131,13 +123,12 @@ def _generate_initialConcentration_firstlayer(activatorsOnObserved,inhibitorsOnO
 
 def compareCpRootFunction(x_test,X1,X2,nbrInputs,model,pythonModel):
     myX_test= np.reshape(x_test,(len(X1),len(X2),nbrInputs[0]))
-    competitions = np.zeros((len(X1),len(X2)))
-    tfCompetitions = np.zeros((len(X1), len(X2)))
-    fitOutput = np.zeros((len(X1), len(X2)))
-    tfFitOutput = np.zeros((len(X1), len(X2)))
-    styleFit = np.zeros((len(X1),len(X2),1000))
-    tfstyleFit = np.zeros((len(X1),len(X2),1000))
-    testOfCp = np.logspace(-1,7,1000)
+    competitions = np.zeros((len(X1),len(X2)),dtype=np.float64)
+    tfCompetitions = np.zeros((len(X1), len(X2)),dtype=np.float64)
+    fitOutput = np.zeros((len(X1), len(X2)),dtype=np.float64)
+    styleFit = np.zeros((len(X1),len(X2),1000),dtype=np.float64)
+    tfstyleFit = np.zeros((len(X1),len(X2),1000),dtype=np.float64)
+    testOfCp = np.array(np.logspace(-1,7,1000),dtype=np.float64)
 
     courbs=[0,int(fitOutput.shape[1]/2),fitOutput.shape[1]-1,int(fitOutput.shape[1]/3),int(2*fitOutput.shape[1]/3)]
 
@@ -160,7 +151,7 @@ def compareCpRootFunction(x_test,X1,X2,nbrInputs,model,pythonModel):
                 #cps = pythonModel.computeCP(myX_test[idx1,idx2],initValue=cpApproxim)
                 competitions[idx1,idx2] = cpApproxim
                 #outCPT[idx1,idx2] = cps[1]
-                x = tf.convert_to_tensor([myX_test[idx1,idx2]],dtype=tf.float32)
+                x = tf.convert_to_tensor([myX_test[idx1,idx2]],dtype=tf.float64)
                 t0=time.time()
                 tfCompetitions[idx1,idx2] = model.obtainCp(x)
                 print("Ended tensorflow brentq methods in "+str(time.time()-t0))

@@ -321,8 +321,7 @@ class pythonSolver():
                     # saving values
                     layerEq[inpIdx] = x_eq
                 olderX[layeridx] = layerEq
-                if verbose:
-                    print("python first layer:",layerEq)
+
             else:
                 for inpIdx in range(layer.shape[1]):
 
@@ -338,6 +337,10 @@ class pythonSolver():
                     layerEq[inpIdx] = x_eq
                     #compute of Kactivs,Kinhibs, for the current layer:
                 olderX[layeridx] = layerEq
+                if verbose and layeridx==1:
+                    print("python second layer:",layerEq)
+                if verbose and layeridx==2:
+                    print("python third layer: ",layerEq)
         #Compute equilibrium for last layers:
         layerEq = np.zeros(masks[-1].shape[0])
         for outputIdx in range(masks[-1].shape[0]):
@@ -348,7 +351,7 @@ class pythonSolver():
             #computing of new equilibrium
             x_eq = np.sum(CactivsOld*olderX[-1]/(kdI[-1][outputIdx]*cp+Inhib/cp))
             layerEq[outputIdx]=x_eq
-        olderX += [layerEq]
+        olderX = olderX + [layerEq]
 
         if observed is not None:
             try:

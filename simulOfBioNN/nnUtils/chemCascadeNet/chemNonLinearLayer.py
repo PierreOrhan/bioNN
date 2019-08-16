@@ -98,13 +98,13 @@ class chemNonLinearLayer(Dense):
 
         if isFirstLayer:
             if self.usingLog:
-                olderInput = ((tf.exp(inputs) - self.TA0 - cps/(self.k1M*self.E0))+
-                                        ((cps/(self.k1M*self.E0)-tf.exp(inputs)+self.TA0)**2+4*tf.exp(inputs)*cps/(self.k1M*self.E0))**0.5)/2
-                olderInput = tf.where(tf.math.is_nan(olderInput),tf.nn.relu(inputs-self.TA0),olderInput)
+                bOnA = tf.exp(inputs) - self.TA0 - cps/(self.k1M * self.E0)
+                olderInput = 0.5*(bOnA + ((bOnA)**2 + 4 * tf.exp(inputs)*cps/(self.k1M * self.E0))**0.5)
+                olderInput = tf.where(tf.math.is_nan(olderInput),tf.exp(inputs),olderInput)
             else:
-                olderInput = ((inputs - self.TA0 - cps/(self.k1M*self.E0))+
-                                    ((cps/(self.k1M*self.E0)-inputs+self.TA0)**2+4*cps*inputs/(self.k1M*self.E0))**0.5)/2
-                olderInput = tf.where(tf.math.is_nan(olderInput),tf.nn.relu(inputs-self.TA0),olderInput)
+                bOnA = inputs - self.TA0 - cps/(self.k1M * self.E0)
+                olderInput = 0.5*(bOnA + ((bOnA)**2 + 4 * inputs*cps/(self.k1M * self.E0))**0.5)
+                olderInput = tf.where(tf.math.is_nan(olderInput),inputs,olderInput)
         else:
             if self.usingLog:
                 olderInput = tf.exp(inputs)
@@ -112,14 +112,18 @@ class chemNonLinearLayer(Dense):
                 olderInput = inputs
 
         if self.usingLog:
-            outputs = tf.math.log(self.k2*self.TA0*olderInput/(self.kdT*(cps/(self.k1M*self.E0)+olderInput)))
+            x_eq = tf.where(tf.math.is_inf(olderInput),
+                            tf.math.log(self.k2*self.TA0/self.kdT),
+                            tf.where(tf.equal(olderInput,0.),
+                                     0.,
+                                     tf.math.log((self.k1M*self.k2*self.E0*self.TA0/self.kdT)*(olderInput/(cps+self.k1M*self.E0*olderInput)))))
         else:
-            outputs =  self.k2*self.TA0*olderInput/(self.kdT*(cps/(self.k1M*self.E0)+olderInput))
+            x_eq = self.k1M*self.k2*self.E0*self.TA0*olderInput/(self.kdT*cps*(1+self.k1M*self.E0*olderInput/cps))
 
-        return outputs
+        return x_eq
 
     @tf.function
-    def layer_cp_equilibrium_FromInv(self, cpInv, cpg, input, isFirstLayer=False):
+    def layer_cp_equilibrium(self, cp, input, isFirstLayer=False):
         with tf.device(self.deviceName):
             #In the following computation we did not solve the case where input could have infinite value:
             if not self.usingLog:
@@ -130,31 +134,31 @@ class chemNonLinearLayer(Dense):
                     #   when cpInv -> 0 we have odlerInput -> (olderInput - TA0)
                     #   and a NaN wil be computed instead...
                     # Therefore we make the test of the presence of a Nan and gives back the approximated equation if it is the case!
-                    olderInput = (((cpInv *self.k1M * self.E0)*(tf.exp(input) - self.TA0) - 1) +
-                                              ((1 - ((cpInv * self.k1M * self.E0) *(tf.exp(input) - self.TA0)))**2 + 4 * tf.exp(input)*(cpInv * self.k1M * self.E0)) ** 0.5)/(2*cpInv * self.k1M * self.E0)
-                    olderInput = tf.where(tf.math.is_nan(olderInput),tf.nn.relu(tf.exp(input)-self.TA0),olderInput)
+                    bOnA = tf.exp(input) - self.TA0 - cp/(self.k1M * self.E0)
+                    olderInput = 0.5*(bOnA + ((bOnA)**2 + 4 * tf.exp(input)*cp/(self.k1M * self.E0))**0.5)
+                    olderInput = tf.where(tf.math.is_nan(olderInput),tf.exp(input),olderInput)
                 else:
-                    olderInput = (((cpInv *self.k1M * self.E0)*(input - self.TA0) - 1) +
-                                  ((1 - ((cpInv * self.k1M * self.E0) *(input - self.TA0)))**2 + 4 * input*(cpInv * self.k1M * self.E0)) ** 0.5)/(2*cpInv * self.k1M * self.E0)
-                    olderInput = tf.where(tf.math.is_nan(olderInput),tf.nn.relu(input-self.TA0),olderInput)
+                    bOnA = input - self.TA0 - cp/(self.k1M * self.E0)
+                    olderInput = 0.5*(bOnA + ((bOnA)**2 + 4 * input*cp/(self.k1M * self.E0))**0.5)
+                    olderInput = tf.where(tf.math.is_nan(olderInput),input,olderInput)
             else:
                 if self.usingLog:
                     olderInput= tf.exp(input)
                 else:
                     olderInput = input
 
-            layer_cp = tf.where(tf.math.equal(olderInput,0),self.TA0/(cpInv*self.E0),self.k1M*self.TA0/(1/olderInput+ self.k1M*cpInv*self.E0))
-            if self.usingLog:
-                if cpInv==0:
-                    x_eq = 0. * self.k1M
+            layer_cp = tf.where(tf.math.equal(olderInput,0),self.TA0*cp/self.E0,self.k1M*self.TA0/(1/olderInput+ self.k1M*self.E0/cp))
+            if tf.equal(tf.math.is_inf(tf.keras.backend.sum(layer_cp)),False):
+                if self.usingLog:
+                    x_eq = tf.where(tf.math.is_inf(olderInput),
+                                    tf.math.log(self.k2*self.TA0/self.kdT),
+                                    tf.where(tf.equal(olderInput,0.),
+                                        0.,
+                                        tf.math.log((self.k1M*self.k2*self.E0*self.TA0/self.kdT)*(olderInput/(cp+self.k1M*self.E0*olderInput)))))
                 else:
-                    x_eq = tf.where(tf.math.is_inf(olderInput),tf.math.log(self.k1M*self.k2*self.E0*cpInv*self.TA0/(self.kdT*(1/olderInput+self.k1M*self.E0*cpInv))),tf.math.log(self.k1M*self.k2*self.E0*cpInv*self.TA0*olderInput/(self.kdT*(1+self.k1M*self.E0*cpInv*olderInput))))
-            else:
-                x_eq = self.k1M*self.k2*self.E0*cpInv*self.TA0*olderInput/(self.kdT*(1+self.k1M*self.E0*cpInv*olderInput))
-
-            # tf.print(cpInv,"cpInv nl layer")
-            # tf.print(tf.math.is_inf(olderInput),"tf.math.is_inf(olderInput)")
-            # tf.print(layer_cp,"layer_cp ",cpInv,"cp Inv",self.k1M*self.TA0/(1/olderInput+ self.k1M*cpInv*self.E0) ,"1st case",self.k1M*self.TA0*olderInput/(1+ self.k1M*olderInput*cpInv*self.E0),"2dn case",olderInput,"olderInput")
+                    x_eq = self.k1M*self.k2*self.E0*self.TA0*olderInput/(self.kdT*cp*(1+self.k1M*self.E0*olderInput/cp))
+            else: #The infinite value of layer_cp ends the loop so we don't compute x_eq...
+                x_eq = self.k1M*input #Value doesn't matter
             return tf.keras.backend.sum(layer_cp),x_eq
 
     def displayVariable(self):
@@ -166,39 +170,3 @@ class chemNonLinearLayer(Dense):
         tf.print(self.E0,"self.E0")
         tf.print(self.rescaleFactor,"self.rescaleFactor")
         tf.print(self.k1M,"self.k1M")
-
-    @tf.function
-    def bornsup_layer_cp_equilibrium_FromInv(self, cpg, input, isFirstLayer=False):
-        with tf.device(self.deviceName):
-            #In the following computation we did not solve the case where input could have infinite value:
-            if not self.usingLog:
-                tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_inf(input),1,0)),0,message="inf detected in inputs")
-            if isFirstLayer:
-                if self.usingLog:
-                    # Due to the presence of the root, it is impossible for us to write the equatation to make it possible for the computer to compute that
-                    #   when cpInv -> 0 we have odlerInput -> (olderInput - TA0)
-                    #   and a NaN wil be computed instead...
-                    # Therefore we make the test of the presence of a Nan and gives back the approximated equation if it is the case!
-                    olderInput = ((( self.k1M * self.E0)*(tf.exp(input) - self.TA0) - 1) +
-                                  ((1 - (( self.k1M * self.E0) *(tf.exp(input) - self.TA0)))**2 + 4 * tf.exp(input)*( self.k1M * self.E0)) ** 0.5)/(2 * self.k1M * self.E0)
-                    olderInput = tf.where(tf.math.is_nan(olderInput),tf.nn.relu(tf.exp(input)-self.TA0),olderInput)
-                else:
-                    olderInput = (((self.k1M * self.E0)*(input - self.TA0) - 1) +
-                                  ((1 - ((self.k1M * self.E0) *(input - self.TA0)))**2 + 4 * input*( self.k1M * self.E0)) ** 0.5)/(2 * self.k1M * self.E0)
-                    olderInput = tf.where(tf.math.is_nan(olderInput),tf.nn.relu(input-self.TA0),olderInput)
-            else:
-                if self.usingLog:
-                    olderInput= tf.exp(input)
-                else:
-                    olderInput = input
-
-            layer_cp = tf.where(tf.math.equal(olderInput,0),self.TA0/(self.E0),self.k1M*self.TA0/(1/olderInput+ self.k1M*self.E0))
-            if self.usingLog:
-               x_eq = tf.where(tf.math.is_inf(olderInput),tf.math.log(self.k1M*self.k2*self.E0*self.TA0/(self.kdT*(1/olderInput+self.k1M*self.E0))),tf.math.log(self.k1M*self.k2*self.E0*self.TA0*olderInput/(self.kdT*(1+self.k1M*self.E0*olderInput))))
-            else:
-                x_eq = self.k1M*self.k2*self.E0*self.TA0*olderInput/(self.kdT*(1+self.k1M*self.E0*olderInput))
-
-            # tf.print(cpInv,"cpInv nl layer")
-            # tf.print(tf.math.is_inf(olderInput),"tf.math.is_inf(olderInput)")
-            # tf.print(layer_cp,"layer_cp ",cpInv,"cp Inv",self.k1M*self.TA0/(1/olderInput+ self.k1M*cpInv*self.E0) ,"1st case",self.k1M*self.TA0*olderInput/(1+ self.k1M*olderInput*cpInv*self.E0),"2dn case",olderInput,"olderInput")
-            return tf.keras.backend.sum(layer_cp),x_eq

@@ -11,7 +11,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from simulOfBioNN.nnUtils.chemCascadeNet.chemCascadeNNModel import chemCascadeNNModel
 import tensorflow as tf
 import multiprocessing as mlp
-
+import time
 import sys
 import os
 import numpy as np
@@ -35,13 +35,13 @@ def _findConstant(savePath):
     constantList = [0.9999999999999998,0.1764705882352941,1.0,0.9999999999999998,
                     0.1764705882352941,1.0,0.9999999999999998,0.1764705882352941,1.0,0.018823529411764708]
     constantList+=[constantList[-1]]
-    enzymeInit = 10**(-6)/C0
+    enzymeInit = 10**(-4)/C0
     activInit =  10**(-6)/C0
-    inhibInit =  10**(-6)/C0
+    inhibInit =  10**(-4)/C0
     return constantList,enzymeInit,activInit,inhibInit,C0
 
-def trainWithChemTemplateNN(savePath):
 
+def getSetForMNIST():
     x_train,x_test,y_train,y_test,x_test_noise=loadMnist(rescaleFactor=2,fashion=False,size=None,mean=0,var=0.01,path="../../../Data/mnist")
     if(np.max(x_test)<=1):
         x_test = np.array(x_test*255,dtype=np.int)
@@ -55,6 +55,11 @@ def trainWithChemTemplateNN(savePath):
     x_test = np.reshape(x_test,(x_test.shape[0],(x_test.shape[1]*x_test.shape[2]))).astype(dtype=np.float32)
     x_train = myLogSpace[x_train]
     x_train = np.reshape(x_train,(x_train.shape[0],(x_train.shape[1]*x_train.shape[2]))).astype(dtype=np.float32)
+    return x_train,x_test,y_train,y_test
+
+def trainWithChemTemplateNN(savePath):
+
+    x_train,x_test,y_train,y_test = getSetForMNIST()
 
     constantList,enzymeInit,activInit,inhibInit,C0 = _findConstant(savePath)
 
@@ -186,10 +191,106 @@ def trainWithChemTemplateNN(savePath):
     return res
 
 
+def computeCpRootFunction(x_test,model,path):
+    tfCompetitions = np.zeros((len(x_test)),dtype=np.float64)
+    fitOutput = np.zeros(len(x_test),dtype=np.float64)
+    tfstyleFit = np.zeros((len(x_test),1000),dtype=np.float64)
+    testOfCp = np.array(np.logspace(5,5.5,1000),dtype=np.float64)
+
+    courbs=[0,int(fitOutput.shape[0]/2),fitOutput.shape[0]-1,int(fitOutput.shape[0]/3),int(2*fitOutput.shape[0]/3)]
+
+    for idx1,x in enumerate(x_test):
+        if idx1 in courbs:
+            assert len(x.shape)==1
+            x = tf.convert_to_tensor(x,dtype=tf.float32)
+            print(x.shape,"x shape ",x," x")
+            t0=time.time()
+            tfCompetitions[idx1] = model._obtainCp(x)
+            print("Ended tensorflow brentq methods in "+str(time.time()-t0))
+            t0=time.time()
+            tfstyleFit[idx1] = np.reshape(np.array(model.getFunctionStyle(testOfCp,x)),(1000))
+            print("Obtain the landscape with tf in  "+str(time.time()-t0))
+
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(19.2,10.8), dpi=100)
+    cmap = plt.get_cmap('Dark2',x_test.shape[0]*len(courbs))
+    for idx1,x in enumerate(x_test):
+        if idx1 in courbs:
+            ax.plot(testOfCp,np.abs(tfstyleFit[idx1,:]),c=cmap(idx1*(courbs.index(idx1)+1)),linestyle="--")
+            ax.axvline(tfCompetitions[idx1],c=cmap(idx1*(courbs.index(idx1)+1)),marker="x",linestyle="-")
+    ax.tick_params(labelsize="xx-large")
+    ax.set_xlabel("cp",fontsize="xx-large")
+    ax.set_ylabel("f(cp)-cp",fontsize="xx-large")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    fig.savefig(os.path.join(path,"formOfcp.png"))
+    plt.show()
+
+def displayCPFunc(path):
+    x_train,x_test,y_train,y_test = getSetForMNIST()
+    sizeInput = x_train.shape[-1]
+    nbUnits = [100,100,10]
+    sparsities = [0,0,0]
+    constantList,enzymeInitC,activTempInitC,inhibTempInitC,C0 = _findConstant(path)
+    x_train = x_train/C0
+    x_test = x_test/C0
+    XglobalinitC = 8.
+    reactionConstantsNL = constantList[:3]+[constantList[10]]
+    reactionConstantsCascade = constantList + [constantList[-1],constantList[-1]] + constantList[:6]
+    activTempInitCNL = activTempInitC
+    TAglobalInitC = activTempInitC
+    cstGlobalInitC = [0.9999999999999998,0.1764705882352941,1.0,0.018823529411764708]
+    usingLog = True
+    usingSoftmax = False
+    if usingLog:
+        x_train = np.log(x_train)
+        x_test = np.log(x_test)
+
+    model = chemCascadeNNModel(nbUnits, sparsities, reactionConstantsCascade,reactionConstantsNL,
+                               enzymeInitC,activTempInitC, inhibTempInitC,
+                               activTempInitCNL,sizeInput,XglobalinitC,
+                               TAglobalInitC,cstGlobalInitC,
+                               randomConstantParameter=None, usingLog = usingLog, usingSoftmax = usingSoftmax )
+    model.compile(optimizer=tf.optimizers.Adam(),
+                  loss='sparse_categorical_crossentropy',
+                  metrics=['accuracy'])
+    model.build(input_shape=(None,sizeInput))
+    computeCpRootFunction(x_test,model,path)
+
+def train(path):
+    x_train,x_test,y_train,y_test = getSetForMNIST()
+    sizeInput = x_train.shape[-1]
+    nbUnits = [100,100,10]
+    sparsities = [0.5,0.5,0]
+    constantList,enzymeInitC,activTempInitC,inhibTempInitC,C0 = _findConstant(path)
+    x_train = x_train/C0
+    x_test = x_test/C0
+    XglobalinitC = 8.
+    reactionConstantsNL = constantList[:3]+[constantList[10]]
+    reactionConstantsCascade = constantList + [constantList[-1],constantList[-1]] + constantList[:6]
+    activTempInitCNL = activTempInitC
+    TAglobalInitC = activTempInitC
+    cstGlobalInitC = [0.9999999999999998,0.1764705882352941,1.0,0.018823529411764708]
+    usingLog = True
+    usingSoftmax = False
+    if usingLog:
+        x_train = np.log(x_train)
+        x_test = np.log(x_test)
+
+    model = chemCascadeNNModel(nbUnits, sparsities, reactionConstantsCascade,reactionConstantsNL,
+                               enzymeInitC,activTempInitC, inhibTempInitC,
+                               activTempInitCNL,sizeInput,XglobalinitC,
+                               TAglobalInitC,cstGlobalInitC,
+                               randomConstantParameter=None, usingLog = usingLog, usingSoftmax = usingSoftmax )
+    model.compile(optimizer=tf.optimizers.Adam(),
+                  loss='sparse_categorical_crossentropy',
+                  metrics=['accuracy'])
+    model.build(input_shape=(None,sizeInput))
+    model.greedy_set_cps(inputs=x_train[:32])
+    model.fit(x_train,y_train,verbose=True)
+
+
 if __name__ == '__main__':
-    #mlp.set_start_method('fork',force=True)
-    #tf.debugging.set_log_device_placement(True)
-    import sys
     p1 = os.path.join(sys.path[0],"..")
     p3 = os.path.join(p1,"trainingWithChemicalNN")
     if not os.path.exists(p3):
@@ -198,4 +299,4 @@ if __name__ == '__main__':
     if not tf.test.is_gpu_available():
         raise SystemError('GPU device not found')
     print('Found GPU at: {}'.format(device_name))
-    res = trainWithChemTemplateNN(p3)
+    train(p3)

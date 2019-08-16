@@ -135,8 +135,8 @@ if __name__ == '__main__':
     endTime = 10000
     timeStep = 0.1
 
-    doODEvsTF = False
-    doODEvsPython = False
+    doODEvsTF = True
+    doODEvsPython = True
     doTFvsPython = True
 
     # masks=[np.array([[1,-1,0,0],[0,0,1,-1]]),np.array([[1,-1]])]
