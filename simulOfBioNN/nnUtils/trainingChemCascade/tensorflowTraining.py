@@ -257,6 +257,29 @@ def displayCPFunc(path):
     model.build(input_shape=(None,sizeInput))
     computeCpRootFunction(x_test,model,path)
 
+def obtainActivationShapes(model,C0,path):
+    #first: plot the non-linearity
+    print("PLOT OF NON-LINEARITIES")
+    inputs = np.log(np.logspace(-8,4,1000)/C0)
+    cps = model.mycps
+    output1 = model.firstNlLayer.obtainNonLinearityShape(inputs, cps, isFirstLayer=True)
+    outputs=[]
+    for l in model.layerList:
+        outputs+=[l[1].obtainNonLinearityShape(inputs,cps)]
+    fig, ax = plt.subplots(figsize=(19.2,10.8), dpi=100)
+    cmap = plt.get_cmap('Dark2',len(outputs)+1)
+    ax.plot(inputs,output1,c=cmap(0),label="Initial layer")
+    for idx,x in enumerate(outputs):
+        ax.plot(inputs,x,c=cmap(idx+1),label="NL n°"+str(idx))
+    ax.tick_params(labelsize="xx-large")
+    fig.savefig(os.path.join(path,"nlActivations.png"))
+    plt.legend()
+    plt.show()
+    print("BIAS FOR LINEARITIES")
+    #Second: simply display the activation and inhibition bias
+    for idx,l in enumerate(model.layerList):
+        print(l[0].measureBias(cps)," for layer n°",idx)
+
 def train(path):
     x_train,x_test,y_train,y_test = getSetForMNIST()
     sizeInput = x_train.shape[-1]
@@ -287,7 +310,10 @@ def train(path):
                   metrics=['accuracy'])
     model.build(input_shape=(None,sizeInput))
     model.greedy_set_cps(inputs=x_train[:32])
-    model.fit(x_train,y_train,verbose=True)
+
+    obtainActivationShapes(model,C0,path)
+
+    #model.fit(x_train,y_train,verbose=True)
 
 
 if __name__ == '__main__':

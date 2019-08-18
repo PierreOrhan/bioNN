@@ -278,6 +278,32 @@ class chemCascadeLayer(Dense):
 
         return outputs
 
+    def measureBias(self, cps):
+        """
+        This function can be used to obtain the bias value given cps, an array of cp!
+        Usefull to find the right scales where the linearity is produced....
+        :param cps:
+        :return:
+        """
+        cps = tf.expand_dims(cps,-1)
+        tf.assert_rank(cps,3)
+
+        if self.usingLog:
+            QgijTemplate_eq = self.TA0*self.k2g*self.k1Mg*tf.exp(self.Xglobal)/(1+self.k1Mg*self.E0*tf.exp(self.Xglobal)/tf.squeeze(cps,axis=-1))
+            QdgijTemplate_eq = self.TI0*self.k4g*self.k3Mg*tf.exp(self.Xglobal)/(1+self.k3Mg*self.E0*tf.exp(self.Xglobal)/tf.squeeze(cps,axis=-1))
+        else:
+            QgijTemplate_eq = self.TA0*self.k2g*self.k1Mg*self.Xglobal/(1+self.k1Mg*self.E0*self.Xglobal/tf.squeeze(cps,axis=-1))
+            QdgijTemplate_eq = self.TI0*self.k4g*self.k3Mg*self.Xglobal/(1+self.k3Mg*self.E0*self.Xglobal/tf.squeeze(cps,axis=-1))
+
+        activBias = tf.keras.backend.sum(tf.where(self.mask > 0, tf.math.log(self.k2 * self.k1M * self.E0/(self.kdT*cps)), 0), axis=1) + \
+                    tf.math.log(QgijTemplate_eq * self.E0 /tf.squeeze(cps,axis=-1))
+
+        pT_eq = tf.keras.backend.sum(tf.where(self.mask<0,tf.math.log(self.k4 * self.E0 *self.k3M/(cps*self.kdT2)),0),axis=1) + \
+                tf.math.log(QdgijTemplate_eq*self.E0/tf.squeeze(cps,axis=-1))
+        inhib_bias = self.k6*self.k5M*self.E0*tf.exp(pT_eq)/(self.kdpT*tf.squeeze(cps,axis=-1))
+
+        return activBias,inhib_bias
+
 
     @tf.function
     def hornerMultiX(self,Xs,hornerMask,kp):

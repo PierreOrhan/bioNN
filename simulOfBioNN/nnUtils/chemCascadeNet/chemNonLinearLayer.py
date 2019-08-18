@@ -119,7 +119,6 @@ class chemNonLinearLayer(Dense):
                                      tf.math.log((self.k1M*self.k2*self.E0*self.TA0/self.kdT)*(olderInput/(cps+self.k1M*self.E0*olderInput)))))
         else:
             x_eq = self.k1M*self.k2*self.E0*self.TA0*olderInput/(self.kdT*cps*(1+self.k1M*self.E0*olderInput/cps))
-
         return x_eq
 
     @tf.function
@@ -160,6 +159,33 @@ class chemNonLinearLayer(Dense):
             else: #The infinite value of layer_cp ends the loop so we don't compute x_eq...
                 x_eq = self.k1M*input #Value doesn't matter
             return tf.keras.backend.sum(layer_cp),x_eq
+
+    def obtainNonLinearityShape(self,input,cps,isFirstLayer=False):
+        input = tf.convert_to_tensor(input,dtype=tf.float32)
+        if isFirstLayer:
+            if self.usingLog:
+                bOnA = tf.exp(input) - self.TA0[0] - cps/(self.k1M[0] * self.E0)
+                olderInput = 0.5*(bOnA + ((bOnA)**2 + 4 * tf.exp(input)*cps/(self.k1M[0] * self.E0))**0.5)
+            else:
+                bOnA = input - self.TA0[0] - cps/(self.k1M[0] * self.E0)
+                olderInput = 0.5*(bOnA + ((bOnA)**2 + 4 * input*cps/(self.k1M[0] * self.E0))**0.5)
+                olderInput = tf.where(tf.math.is_nan(olderInput),input,olderInput)
+        else:
+            if self.usingLog:
+                olderInput = tf.exp(input)
+            else:
+                olderInput = input
+
+        if self.usingLog:
+            x_eq = tf.where(tf.math.is_inf(olderInput),
+                            tf.math.log(self.k2[0]*self.TA0[0]/self.kdT[0]),
+                            tf.where(tf.equal(olderInput,0.),
+                                     0.,
+                                     tf.math.log((self.k1M[0]*self.k2[0]*self.E0*self.TA0[0]/self.kdT[0])*(olderInput/(cps+self.k1M[0]*self.E0*olderInput)))))
+        else:
+            x_eq = self.k1M[0]*self.k2[0]*self.E0*self.TA0[0]*olderInput/(self.kdT[0]*cps*(1+self.k1M[0]*self.E0*olderInput/cps))
+        return x_eq
+
 
     def displayVariable(self):
         tf.print(self.k1,"self.k1")
