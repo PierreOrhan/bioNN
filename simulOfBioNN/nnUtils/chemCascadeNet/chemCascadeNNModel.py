@@ -270,6 +270,8 @@ class chemCascadeNNModel(tf.keras.Model):
         Xglobaleq = tf.where(tf.math.is_nan(Xglobaleq),tf.nn.relu(tf.exp(self.XglobalinitC)),Xglobaleq)
         Xglobal2 = k2ngi/kdgi*k1Mgi*self.TAglobalInitC*Xglobaleq*self.enzymeInitC/cp
 
+        #tf.print("Xglobal2 is computed as:",Xglobal2)
+
         for l in self.layerList:
             if self.usingLog:
                 l[0].updateXglobal(tf.reshape(tf.math.log(Xglobal2),()))
@@ -282,7 +284,7 @@ class chemCascadeNNModel(tf.keras.Model):
         tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(layercp),1,0)),0,message="nan detected in layercp nl first layer")
         tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(tf.exp(x)),1,0)),0,message="nan detected in outputs nl first layer")
         new_cp += layercp
-        tf.print(layercp," adding this to new_cp")
+        #tf.print(layercp," adding this to new_cp")
 
 
         for l in self.layerList:

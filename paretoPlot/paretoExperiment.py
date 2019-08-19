@@ -4,7 +4,6 @@
 
 from paretoPlot.paretoConfigUtils import _getConfig
 from paretoPlot.paretoTrainTools import train,paretoPlot
-from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import clippedSparseBioDenseLayer
 from simulOfBioNN.nnUtils.geneAutoRegulNet.autoRegulLayer import autoRegulLayer
 
 def run():

@@ -2,19 +2,12 @@
     In this file we produce a little animation to show the influence of rescaling E0 and the template initial concentration relatively to the network size.
 """
 
-from simulOfBioNN.nnUtils.plotUtils import displayEmbeddingHeat,plotWeight
 from simulOfBioNN.nnUtils.dataUtils import loadMnist
-from simulOfBioNN.parseUtils.parser import saveModelWeight,sparseParser,read_file,generateTemplateNeuralNetwork
+from simulOfBioNN.parseUtils.parser import sparseParser,read_file,generateTemplateNeuralNetwork
 from simulOfBioNN.odeUtils.systemEquation import setToUnits
-from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import clippedSparseBioDenseLayer
-from simulOfBioNN.nnUtils.clippedBinaryLayer import clippedBinaryLayer
-from simulOfBioNN.nnUtils.clippedSparseBioSigLayer import clippedSparseBioSigLayer
 from simulOfBioNN.nnUtils.chemTemplateNN.chemTemplateNNModel import chemTemplateNNModel
 import tensorflow as tf
 import matplotlib.pyplot as plt
-
-import matplotlib.animation as animation
-
 
 import os
 import numpy as np

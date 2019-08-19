@@ -35,9 +35,9 @@ def _findConstant(savePath):
     constantList = [0.9999999999999998,0.1764705882352941,1.0,0.9999999999999998,
                     0.1764705882352941,1.0,0.9999999999999998,0.1764705882352941,1.0,0.018823529411764708]
     constantList+=[constantList[-1]]
-    enzymeInit = 10**(-4)/C0
+    enzymeInit = 10**(-6)/C0
     activInit =  10**(-6)/C0
-    inhibInit =  10**(-4)/C0
+    inhibInit =  10**(-6)/C0
     return constantList,enzymeInit,activInit,inhibInit,C0
 
 
@@ -65,7 +65,7 @@ def trainWithChemTemplateNN(savePath):
 
     #in a first time we consider the activInitNL as similar:
     activInitNL = activInit
-    XglobalInit = 8.
+    XglobalInit = 4.
     reactionConstantsNL = constantList[:3]+[constantList[10]]
     constantList = constantList + [constantList[-1],constantList[-1]] + constantList[:6]
 
@@ -195,7 +195,7 @@ def computeCpRootFunction(x_test,model,path):
     tfCompetitions = np.zeros((len(x_test)),dtype=np.float64)
     fitOutput = np.zeros(len(x_test),dtype=np.float64)
     tfstyleFit = np.zeros((len(x_test),1000),dtype=np.float64)
-    testOfCp = np.array(np.logspace(5,5.5,1000),dtype=np.float64)
+    testOfCp = np.array(np.logspace(4,7,1000),dtype=np.float64)
 
     courbs=[0,int(fitOutput.shape[0]/2),fitOutput.shape[0]-1,int(fitOutput.shape[0]/3),int(2*fitOutput.shape[0]/3)]
 
@@ -220,7 +220,7 @@ def computeCpRootFunction(x_test,model,path):
             ax.axvline(tfCompetitions[idx1],c=cmap(idx1*(courbs.index(idx1)+1)),marker="x",linestyle="-")
     ax.tick_params(labelsize="xx-large")
     ax.set_xlabel("cp",fontsize="xx-large")
-    ax.set_ylabel("f(cp)-cp",fontsize="xx-large")
+    ax.set_ylabel("|f(cp)-cp|",fontsize="xx-large")
     ax.set_xscale("log")
     ax.set_yscale("log")
     fig.savefig(os.path.join(path,"formOfcp.png"))
@@ -234,11 +234,11 @@ def displayCPFunc(path):
     constantList,enzymeInitC,activTempInitC,inhibTempInitC,C0 = _findConstant(path)
     x_train = x_train/C0
     x_test = x_test/C0
-    XglobalinitC = 8.
+    XglobalinitC = 4.
     reactionConstantsNL = constantList[:3]+[constantList[10]]
     reactionConstantsCascade = constantList + [constantList[-1],constantList[-1]] + constantList[:6]
-    activTempInitCNL = activTempInitC
-    TAglobalInitC = activTempInitC
+    activTempInitCNL = 10**(-4)/C0
+    TAglobalInitC = 10**(-4)/C0
     cstGlobalInitC = [0.9999999999999998,0.1764705882352941,1.0,0.018823529411764708]
     usingLog = True
     usingSoftmax = False
@@ -256,6 +256,25 @@ def displayCPFunc(path):
                   metrics=['accuracy'])
     model.build(input_shape=(None,sizeInput))
     computeCpRootFunction(x_test,model,path)
+
+
+def linearPlot(logactivBias,InhibBias,name=None):
+    X1 = np.log(np.logspace(-2,8,1000))
+    X2 = np.logspace(-2,8,1000)
+    fig = plt.figure(figsize=(19.2,10.8), dpi=100)
+    ax = fig.add_subplot(111,projection='3d')
+    Z = np.zeros((len(X1),len(X2)))
+    for idx1,x1 in enumerate(X1):
+        Z[:,idx1] = x1+logactivBias-np.log(InhibBias)-np.log(0.018823529411764708/InhibBias+X2)
+    x,y = np.meshgrid(X1,np.log(X2))
+    from matplotlib import cm
+    ax.plot_surface(x,y,Z,cmap=cm.get_cmap("summer"))
+    ax.set_xlabel("activation")
+    ax.set_ylabel("inhibition")
+    ax.set_zlabel("Output of Linear layer")
+    plt.show()
+    fig.savefig(name)
+
 
 def obtainActivationShapes(model,C0,path):
     #first: plot the non-linearity
@@ -277,8 +296,12 @@ def obtainActivationShapes(model,C0,path):
     plt.show()
     print("BIAS FOR LINEARITIES")
     #Second: simply display the activation and inhibition bias
+    gatheredCps = tf.reshape(tf.fill([1],cps),(1,1))
     for idx,l in enumerate(model.layerList):
-        print(l[0].measureBias(cps)," for layer n°",idx)
+        logactivBias,InhibBias = l[0].measureBias(gatheredCps)
+        print(logactivBias,InhibBias," for layer n°",idx)
+        print(logactivBias[0,0],InhibBias[0,0],"used in layer n*",idx)
+        linearPlot(logactivBias[0,0],InhibBias[0,0],os.path.join(path,"layer"+str(idx)+".png"))
 
 def train(path):
     x_train,x_test,y_train,y_test = getSetForMNIST()
@@ -288,11 +311,11 @@ def train(path):
     constantList,enzymeInitC,activTempInitC,inhibTempInitC,C0 = _findConstant(path)
     x_train = x_train/C0
     x_test = x_test/C0
-    XglobalinitC = 8.
+    XglobalinitC = 4.
     reactionConstantsNL = constantList[:3]+[constantList[10]]
     reactionConstantsCascade = constantList + [constantList[-1],constantList[-1]] + constantList[:6]
-    activTempInitCNL = activTempInitC
-    TAglobalInitC = activTempInitC
+    activTempInitCNL = 10**(-4)/C0
+    TAglobalInitC = 10**(-4)/C0
     cstGlobalInitC = [0.9999999999999998,0.1764705882352941,1.0,0.018823529411764708]
     usingLog = True
     usingSoftmax = False
@@ -317,12 +340,12 @@ def train(path):
 
 
 if __name__ == '__main__':
-    p1 = os.path.join(sys.path[0],"..")
-    p3 = os.path.join(p1,"trainingWithChemicalNN")
+    p3 = os.path.join(sys.path[0],"trainingWithChemicalNN")
     if not os.path.exists(p3):
         os.makedirs(p3)
     device_name = tf.test.gpu_device_name()
     if not tf.test.is_gpu_available():
         raise SystemError('GPU device not found')
     print('Found GPU at: {}'.format(device_name))
+    #displayCPFunc(p3)
     train(p3)

@@ -1,15 +1,7 @@
 from tensorflow.python.keras.layers import Dense
-from tensorflow.python.framework import ops
-from tensorflow.python.ops import standard_ops
-from tensorflow.python.eager import context
-from tensorflow.python.framework import common_shapes
 
 import tensorflow as tf
-import numpy as np
-from tensorflow.python.ops import nn
-from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import weightFixedAndClippedConstraint,sparseInitializer,constant_initializer,layerconstantInitiliaizer
-
-
+from simulOfBioNN.nnUtils.classicalTfNet.clippedSparseBioDenseLayer import weightFixedAndClippedConstraint,sparseInitializer
 
 
 class chemTemplateLayer(Dense):

@@ -2,16 +2,14 @@
     Provide a simple train function to train a network with tensorflow.
 """
 
-from simulOfBioNN.nnUtils.plotUtils import displayEmbeddingHeat,plotWeight
+from simulOfBioNN.nnUtils.plotUtils import plotWeight
 from simulOfBioNN.nnUtils.dataUtils import loadMnist
 from simulOfBioNN.parseUtils.parser import saveModelWeight,sparseParser,read_file,generateTemplateNeuralNetwork
 from simulOfBioNN.odeUtils.systemEquation import setToUnits
-from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import clippedSparseBioDenseLayer
-from simulOfBioNN.nnUtils.clippedBinaryLayer import clippedBinaryLayer
-from simulOfBioNN.nnUtils.clippedSparseBioSigLayer import clippedSparseBioSigLayer
-from simulOfBioNN.nnUtils.chemTemplateNN.chemTemplateNNModel import chemTemplateNNModel
+from simulOfBioNN.nnUtils.classicalTfNet.clippedSparseBioDenseLayer import clippedSparseBioDenseLayer
+from simulOfBioNN.nnUtils.classicalTfNet.clippedBinaryLayer import clippedBinaryLayer
+from simulOfBioNN.nnUtils.classicalTfNet.clippedSparseBioSigLayer import clippedSparseBioSigLayer
 import tensorflow as tf
-import multiprocessing as mlp
 
 import os
 import numpy as np

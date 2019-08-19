@@ -1,15 +1,7 @@
 from tensorflow.python.keras.layers import Dense
-from tensorflow.python.framework import ops
-from tensorflow.python.ops import standard_ops
-from tensorflow.python.eager import context
-from tensorflow.python.framework import common_shapes
 
 import tensorflow as tf
-import numpy as np
-from tensorflow.python.ops import nn
-from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import weightFixedAndClippedConstraint,sparseInitializer,constant_initializer,layerconstantInitiliaizer
-
-
+from simulOfBioNN.nnUtils.classicalTfNet.clippedSparseBioDenseLayer import weightFixedAndClippedConstraint,sparseInitializer
 
 
 class chemCascadeLayer(Dense):
@@ -358,9 +350,6 @@ class chemCascadeLayer(Dense):
             tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_inf(QgijTemplate_eq),1,0)),0,message="inf detected in QgijTemplate_eq")
             activCP = QgijTemplate_eq * hornerActiv + self.k1Mg*Template_eqXg
 
-            if verbose:
-                tf.print(activCP,"activCP")
-
             if self.usingLog:
                 # We must be careful of the case where cpg --> +infinity
                 #tf.where(tf.math.is_inf(self.k1Mg*tf.exp(self.Xglobal)/cpg),self.TA0/(self.E0*cpInv),self.TA0*self.k1Mg*tf.exp(self.Xglobal)/(cpg + self.k1Mg *tf.exp(self.Xglobal) * self.E0 *cpInv))
@@ -383,9 +372,9 @@ class chemCascadeLayer(Dense):
 
             activBias = tf.keras.backend.sum(tf.where(self.mask > 0, tf.math.log(self.k2 * self.k1M * self.E0/(self.kdT*cp)), 0), axis=0) +\
                         tf.math.log(QgijTemplate_eq * self.E0 /cp)
-            if verbose:
-                tf.print(tf.keras.backend.sum(tf.where(self.mask > 0, tf.math.log(self.k2 * self.k1M * self.E0/(self.kdT*cp)), 0), axis=0),"first sum for activBias")
-                tf.print(tf.math.log(QgijTemplate_eq * self.E0 /cp)," log for activ Bias")
+            # if verbose:
+            #     tf.print(tf.keras.backend.sum(tf.where(self.mask > 0, tf.math.log(self.k2 * self.k1M * self.E0/(self.kdT*cp)), 0), axis=0),"first sum for activBias")
+            #     tf.print(tf.math.log(QgijTemplate_eq * self.E0 /cp)," log for activ Bias")
 
             activKernel = tf.where(self.mask>0,self.mask,0)
             #when the input is 0 so -inf in log, its multiplication by 0 gives NaN.
@@ -398,43 +387,23 @@ class chemCascadeLayer(Dense):
             if self.usingLog:
                 pT_eq = tf.keras.backend.sum(tf.where(self.mask<0,tf.math.log(self.k4 * self.E0 *self.k3M/(cp*self.kdT2) ),0),axis=0) +\
                         tf.keras.backend.sum(tf.where(self.mask < 0,(-1)*self.mask * tf.transpose(input), 0), axis=0) + \
-                        tf.math.log(QdgijTemplate_eq*self.E0/cp)
+                        tf.math.log(QdgijTemplate_eq*self.E0/cp)-tf.math.log(self.kdpT)
                     # tf.math.log(tf.where(tf.math.is_inf(self.k3Mg*tf.exp(self.Xglobal)/cpg),self.TI0/self.kdpT,self.k3Mg*self.TI0*self.E0*tf.exp(self.Xglobal)/cpg*cpInv/(self.kdpT*(1+cpInv*self.k3Mg*tf.exp(self.Xglobal)*self.E0/cpg))))
-                inhib = self.k6*self.k5M*self.E0*tf.exp(pT_eq)/(self.kdpT*cp)
+                inhib = self.k6*self.k5M*self.E0*tf.exp(pT_eq)/cp
                 inhibition = tf.where(tf.equal(tf.exp(pT_eq),0),tf.math.log(self.kd),
-                                      (tf.math.log(self.k6*self.k5M*self.E0/(self.kdpT*cp))+pT_eq)+tf.math.log(self.kd/inhib+1))
+                                      tf.math.log(self.k6*self.k5M*self.E0/cp)+pT_eq+tf.math.log(self.kd/inhib+1))
                 x_eq = logActivationsSum + activBias - inhibition
-                if verbose:
-                    tf.print(tf.keras.backend.sum(tf.where(self.mask<0,tf.math.log(self.k4 * self.E0 *self.k3M/(cp*self.kdT2) ),0),axis=0),"sum 1 for pT")
-                    tf.print(tf.keras.backend.sum(tf.where(self.mask < 0, (-1)*self.mask * tf.transpose(input), 0), axis=0),"sum 2 for pT")
-                    tf.print(tf.math.log(QdgijTemplate_eq*self.E0/cp),"log last for pT")
-                    tf.print(pT_eq,"pT_eq")
-                    tf.print(inhib,"inhib")
-                    tf.print(inhibition,"inhibition")
-                    tf.print(logActivationsSum,"logActivationsSum")
-                    tf.print(tf.exp(logActivationsSum + activBias),"tf.exp(logActivationsSum + activBias)")
-                    tf.print(activBias,"activBias")
                 pT_cp = tf.where(tf.equal(tf.exp(pT_eq),0),0.,
                                 self.k5M*tf.exp(logActivationsSum+activBias)/(
-                                         self.kd/tf.exp(pT_eq) + self.k6*self.k5M*self.E0/(cp*self.kdpT)))
-                if verbose:
-                    tf.print(x_eq,"x_eq")
-                    tf.print(pT_cp,"pT_cp")
+                                         self.kd/tf.exp(pT_eq) + self.k6*self.k5M*self.E0/cp))
             else:
                 pT_eq = tf.reduce_prod(tf.where(self.mask < 0,
                                                 self.k4 * self.E0 * tf.transpose(input) * self.k3M/ (self.kdT2*cp), 1), axis=0) * \
-                                                QdgijTemplate_eq*self.E0/cp
-                inhib = self.k6 * self.k5M * self.E0*pT_eq /(self.kdpT*cp)
-                if verbose:
-                    tf.print(self.k4 * self.E0 * tf.transpose(input) * self.k3M/ (self.kdT2*cp),"self.k4 * self.E0 * tf.transpose(input) * self.k3M/ (self.kdT2*cp)")
-                    tf.print(pT_eq,"pT_eq")
-                    tf.print(inhib,"inhib")
-                    tf.print(logActivationsSum,"logActivationsSum")
-                    tf.print(tf.exp(logActivationsSum + activBias),"tf.exp(logActivationsSum + activBias)")
-                    tf.print(activBias,"activBias")
+                                                QdgijTemplate_eq*self.E0/(self.kdpT*cp)
+                inhib = self.k6 * self.k5M * self.E0*pT_eq /cp
                 x_eq = tf.exp(logActivationsSum + activBias)/(self.kd+inhib)
                 pT_cp = tf.where(tf.equal(pT_eq,0),0.,
-                                 self.k5M*tf.exp(logActivationsSum+activBias)/(self.kd/pT_eq + self.k6*self.k5M*self.E0/(self.kdpT*cp)))
+                                 self.k5M*tf.exp(logActivationsSum+activBias)/(self.kd/pT_eq + self.k6*self.k5M*self.E0/cp))
 
 
             tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(activCP),1,0)),0,message="nan detected in activCP of cascade layer")
@@ -443,6 +412,17 @@ class chemCascadeLayer(Dense):
                                       message="nan detected in pT_cp of cascade layer pT_eq:"+str(pT_eq)+" cp:"+str(cp))
 
             layer_cp = activCP + inhibCP_no_pT + pT_cp
+            if verbose:
+                tf.print(x_eq,"x_eq")
+                tf.print(pT_cp,"pT_cp")
+                tf.print(activCP,"activCP")
+                tf.print(inhibCP_no_pT,"inhibCP_no_pT")
+                tf.print(pT_cp,"pT_cp")
+                tf.print(cp,"cp")
+
+            #Lastly we need to add the participation of the Xglobal activating the initial template:
+            layer_cp += self.k1Mg*tf.exp(self.Xglobal)*self.E0/cp*self.TA0/(1+self.k1Mg*tf.exp(self.Xglobal)*self.E0/cp)
+            layer_cp += self.k3Mg*tf.exp(self.Xglobal)*self.E0/cp*self.TI0/(1+self.k3Mg*tf.exp(self.Xglobal)*self.E0/cp)
 
             tf.debugging.assert_equal(tf.keras.backend.sum(tf.where(tf.math.is_nan(x_eq),1,0)),0,message="nan detected in outputs of cascade layer")
 

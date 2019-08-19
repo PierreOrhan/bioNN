@@ -176,7 +176,7 @@ def compareCpRootFunction(x_test,X1,X2,nbrInputs,model,pythonModel):
                 ax.axvline(tfCompetitions[idx1,idx2],c=cmap(idx1*(courbs.index(idx2)+1)),marker="x",linestyle="-")
     ax.tick_params(labelsize="xx-large")
     ax.set_xlabel("cp",fontsize="xx-large")
-    ax.set_ylabel("f(cp)-cp",fontsize="xx-large")
+    ax.set_ylabel("|f(cp)-cp|",fontsize="xx-large")
     ax.set_xscale("log")
     ax.set_yscale("log")
     fig.savefig("formOfcp.png")

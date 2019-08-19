@@ -1,15 +1,6 @@
 from tensorflow.python.keras.layers import Dense
-from tensorflow.python.framework import ops
-from tensorflow.python.ops import standard_ops
-from tensorflow.python.eager import context
-from tensorflow.python.framework import common_shapes
 
 import tensorflow as tf
-import numpy as np
-from tensorflow.python.ops import nn
-from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import weightFixedAndClippedConstraint,sparseInitializer,constant_initializer,layerconstantInitiliaizer
-
-
 
 
 class chemNonLinearLayer(Dense):
@@ -130,7 +121,7 @@ class chemNonLinearLayer(Dense):
             if isFirstLayer:
                 if self.usingLog:
                     # Due to the presence of the root, it is impossible for us to write the equatation to make it possible for the computer to compute that
-                    #   when cpInv -> 0 we have odlerInput -> (olderInput - TA0)
+                    #   when cp -> +infinity we have olderInput -> input
                     #   and a NaN wil be computed instead...
                     # Therefore we make the test of the presence of a Nan and gives back the approximated equation if it is the case!
                     bOnA = tf.exp(input) - self.TA0 - cp/(self.k1M * self.E0)
@@ -146,7 +137,7 @@ class chemNonLinearLayer(Dense):
                 else:
                     olderInput = input
 
-            layer_cp = tf.where(tf.math.equal(olderInput,0),self.TA0*cp/self.E0,self.k1M*self.TA0/(1/olderInput+ self.k1M*self.E0/cp))
+            layer_cp = tf.where(tf.math.equal(olderInput,0),0.,self.k1M*self.TA0/(1/olderInput+ self.k1M*self.E0/cp))
             if tf.equal(tf.math.is_inf(tf.keras.backend.sum(layer_cp)),False):
                 if self.usingLog:
                     x_eq = tf.where(tf.math.is_inf(olderInput),

@@ -4,12 +4,10 @@
 
 from simulOfBioNN.nnUtils.plotUtils import *
 from simulOfBioNN.nnUtils.dataUtils import loadMnist
-from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import clippedSparseBioDenseLayer
-from simulOfBioNN.nnUtils.geneAutoRegulNet.autoRegulLayer import autoRegulLayer
 import multiprocessing
 import os
 import pandas
-from paretoPlot.paretoConfigUtils import _getConfig
+
 
 def _trainAndTest(layer,sess,GPUidx, x_train, y_train, x_test, x_test_noise, y_test, resultPath, nbUnits=[], use_bias=True, flatten=True, epochs=5, biasValue=[], fractionZero=[], verbose=False):
     import tensorflow as tf

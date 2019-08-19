@@ -128,20 +128,14 @@ def _generate_initialConcentration_firstlayer(activatorsOnObserved,inhibitorsOnO
 
 
 if __name__ == '__main__':
-
-
-
     name = "compare100"
     endTime = 10000
     timeStep = 0.1
-
     doODEvsTF = True
     doODEvsPython = True
     doTFvsPython = True
-
     # masks=[np.array([[1,-1,0,0],[0,0,1,-1]]),np.array([[1,-1]])]
     # nbrInputs=masks[0].shape[1]
-    #
     # activatorsOnObserved = [0]
     # inhibitorsOnObserved = [1]
     # nodeObserved = 0
@@ -176,7 +170,7 @@ if __name__ == '__main__':
     FULL = True
     outputMode = "all"
     #Here we need to choose X_2 this time
-    outputList = ["X_2_"+str(nodeObserved)] #"all" or None or list of output species
+    outputList = ["X_2_"+str(nodeObserved),"E"] #"all" or None or list of output species
     complexity="simple"
     useEndo = False  # if we want to use the complicated endo model
     useProtectionOnActivator = False
@@ -236,8 +230,9 @@ if __name__ == '__main__':
                 results = executeODESimulation(fPythonSparse, name, x_test, initialization_dic, outputList= outputList,
                                                leak = 0, endTime=endTime, sparse=True, modes=modes,
                                                timeStep=timeStep, initValue= initValue, rescaleFactor=rescaleFactor)
-            output = results[modes.index("outputEqui")]
+            output = results[modes.index("outputEqui")][0,:]
             output = np.reshape(output,(len(X1),len(X2)))
+            outputE = results[modes.index("outputEqui")][1,:]
 
         C0 = 8.086075400626399e-07
         cstlist = [0.9999999999999998,0.1764705882352941,1.0,0.9999999999999998,0.1764705882352941,1.0,
@@ -328,3 +323,5 @@ if __name__ == '__main__':
                        figname2=os.path.join(experiment_path, "TFVSTFlogX2.png"), useLogX=True)
 
         compareCpRootFunction(x_test,X1,X2,nbrInputs,model,pythonModel)
+        if doODEvsPython or doODEvsTF:
+            print("cp obtained with ODE:",E0*(rescaleFactor**0.5)/outputE)

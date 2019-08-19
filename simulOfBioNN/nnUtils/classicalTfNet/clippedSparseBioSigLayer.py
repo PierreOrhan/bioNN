@@ -8,7 +8,7 @@ from tensorflow.python.framework import common_shapes
 from tensorflow.python.keras import backend as K
 import tensorflow as tf
 from tensorflow.python.ops import nn
-from simulOfBioNN.nnUtils.clippedSparseBioDenseLayer import weightFixedAndClippedConstraint,sparseInitializer,constant_initializer,layerconstantInitiliaizer
+from simulOfBioNN.nnUtils.classicalTfNet.clippedSparseBioDenseLayer import weightFixedAndClippedConstraint,sparseInitializer,constant_initializer,layerconstantInitiliaizer
 
 def sigClippedTensorDot(deviceName,inputs,kernel,rank):
     """
