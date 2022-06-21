@@ -31,7 +31,7 @@ matplotlib==3.0.3
 mock==2.0.0
 networkx==2.3
 numba==0.43.1
-numpy==1.16.3
+numpy==1.22.0
 olefile==0.46
 packaging==19.0
 pandas==0.24.2
